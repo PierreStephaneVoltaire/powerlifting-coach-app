@@ -1,7 +1,6 @@
 FROM public.ecr.aws/docker/library/golang:alpine AS builder
 
 WORKDIR /app
-RUN apk add --no-cache git 
 
 COPY go.mod ./
 
