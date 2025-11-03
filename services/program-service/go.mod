@@ -16,4 +16,4 @@ require (
 	github.com/sashabaranov/go-openai v1.17.9
 )
 
-replace github.com/powerlifting-coach-app/shared => ../../shared
+replace github.com/powerlifting-coach-app/shared => ./shared

@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache ffmpeg
 
 COPY go.mod ./
+COPY ../../shared ./shared
 RUN go mod download
 
 COPY . .
