@@ -6,7 +6,7 @@ RUN apk add --no-cache git
 # Install FFmpeg
 RUN apk add --no-cache ffmpeg
 
-COPY go.mod ./
+COPY go.mod go.sum ./
 ENV GOPROXY=https://proxy.golang.org,direct
 
 RUN go mod download
