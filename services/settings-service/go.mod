@@ -10,6 +10,5 @@ require (
 	github.com/rs/zerolog v1.31.0
 	github.com/stretchr/testify v1.8.4
 	github.com/google/uuid v1.3.0
-	github.com/powerlifting-coach-app/shared v0.1.0
+	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.0
 )
-
