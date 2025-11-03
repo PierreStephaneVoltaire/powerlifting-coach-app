@@ -1,0 +1,63 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: powerlifting-coach
+
+resources:
+  - ../../base
+  - vault.yaml
+
+patchesStrategicMerge:
+  - production-patches.yaml
+
+configMapGenerator:
+  - name: app-config
+    literals:
+      - ENVIRONMENT=production
+      - REDIS_URL=valkey:6379
+      - RABBITMQ_URL=amqp://admin:changeme123@rabbitmq:5672/
+
+secretGenerator:
+  - name: app-secrets
+    type: Opaque
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - DATABASE_URL=postgresql://app_user:powerlifting123@postgres:5432/powerlifting_app
+
+images:
+  - name: auth-service
+    newName: public.ecr.aws/powerlifting-coach/auth-service
+    newTag: latest
+  - name: user-service
+    newName: public.ecr.aws/powerlifting-coach/user-service
+    newTag: latest
+  - name: video-service
+    newName: public.ecr.aws/powerlifting-coach/video-service
+    newTag: latest
+  - name: settings-service
+    newName: public.ecr.aws/powerlifting-coach/settings-service
+    newTag: latest
+  - name: program-service
+    newName: public.ecr.aws/powerlifting-coach/program-service
+    newTag: latest
+  - name: coach-service
+    newName: public.ecr.aws/powerlifting-coach/coach-service
+    newTag: latest
+  - name: notification-service
+    newName: public.ecr.aws/powerlifting-coach/notification-service
+    newTag: latest
+  - name: frontend
+    newName: public.ecr.aws/powerlifting-coach/frontend
+    newTag: latest
+
+commonLabels:
+  environment: production
+
+replicas:
+  - name: postgres
+    count: 1
+  - name: valkey
+    count: 1
+  - name: rabbitmq
+    count: 1

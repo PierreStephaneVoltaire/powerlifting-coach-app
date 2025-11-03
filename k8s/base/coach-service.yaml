@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coach-service
+  namespace: powerlifting-coach
+  labels:
+    app: coach-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coach-service
+  template:
+    metadata:
+      labels:
+        app: coach-service
+    spec:
+      containers:
+      - name: coach-service
+        image: ghcr.io/powerlifting-coach-app/coach-service:latest
+        ports:
+        - containerPort: 8085
+        env:
+        - name: PORT
+          value: "8085"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-url
+        - name: REDIS_URL
+          value: "valkey:6379"
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: rabbitmq-url
+        - name: AUTH_SERVICE
+          value: "http://auth-service:8080"
+        - name: USER_SERVICE
+          value: "http://user-service:8081"
+        - name: VIDEO_SERVICE
+          value: "http://video-service:8082"
+        - name: PROGRAM_SERVICE
+          value: "http://program-service:8084"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8085
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8085
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coach-service
+  namespace: powerlifting-coach
+spec:
+  selector:
+    app: coach-service
+  ports:
+  - port: 8085
+    targetPort: 8085
+  type: ClusterIP

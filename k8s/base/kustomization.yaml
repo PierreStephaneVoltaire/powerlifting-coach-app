@@ -1,0 +1,47 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - auth-service.yaml
+  - user-service.yaml
+  - video-service.yaml
+  - settings-service.yaml
+  - program-service.yaml
+  - coach-service.yaml
+  - notification-service.yaml
+  - frontend.yaml
+  - postgres.yaml
+  - valkey.yaml
+  - rabbitmq.yaml
+  - ingress.yaml
+
+images:
+  - name: auth-service
+    newName: public.ecr.aws/powerlifting-coach/auth-service
+    newTag: latest
+  - name: user-service
+    newName: public.ecr.aws/powerlifting-coach/user-service
+    newTag: latest
+  - name: video-service
+    newName: public.ecr.aws/powerlifting-coach/video-service
+    newTag: latest
+  - name: settings-service
+    newName: public.ecr.aws/powerlifting-coach/settings-service
+    newTag: latest
+  - name: program-service
+    newName: public.ecr.aws/powerlifting-coach/program-service
+    newTag: latest
+  - name: coach-service
+    newName: public.ecr.aws/powerlifting-coach/coach-service
+    newTag: latest
+  - name: notification-service
+    newName: public.ecr.aws/powerlifting-coach/notification-service
+    newTag: latest
+  - name: frontend
+    newName: public.ecr.aws/powerlifting-coach/frontend
+    newTag: latest
+
+commonLabels:
+  app.kubernetes.io/name: powerlifting-coach
+  app.kubernetes.io/version: v1.0.0

@@ -1,0 +1,99 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: powerlifting-coach-ingress
+  namespace: powerlifting-coach
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://app.powerliftingcoach.app"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+spec:
+  tls:
+  - hosts:
+    - app.powerliftingcoach.app
+    - api.powerliftingcoach.app
+    secretName: powerlifting-coach-tls
+  rules:
+  - host: app.powerliftingcoach.app
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+  - host: api.powerliftingcoach.app
+    http:
+      paths:
+      - path: /auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8080
+      - path: /api/v1/users
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8081
+      - path: /api/v1/videos
+        pathType: Prefix
+        backend:
+          service:
+            name: video-service
+            port:
+              number: 8082
+      - path: /api/v1/settings
+        pathType: Prefix
+        backend:
+          service:
+            name: settings-service
+            port:
+              number: 8083
+      - path: /api/v1/programs
+        pathType: Prefix
+        backend:
+          service:
+            name: program-service
+            port:
+              number: 8084
+      - path: /api/v1/coach
+        pathType: Prefix
+        backend:
+          service:
+            name: coach-service
+            port:
+              number: 8085
+      - path: /api/v1/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 8086
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@powerliftingcoach.app
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
