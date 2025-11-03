@@ -6,6 +6,8 @@ WORKDIR /app
 
 COPY go.mod go.sum ./
 
+ENV GOPRIVATE=github.com/PierreStephaneVoltaire/powerlifting-coach-app/*
+
 RUN go mod download
 
 COPY . .

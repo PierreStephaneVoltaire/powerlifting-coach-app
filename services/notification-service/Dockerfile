@@ -5,6 +5,7 @@ RUN apk add --no-cache git
 
 COPY go.mod go.sum ./
 ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOPRIVATE=github.com/PierreStephaneVoltaire/powerlifting-coach-app/*
 
 RUN go mod download
 
