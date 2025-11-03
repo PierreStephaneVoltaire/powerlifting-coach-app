@@ -13,6 +13,8 @@ env:
 jobs:
   build-images:
     runs-on: ubuntu-latest
+    environment:
+      name: prod
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     strategy:
