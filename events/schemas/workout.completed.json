@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WorkoutCompleted",
+  "description": "Event emitted when a user completes a workout with summary data",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "workout.completed"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Completion timestamp"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["workout_id", "plan_id", "duration_minutes", "exercises_summary"],
+      "properties": {
+        "workout_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "duration_minutes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exercises_summary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "exercise_name": {"type": "string"},
+              "sets_completed": {"type": "integer"},
+              "reps": {"type": "array", "items": {"type": "integer"}},
+              "weights": {"type": "array", "items": {"type": "number"}},
+              "rpe_avg": {"type": "number"}
+            }
+          }
+        },
+        "rpe_summary": {
+          "type": "object",
+          "properties": {
+            "avg": {"type": "number"},
+            "max": {"type": "number"}
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "workout.completed",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440033",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-10T16:15:00Z",
+    "source_service": "frontend",
+    "data": {
+      "workout_id": "e2f3a4b5-c6d7-8901-efgh-234567890123",
+      "plan_id": "d1e2f3a4-b5c6-7890-defg-123456789012",
+      "duration_minutes": 95,
+      "exercises_summary": [
+        {
+          "exercise_name": "Squat",
+          "sets_completed": 5,
+          "reps": [5, 5, 5, 5, 5],
+          "weights": [150, 150, 150, 150, 150],
+          "rpe_avg": 7.5
+        },
+        {
+          "exercise_name": "Bench Press",
+          "sets_completed": 5,
+          "reps": [5, 5, 5, 5, 4],
+          "weights": [100, 100, 100, 100, 100],
+          "rpe_avg": 7.8
+        }
+      ],
+      "rpe_summary": {
+        "avg": 7.65,
+        "max": 8.5
+      },
+      "notes": "Felt strong today, depth was good on squats"
+    }
+  }
+}

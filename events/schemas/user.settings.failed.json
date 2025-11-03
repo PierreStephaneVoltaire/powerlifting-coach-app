@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserSettingsFailed",
+  "description": "Event emitted when settings-service fails to persist user settings due to validation or other errors",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "user.settings.failed"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Matches original user.settings.submitted client_generated_id"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "settings-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["error_code", "error_message"],
+      "properties": {
+        "error_code": {
+          "type": "string",
+          "enum": [
+            "VALIDATION_ERROR",
+            "MISSING_REQUIRED_FIELD",
+            "INVALID_VALUE",
+            "DATABASE_ERROR",
+            "DUPLICATE_SUBMISSION",
+            "UNKNOWN_ERROR"
+          ]
+        },
+        "error_message": {
+          "type": "string",
+          "description": "Human-readable error message"
+        },
+        "validation_errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {"type": "string"},
+              "message": {"type": "string"}
+            }
+          },
+          "description": "Detailed validation errors per field"
+        },
+        "original_event_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "user.settings.failed",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T14:35:02Z",
+    "source_service": "settings-service",
+    "data": {
+      "error_code": "VALIDATION_ERROR",
+      "error_message": "Invalid settings data",
+      "validation_errors": [
+        {
+          "field": "age",
+          "message": "Age must be between 13 and 120"
+        },
+        {
+          "field": "training_days_per_week",
+          "message": "Training days per week is required"
+        }
+      ],
+      "original_event_id": "550e8400-e29b-41d4-a716-446655440000"
+    }
+  }
+}

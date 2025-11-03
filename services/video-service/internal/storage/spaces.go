@@ -108,8 +108,8 @@ func (s *SpacesClient) GetPublicFileURL(key string) string {
 		return fmt.Sprintf("%s/%s", strings.TrimRight(s.cdnURL, "/"), key)
 	}
 
-	return fmt.Sprintf("https://%s.%s/%s", s.bucket, 
-		strings.TrimPrefix(s.client.Config.Endpoint, "https://"), key)
+	return fmt.Sprintf("https://%s.%s/%s", s.bucket,
+		strings.TrimPrefix(*s.client.Config.Endpoint, "https://"), key)
 }
 
 func (s *SpacesClient) DeleteFile(key string) error {

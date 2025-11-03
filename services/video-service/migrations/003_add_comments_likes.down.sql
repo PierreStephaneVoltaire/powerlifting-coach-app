@@ -1,0 +1,11 @@
+DROP TRIGGER IF EXISTS update_comments_updated_at ON comments;
+DROP INDEX IF EXISTS idx_likes_created_at;
+DROP INDEX IF EXISTS idx_likes_user_id;
+DROP INDEX IF EXISTS idx_likes_target;
+DROP TABLE IF EXISTS likes;
+DROP INDEX IF EXISTS idx_comments_comment_id;
+DROP INDEX IF EXISTS idx_comments_created_at;
+DROP INDEX IF EXISTS idx_comments_parent_comment_id;
+DROP INDEX IF EXISTS idx_comments_user_id;
+DROP INDEX IF EXISTS idx_comments_post_id;
+DROP TABLE IF EXISTS comments;

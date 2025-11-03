@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Nerzal/gocloak/v13"
+	"github.com/go-resty/resty/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/powerlifting-coach-app/auth-service/internal/config"
 )
@@ -59,15 +60,43 @@ func (s *Service) getAdminToken(ctx context.Context) (*gocloak.JWT, error) {
 		return s.adminToken, nil
 	}
 
-	token, err := s.client.LoginAdmin(ctx, "admin", "changeme123", "master")
+	token, err := s.client.LoginAdmin(ctx, s.config.KeycloakAdminUser, s.config.KeycloakAdminPassword, "master")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get admin token: %w", err)
 	}
 
 	s.adminToken = token
 	s.tokenExpiry = time.Now().Add(time.Duration(token.ExpiresIn-60) * time.Second)
-	
+
 	return token, nil
+}
+
+func (s *Service) setUserPassword(ctx context.Context, accessToken, realm, userID, password string, temporary bool) error {
+	client := resty.New()
+	url := fmt.Sprintf("%s/admin/realms/%s/users/%s/reset-password", s.config.KeycloakURL, realm, userID)
+
+	payload := map[string]interface{}{
+		"type":      "password",
+		"value":     password,
+		"temporary": temporary,
+	}
+
+	resp, err := client.R().
+		SetContext(ctx).
+		SetHeader("Authorization", fmt.Sprintf("Bearer %s", accessToken)).
+		SetHeader("Content-Type", "application/json").
+		SetBody(payload).
+		Put(url)
+
+	if err != nil {
+		return fmt.Errorf("failed to call reset password API: %w", err)
+	}
+
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("unexpected status code %d: %s", resp.StatusCode(), resp.String())
+	}
+
+	return nil
 }
 
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*TokenResponse, error) {
@@ -92,7 +121,7 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*TokenResp
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	err = s.client.SetPassword(ctx, adminToken.AccessToken, s.config.KeycloakRealm, userID, req.Password, false)
+	err = s.setUserPassword(ctx, adminToken.AccessToken, s.config.KeycloakRealm, userID, req.Password, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set password: %w", err)
 	}

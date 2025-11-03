@@ -10,7 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/powerlifting-coach-app/video-service/internal/config"
 	"github.com/powerlifting-coach-app/video-service/internal/database"
 	"github.com/powerlifting-coach-app/video-service/internal/handlers"
@@ -53,9 +53,48 @@ func main() {
 	}
 	defer queueClient.Close()
 
+	eventConsumer, err := queue.NewEventConsumer(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create event consumer")
+	}
+	defer eventConsumer.Close()
+
+	eventPublisher, err := queue.NewRabbitMQClient(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create event publisher")
+	}
+	defer eventPublisher.Close()
+
+	feedHandlers := handlers.NewFeedHandlers(db.DB)
+	commentHandlers := handlers.NewCommentHandlers(db.DB)
+	commentHandlers.SetPublisher(eventPublisher)
+	mediaHandlers := handlers.NewMediaEventHandlers(db.DB, eventPublisher)
+
+	eventConsumer.RegisterHandler("feed.post.created", feedHandlers.HandleFeedPostCreated)
+	eventConsumer.RegisterHandler("feed.post.updated", feedHandlers.HandleFeedPostUpdated)
+	eventConsumer.RegisterHandler("feed.post.deleted", feedHandlers.HandleFeedPostDeleted)
+	eventConsumer.RegisterHandler("comment.created", commentHandlers.HandleCommentCreated)
+	eventConsumer.RegisterHandler("interaction.liked", commentHandlers.HandleInteractionLiked)
+	eventConsumer.RegisterHandler("media.upload_requested", mediaHandlers.HandleMediaUploadRequested)
+	eventConsumer.RegisterHandler("media.uploaded", mediaHandlers.HandleMediaUploaded)
+
+	routingKeys := []string{
+		"feed.post.created",
+		"feed.post.updated",
+		"feed.post.deleted",
+		"comment.created",
+		"interaction.liked",
+		"media.upload_requested",
+		"media.uploaded",
+	}
+
+	if err := eventConsumer.StartConsuming("video-service.events", routingKeys); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start event consumer")
+	}
+
 	videoRepo := repository.NewVideoRepository(db.DB)
 	videoHandlers := handlers.NewVideoHandlers(
-		videoRepo, spacesClient, queueClient, 
+		videoRepo, spacesClient, queueClient,
 		cfg.MaxFileSize, cfg.AllowedExtensions,
 	)
 
@@ -86,7 +125,7 @@ func main() {
 		{
 			// Public endpoints
 			videos.GET("/shared/:token", videoHandlers.GetSharedVideo)
-			
+
 			// Protected endpoints
 			videos.Use(middleware.AuthMiddleware(authConfig))
 			{
@@ -95,6 +134,24 @@ func main() {
 				videos.GET("/", videoHandlers.GetMyVideos)
 				videos.GET("/:id", videoHandlers.GetVideo)
 				videos.DELETE("/:id", videoHandlers.DeleteVideo)
+			}
+		}
+
+		feed := v1.Group("/feed")
+		{
+			feed.Use(middleware.AuthMiddleware(authConfig))
+			{
+				feed.GET("/", feedHandlers.GetFeed)
+				feed.GET("/:post_id", feedHandlers.GetFeedPost)
+			}
+		}
+
+		posts := v1.Group("/posts")
+		{
+			posts.Use(middleware.AuthMiddleware(authConfig))
+			{
+				posts.GET("/:post_id/comments", commentHandlers.GetPostComments)
+				posts.GET("/:post_id/likes", commentHandlers.GetPostLikes)
 			}
 		}
 	}

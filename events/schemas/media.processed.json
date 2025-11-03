@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MediaProcessed",
+  "description": "Event emitted after media processing (transcoding, thumbnails) completes",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "media.processed"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "media-processing-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["media_id", "media_url"],
+      "properties": {
+        "media_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "media_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "CDN URL for processed media"
+        },
+        "thumbnail_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "Video duration in seconds"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "formats": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "format": {"type": "string"},
+              "url": {"type": "string", "format": "uri"},
+              "bitrate": {"type": "integer"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "media.processed",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440010",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T14:55:00Z",
+    "source_service": "media-processing-service",
+    "data": {
+      "media_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "media_url": "https://cdn.example.com/videos/b2c3d4e5.mp4",
+      "thumbnail_url": "https://cdn.example.com/thumbnails/b2c3d4e5.jpg",
+      "duration_seconds": 12.5,
+      "width": 1920,
+      "height": 1080,
+      "formats": [
+        {
+          "format": "1080p",
+          "url": "https://cdn.example.com/videos/b2c3d4e5_1080p.mp4",
+          "bitrate": 5000000
+        },
+        {
+          "format": "720p",
+          "url": "https://cdn.example.com/videos/b2c3d4e5_720p.mp4",
+          "bitrate": 2500000
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MachineNotesPersisted",
+  "description": "Event emitted after machine-service persists equipment notes",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "machine.notes.persisted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Matches original machine.notes.submitted client_generated_id"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "machine-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["note_id"],
+      "properties": {
+        "note_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "machine_type": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "machine.notes.persisted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440051",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T18:10:01Z",
+    "source_service": "machine-service",
+    "data": {
+      "note_id": "h3c4d5e6-f7g8-9012-hijk-567890123456",
+      "machine_type": "hack_squat"
+    }
+  }
+}

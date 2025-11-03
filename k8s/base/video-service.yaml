@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: video-service
-  namespace: powerlifting-coach
+  namespace: app
   labels:
     app: video-service
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: video-service
-        image: ghcr.io/powerlifting-coach-app/video-service:latest
+        image: video-service:latest
         ports:
         - containerPort: 8082
         env:
@@ -53,11 +53,11 @@ spec:
           value: "http://auth-service:8080"
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "128Mi"
+            cpu: "100m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "300m"
         livenessProbe:
           httpGet:
             path: /health
@@ -83,7 +83,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: video-service
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   selector:
     app: video-service

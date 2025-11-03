@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FeedAccessAttempt",
+  "description": "Event emitted when user attempts to access a passcode-protected feed",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "feed.access.attempt"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User attempting to access the feed"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["feed_owner_id", "passcode"],
+      "properties": {
+        "feed_owner_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owner of the feed being accessed"
+        },
+        "passcode": {
+          "type": "string",
+          "minLength": 4,
+          "description": "Passcode to validate (will not be logged)"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "feed.access.attempt",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440060",
+    "user_id": "8d0f7780-8536-51ef-b827-557fc2f91bf8",
+    "timestamp": "2025-11-05T19:00:00Z",
+    "source_service": "frontend",
+    "data": {
+      "feed_owner_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "passcode": "1234"
+    }
+  }
+}

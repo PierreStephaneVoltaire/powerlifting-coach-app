@@ -1,8 +1,12 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { AuthTokens } from '@/types';
+import { offlineQueue } from './offlineQueue';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+// Use empty string so requests go to same origin, nginx proxies to backend services
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const DEFAULT_TIMEOUT = 30000;
+const WRITE_TIMEOUT = 60000;
 
 class ApiClient {
   private client: AxiosInstance;
@@ -10,7 +14,7 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 30000,
+      timeout: DEFAULT_TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -201,6 +205,136 @@ class ApiClient {
       },
     });
     return response;
+  }
+
+  // Feed endpoints
+  async getFeed(limit = 20, cursor?: string, visibility = 'public') {
+    const params: any = { limit, visibility };
+    if (cursor) params.cursor = cursor;
+
+    const response = await this.client.get('/api/v1/feed', { params });
+    return response.data;
+  }
+
+  async getFeedPost(postId: string) {
+    const response = await this.client.get(`/api/v1/feed/${postId}`);
+    return response.data;
+  }
+
+  // Comments and Likes endpoints
+  async getPostComments(postId: string) {
+    const response = await this.client.get(`/api/v1/posts/${postId}/comments`);
+    return response.data;
+  }
+
+  async getPostLikes(postId: string) {
+    const response = await this.client.get(`/api/v1/posts/${postId}/likes`);
+    return response.data;
+  }
+
+  // Event submission (notification service)
+  async submitEvent(event: any, options: { useOfflineQueue?: boolean } = {}) {
+    const { useOfflineQueue: shouldUseQueue = true } = options;
+
+    try {
+      const response = await this.client.post('/api/v1/notify/events', event, {
+        timeout: WRITE_TIMEOUT,
+      });
+      return response.data;
+    } catch (error: any) {
+      const isNetworkError = !error.response || error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK';
+
+      if (shouldUseQueue && isNetworkError) {
+        console.info('Network error, queuing event for offline submission', {
+          event_type: event.event_type,
+          error: error.message,
+        });
+        await offlineQueue.enqueue(event);
+        return { queued: true, id: event.client_generated_id };
+      }
+
+      throw error;
+    }
+  }
+
+  async submitOnboardingSettings(userId: string, settings: any) {
+    const event = {
+      schema_version: '1.0.0',
+      event_type: 'user.settings.submitted',
+      client_generated_id: crypto.randomUUID(),
+      user_id: userId,
+      timestamp: new Date().toISOString(),
+      source_service: 'frontend',
+      data: settings,
+    };
+
+    return this.submitEvent(event);
+  }
+
+  async submitComment(userId: string, postId: string, commentText: string, parentCommentId?: string) {
+    const event = {
+      schema_version: '1.0.0',
+      event_type: 'comment.created',
+      client_generated_id: crypto.randomUUID(),
+      user_id: userId,
+      timestamp: new Date().toISOString(),
+      source_service: 'frontend',
+      data: {
+        post_id: postId,
+        parent_comment_id: parentCommentId || null,
+        comment_text: commentText,
+      },
+    };
+
+    return this.submitEvent(event);
+  }
+
+  async submitLike(userId: string, targetType: string, targetId: string, action: 'like' | 'unlike') {
+    const event = {
+      schema_version: '1.0.0',
+      event_type: 'interaction.liked',
+      client_generated_id: crypto.randomUUID(),
+      user_id: userId,
+      timestamp: new Date().toISOString(),
+      source_service: 'frontend',
+      data: {
+        target_type: targetType,
+        target_id: targetId,
+        action,
+      },
+    };
+
+    return this.submitEvent(event);
+  }
+
+  async submitFeedAccessAttempt(userId: string, feedOwnerID: string, passcode: string) {
+    const event = {
+      schema_version: '1.0.0',
+      event_type: 'feed.access.attempt',
+      client_generated_id: crypto.randomUUID(),
+      user_id: userId,
+      timestamp: new Date().toISOString(),
+      source_service: 'frontend',
+      data: {
+        feed_owner_id: feedOwnerID,
+        passcode,
+      },
+    };
+
+    return this.submitEvent(event);
+  }
+
+  async getConversationMessages(conversationId: string) {
+    const response = await this.client.get(`/api/v1/dm/conversations/${conversationId}/messages`);
+    return response.data;
+  }
+
+  async getPendingEventsCount(): Promise<number> {
+    return offlineQueue.getPendingCount();
+  }
+
+  startOfflineQueueProcessor() {
+    offlineQueue.startAutoProcess();
   }
 }
 

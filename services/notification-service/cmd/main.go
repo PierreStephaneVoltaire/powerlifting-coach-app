@@ -15,7 +15,6 @@ import (
 	"github.com/powerlifting-coach-app/notification-service/internal/handlers"
 	"github.com/powerlifting-coach-app/notification-service/internal/notification"
 	"github.com/powerlifting-coach-app/notification-service/internal/queue"
-	"github.com/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
 )
@@ -52,8 +51,16 @@ func main() {
 		zlog.Fatal().Err(err).Msg("Failed to start consuming messages")
 	}
 
+	// Initialize queue publisher
+	publisher, err := queue.NewPublisher(cfg.RabbitMQURL)
+	if err != nil {
+		zlog.Fatal().Err(err).Msg("Failed to create queue publisher")
+	}
+	defer publisher.Close()
+
 	// Initialize HTTP handlers
 	h := handlers.NewHandlers(sender, cfg)
+	eventsHandler := handlers.NewEventsHandler(publisher)
 
 	// Set up Gin router
 	if cfg.Environment == "production" {
@@ -63,7 +70,6 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	router.Use(middleware.CORS())
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -81,6 +87,7 @@ func main() {
 		v1.GET("/notifications/preferences/:user_id", h.GetPreferences)
 		v1.PUT("/notifications/preferences/:user_id", h.UpdatePreferences)
 		v1.GET("/notifications/history/:user_id", h.GetNotificationHistory)
+		v1.POST("/notify/events", eventsHandler.PublishEvent)
 	}
 
 	// Start HTTP server

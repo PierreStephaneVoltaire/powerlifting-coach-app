@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ToolsPlatecalcQuery",
+  "description": "Optional telemetry event for plate calculator usage",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "tools.platecalc.query"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "frontend"
+    },
+    "data": {
+      "type": "object",
+      "required": ["target_weight", "equipment_type"],
+      "properties": {
+        "target_weight": {
+          "type": "number"
+        },
+        "weight_unit": {
+          "type": "string",
+          "enum": ["kg", "lb"]
+        },
+        "equipment_type": {
+          "type": "string",
+          "enum": ["barbell", "hack_squat", "leg_press", "hex_bar", "cable"]
+        },
+        "bar_weight": {
+          "type": "number"
+        },
+        "available_plates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "weight": {"type": "number"},
+              "count": {"type": "integer"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "tools.platecalc.query",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440050",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T18:00:00Z",
+    "source_service": "frontend",
+    "data": {
+      "target_weight": 180,
+      "weight_unit": "kg",
+      "equipment_type": "barbell",
+      "bar_weight": 20,
+      "available_plates": [
+        {"weight": 25, "count": 4},
+        {"weight": 20, "count": 4},
+        {"weight": 15, "count": 2},
+        {"weight": 10, "count": 2},
+        {"weight": 5, "count": 2},
+        {"weight": 2.5, "count": 2}
+      ]
+    }
+  }
+}

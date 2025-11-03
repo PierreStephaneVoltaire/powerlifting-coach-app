@@ -1,0 +1,708 @@
+openapi: 3.0.3
+info:
+  title: Video Service API
+  description: Handles video uploads, processing, feed management, and social interactions
+  version: 1.0.0
+  contact:
+    name: Powerlifting Coach App
+    email: support@powerliftingcoach.app
+
+servers:
+  - url: http://localhost:8082
+    description: Local development
+  - url: https://api.powerliftingcoach.app/video
+    description: Production
+
+tags:
+  - name: health
+    description: Health check endpoints
+  - name: videos
+    description: Video upload and management
+  - name: feed
+    description: Feed and post management
+  - name: comments
+    description: Comments and likes
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - health
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  /api/v1/videos/shared/{token}:
+    get:
+      summary: Get shared video (public access)
+      tags:
+        - videos
+      operationId: getSharedVideo
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Share token for the video
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Shared video details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Video'
+        '404':
+          description: Video not found or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/videos/upload:
+    post:
+      summary: Get presigned URL for video upload
+      tags:
+        - videos
+      operationId: getUploadURL
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - filename
+                - content_type
+              properties:
+                filename:
+                  type: string
+                  description: Name of the file to upload
+                content_type:
+                  type: string
+                  description: MIME type of the file
+                  example: video/mp4
+      responses:
+        '200':
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                    format: uri
+                    description: Presigned URL for uploading the file
+                  video_id:
+                    type: string
+                    format: uuid
+                    description: ID of the video record
+                  expires_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/videos/{id}/complete:
+    post:
+      summary: Mark video upload as complete and trigger processing
+      tags:
+        - videos
+      operationId: completeUpload
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Video ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video upload marked complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Video processing started
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/videos:
+    get:
+      summary: Get current user's videos
+      tags:
+        - videos
+      operationId: getMyVideos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of videos to return
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          description: Number of videos to skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: User's videos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  videos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Video'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/videos/{id}:
+    get:
+      summary: Get video by ID
+      tags:
+        - videos
+      operationId: getVideo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Video ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Video'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete video
+      tags:
+        - videos
+      operationId: deleteVideo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Video ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/feed:
+    get:
+      summary: Get feed posts with cursor pagination
+      tags:
+        - feed
+      operationId: getFeed
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Cursor for pagination (post ID)
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of posts to return
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Feed posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FeedPost'
+                  next_cursor:
+                    type: string
+                    format: uuid
+                    description: Cursor for next page (null if no more posts)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/feed/{post_id}:
+    get:
+      summary: Get feed post by ID
+      tags:
+        - feed
+      operationId: getFeedPost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          description: Post ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Feed post details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedPost'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/posts/{post_id}/comments:
+    get:
+      summary: Get comments for a post
+      tags:
+        - comments
+      operationId: getPostComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          description: Post ID
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of comments to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          description: Number of comments to skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Post comments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Comment'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/posts/{post_id}/likes:
+    get:
+      summary: Get likes for a post
+      tags:
+        - comments
+      operationId: getPostLikes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          description: Post ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Post likes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  likes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Like'
+                  total:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Video:
+      type: object
+      properties:
+        video_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        media_url:
+          type: string
+          format: uri
+          description: URL of the processed video
+        thumbnail_url:
+          type: string
+          format: uri
+          description: URL of the video thumbnail
+        movement_label:
+          type: string
+          enum: [squat, bench, deadlift, accessory, other]
+          description: Type of lift in the video
+        weight:
+          type: number
+          format: float
+          description: Weight used in the lift
+        rpe:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 10
+          description: Rate of perceived exertion
+        visibility:
+          type: string
+          enum: [public, private]
+          description: Video visibility setting
+        comment:
+          type: string
+          description: User comment about the lift
+        processing_status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Video processing status
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FeedPost:
+      type: object
+      properties:
+        post_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          description: Display name of the post author
+        media_url:
+          type: string
+          format: uri
+        thumbnail_url:
+          type: string
+          format: uri
+        movement_label:
+          type: string
+          enum: [squat, bench, deadlift, accessory, other]
+        weight:
+          type: number
+          format: float
+        rpe:
+          type: number
+          format: float
+        comment:
+          type: string
+        like_count:
+          type: integer
+          description: Number of likes on this post
+        comment_count:
+          type: integer
+          description: Number of comments on this post
+        created_at:
+          type: string
+          format: date-time
+
+    Comment:
+      type: object
+      properties:
+        comment_id:
+          type: string
+          format: uuid
+        post_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          description: Display name of the commenter
+        comment_text:
+          type: string
+          description: Comment content
+        parent_comment_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent comment ID for threaded comments
+        created_at:
+          type: string
+          format: date-time
+
+    Like:
+      type: object
+      properties:
+        like_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          description: Display name of the user who liked
+        target_id:
+          type: string
+          format: uuid
+          description: ID of the liked post or comment
+        target_type:
+          type: string
+          enum: [post, comment]
+          description: Type of liked content
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details

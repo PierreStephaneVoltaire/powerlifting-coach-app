@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: notification-service
-  namespace: powerlifting-coach
+  namespace: app
   labels:
     app: notification-service
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: ghcr.io/powerlifting-coach-app/notification-service:latest
+        image: notification-service:latest
         ports:
         - containerPort: 8086
         env:
@@ -30,13 +30,6 @@ spec:
             secretKeyRef:
               name: app-secrets
               key: rabbitmq-url
-        - name: SENDGRID_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: sendgrid-api-key
-        - name: SENDGRID_FROM_EMAIL
-          value: "noreply@powerliftingcoach.app"
         - name: USER_SERVICE
           value: "http://user-service:8081"
         - name: COACH_SERVICE
@@ -49,11 +42,11 @@ spec:
           value: "https://app.powerliftingcoach.app"
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "64Mi"
+            cpu: "50m"
           limits:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "128Mi"
+            cpu: "150m"
         livenessProbe:
           httpGet:
             path: /health
@@ -72,7 +65,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: notification-service
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   selector:
     app: notification-service

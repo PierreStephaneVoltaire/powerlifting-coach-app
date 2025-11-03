@@ -1,8 +1,12 @@
-FROM public.ecr.aws/docker/library/golang:1.21-alpine AS builder
+FROM public.ecr.aws/docker/library/golang:alpine AS builder
 
 WORKDIR /app
+RUN apk add --no-cache git
 
 COPY go.mod go.sum ./
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOPRIVATE=github.com/PierreStephaneVoltaire/powerlifting-coach-app/*
+
 RUN go mod download
 
 COPY . .

@@ -14,7 +14,7 @@ import (
 	"github.com/powerlifting-coach-app/coach-service/internal/database"
 	"github.com/powerlifting-coach-app/coach-service/internal/handlers"
 	"github.com/powerlifting-coach-app/coach-service/internal/repository"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

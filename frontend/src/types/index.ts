@@ -188,3 +188,117 @@ export interface UploadResponse {
   upload_url: string;
   expires_at: string;
 }
+
+export interface FeedPost {
+  id: string;
+  post_id: string;
+  user_id: string;
+  user_name?: string;
+  video_id?: string;
+  visibility: 'public' | 'passcode';
+  movement_label: string;
+  weight?: string;
+  rpe?: number;
+  comment_text: string;
+  comments_count: number;
+  likes_count: number;
+  media_url?: string;
+  thumbnail_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeedResponse {
+  posts: FeedPost[];
+  next_cursor?: string;
+}
+
+export interface Comment {
+  id: string;
+  comment_id: string;
+  post_id: string;
+  user_id: string;
+  parent_comment_id?: string;
+  comment_text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommentsResponse {
+  comments: Comment[];
+}
+
+export interface Like {
+  id: string;
+  user_id: string;
+  target_type: string;
+  target_id: string;
+  created_at: string;
+}
+
+export interface LikesResponse {
+  likes: Like[];
+}
+
+export interface OnboardingSettings {
+  weight: {
+    value: number;
+    unit: 'kg' | 'lb';
+  };
+  age: number;
+  target_weight_class?: string;
+  weeks_until_comp?: number;
+  squat_goal?: {
+    value: number;
+    unit: 'kg' | 'lb';
+  };
+  bench_goal?: {
+    value: number;
+    unit: 'kg' | 'lb';
+  };
+  dead_goal?: {
+    value: number;
+    unit: 'kg' | 'lb';
+  };
+  most_important_lift?: 'squat' | 'bench' | 'deadlift';
+  least_important_lift?: 'squat' | 'bench' | 'deadlift';
+  recovery_rating_squat?: number;
+  recovery_rating_bench?: number;
+  recovery_rating_dead?: number;
+  training_days_per_week: number;
+  session_length_minutes?: number;
+  weight_plan?: 'gain' | 'lose' | 'maintain';
+  form_issues?: string[];
+  injuries?: string;
+  evaluate_feasibility?: boolean;
+  federation?: string;
+  knee_sleeve?: string;
+  deadlift_style?: 'sumo' | 'conventional';
+  squat_stance?: 'wide' | 'narrow' | 'medium';
+  add_per_month?: '2.5kg' | '5kg' | 'none';
+  volume_preference?: 'low' | 'high' | 'medium';
+  recovers_from_heavy_deads?: boolean;
+  height?: {
+    value: number;
+    unit: 'cm' | 'in';
+  };
+  past_competitions?: Array<{
+    date_range: string;
+    squat_attempts: number[];
+    bench_attempts: number[];
+    deadlift_attempts: number[];
+    total: number;
+  }>;
+  feed_visibility?: 'public' | 'passcode';
+  passcode?: string;
+}
+
+export interface Event {
+  schema_version: string;
+  event_type: string;
+  client_generated_id: string;
+  user_id: string;
+  timestamp: string;
+  source_service: string;
+  data: Record<string, any>;
+}

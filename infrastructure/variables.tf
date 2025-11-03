@@ -45,3 +45,15 @@ variable "spaces_bucket_name" {
   type        = string
   default     = "powerlifting-coach-videos"
 }
+
+variable "kubernetes_resources_enabled" {
+  description = "Enable Kubernetes resources (namespaces, secrets, ArgoCD). Set to false for initial cluster creation, then true for second apply"
+  type        = bool
+  default     = false
+}
+
+variable "argocd_resources_enabled" {
+  description = "Enable ArgoCD Application and RBAC resources. Requires ArgoCD CRDs to be installed. Set to false initially, then true after ArgoCD is fully deployed"
+  type        = bool
+  default     = false
+}

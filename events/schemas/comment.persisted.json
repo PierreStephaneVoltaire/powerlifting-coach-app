@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CommentPersisted",
+  "description": "Event emitted after comments-service persists a comment",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "comment.persisted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Matches original comment.created client_generated_id"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "comments-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["comment_id", "post_id"],
+      "properties": {
+        "comment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "post_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "parent_comment_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "comment.persisted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440020",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T16:00:01Z",
+    "source_service": "comments-service",
+    "data": {
+      "comment_id": "c1d2e3f4-a5b6-7890-cdef-012345678901",
+      "post_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    }
+  }
+}

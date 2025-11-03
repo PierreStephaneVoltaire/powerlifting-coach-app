@@ -153,6 +153,31 @@ func (r *RabbitMQClient) ConsumeVideoProcessing(handler func([]byte) error) erro
 	return nil
 }
 
+func (r *RabbitMQClient) PublishEvent(routingKey string, event interface{}) error {
+	body, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+
+	err = r.channel.Publish(
+		AppEventsExchange,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Body:         body,
+			DeliveryMode: amqp.Persistent,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to publish event: %w", err)
+	}
+
+	log.Info().Str("routing_key", routingKey).Msg("Published event")
+	return nil
+}
+
 func (r *RabbitMQClient) Close() {
 	if r.channel != nil {
 		r.channel.Close()

@@ -10,6 +10,7 @@ type Config struct {
 	AuthService  string
 	Environment  string
 	JWTSecret    string
+	RabbitMQURL  string
 }
 
 func Load() *Config {
@@ -19,6 +20,7 @@ func Load() *Config {
 		AuthService:  getEnv("AUTH_SERVICE", "http://auth-service:8080"),
 		Environment:  getEnv("ENVIRONMENT", "development"),
 		JWTSecret:    getEnv("JWT_SECRET", "your-secret-key"),
+		RabbitMQURL:  getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 	}
 }
 

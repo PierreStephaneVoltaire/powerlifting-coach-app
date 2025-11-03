@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FeedAccessGranted",
+  "description": "Event emitted after successful passcode validation",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "feed.access.granted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Matches original feed.access.attempt client_generated_id"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "settings-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["feed_owner_id", "access_token"],
+      "properties": {
+        "feed_owner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "access_token": {
+          "type": "string",
+          "description": "JWT token for feed access (24h expiry)"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "feed.access.granted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440060",
+    "user_id": "8d0f7780-8536-51ef-b827-557fc2f91bf8",
+    "timestamp": "2025-11-05T19:00:01Z",
+    "source_service": "settings-service",
+    "data": {
+      "feed_owner_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expires_at": "2025-11-06T19:00:01Z"
+    }
+  }
+}

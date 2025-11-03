@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq
-  namespace: powerlifting-coach
+  namespace: app
   labels:
     app: rabbitmq
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: rabbitmq
-        image: public.ecr.aws/docker/library/rabbitmq:3-management-alpine
+        image: public.ecr.aws/docker/library/rabbitmq:4-management-alpine
         ports:
         - containerPort: 5672
           name: amqp
@@ -42,21 +42,25 @@ spec:
             cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "200m"
+            cpu: "300m"
         livenessProbe:
           exec:
             command:
             - rabbitmq-diagnostics
             - status
-          initialDelaySeconds: 60
+          initialDelaySeconds: 180
           periodSeconds: 30
+          timeoutSeconds: 30
+          failureThreshold: 6
         readinessProbe:
           exec:
             command:
             - rabbitmq-diagnostics
             - ping
-          initialDelaySeconds: 20
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 15
+          failureThreshold: 3
       volumes:
       - name: rabbitmq-storage
         persistentVolumeClaim:
@@ -67,7 +71,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbitmq
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   selector:
     app: rabbitmq
@@ -85,7 +89,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rabbitmq-pvc
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   accessModes:
     - ReadWriteOnce
@@ -93,12 +97,3 @@ spec:
     requests:
       storage: 5Gi
 
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rabbitmq-secret
-  namespace: powerlifting-coach
-type: Opaque
-data:
-  password: Y2hhbmdlbWUxMjM= # changeme123 base64 encoded

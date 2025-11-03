@@ -1,0 +1,392 @@
+openapi: 3.0.3
+info:
+  title: Notification Service API
+  description: Handles notification delivery and preference management
+  version: 1.0.0
+  contact:
+    name: Powerlifting Coach App
+    email: support@powerliftingcoach.app
+
+servers:
+  - url: http://localhost:8087
+    description: Local development
+  - url: https://api.powerliftingcoach.app/notification
+    description: Production
+
+tags:
+  - name: health
+    description: Health check endpoints
+  - name: notifications
+    description: Notification management endpoints
+  - name: preferences
+    description: User notification preferences
+  - name: events
+    description: Event submission endpoints
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - health
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: notification-service
+                  timestamp:
+                    type: integer
+                    format: int64
+                    example: 1609459200
+
+  /api/v1/notifications/send:
+    post:
+      summary: Send notification
+      tags:
+        - notifications
+      operationId: sendNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - notification_type
+                - message
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                  description: ID of the user to notify
+                notification_type:
+                  type: string
+                  enum:
+                    - email
+                    - push
+                    - sms
+                  description: Type of notification to send
+                message:
+                  type: string
+                  description: Notification message content
+                subject:
+                  type: string
+                  description: Email subject (for email notifications)
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  description: Additional notification metadata
+      responses:
+        '200':
+          description: Notification sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  notification_id:
+                    type: string
+                    format: uuid
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/notifications/preferences/{user_id}:
+    get:
+      summary: Get user notification preferences
+      tags:
+        - preferences
+      operationId: getNotificationPreferences
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User notification preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                  email_enabled:
+                    type: boolean
+                  push_enabled:
+                    type: boolean
+                  sms_enabled:
+                    type: boolean
+                  preferences:
+                    type: object
+                    additionalProperties: true
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update user notification preferences
+      tags:
+        - preferences
+      operationId: updateNotificationPreferences
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_enabled:
+                  type: boolean
+                push_enabled:
+                  type: boolean
+                sms_enabled:
+                  type: boolean
+                preferences:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/notifications/history/{user_id}:
+    get:
+      summary: Get user notification history
+      tags:
+        - notifications
+      operationId: getNotificationHistory
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of notifications to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          description: Number of notifications to skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: User notification history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        notification_id:
+                          type: string
+                          format: uuid
+                        notification_type:
+                          type: string
+                          enum:
+                            - email
+                            - push
+                            - sms
+                        message:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                            - sent
+                            - delivered
+                            - failed
+                        created_at:
+                          type: string
+                          format: date-time
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/notify/events:
+    post:
+      summary: Submit notification event
+      tags:
+        - events
+      operationId: publishNotificationEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '202':
+          description: Event accepted for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Event queued for processing
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Event:
+      type: object
+      required:
+        - schema_version
+        - event_type
+        - client_generated_id
+        - user_id
+        - timestamp
+        - source_service
+        - data
+      properties:
+        schema_version:
+          type: string
+          example: "1.0.0"
+        event_type:
+          type: string
+          example: notification.sent
+        client_generated_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        source_service:
+          type: string
+          example: notification-service
+        data:
+          type: object
+          additionalProperties: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details

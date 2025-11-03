@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"time"
 
 	"github.com/powerlifting-coach-app/program-service/internal/models"
 	"github.com/tealeg/xlsx/v3"

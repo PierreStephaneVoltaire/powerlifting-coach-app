@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +13,7 @@ import (
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/models"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog/log"
 )
 

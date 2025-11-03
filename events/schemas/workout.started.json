@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WorkoutStarted",
+  "description": "Event emitted when a user starts a workout from their program",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "workout.started"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Start timestamp"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["workout_id", "plan_id"],
+      "properties": {
+        "workout_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scheduled_date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "workout.started",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440032",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-10T14:30:00Z",
+    "source_service": "frontend",
+    "data": {
+      "workout_id": "e2f3a4b5-c6d7-8901-efgh-234567890123",
+      "plan_id": "d1e2f3a4-b5c6-7890-defg-123456789012",
+      "scheduled_date": "2025-11-10"
+    }
+  }
+}

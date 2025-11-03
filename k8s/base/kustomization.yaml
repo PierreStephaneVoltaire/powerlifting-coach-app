@@ -10,36 +10,51 @@ resources:
   - program-service.yaml
   - coach-service.yaml
   - notification-service.yaml
+  - dm-service.yaml
+  - machine-service.yaml
+  - reminder-service.yaml
   - frontend.yaml
   - postgres.yaml
   - valkey.yaml
   - rabbitmq.yaml
+  - keycloak.yaml
+  - keycloak-realm.yaml
+  - litellm.yaml
   - ingress.yaml
 
 images:
   - name: auth-service
-    newName: public.ecr.aws/powerlifting-coach/auth-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/auth-service
     newTag: latest
   - name: user-service
-    newName: public.ecr.aws/powerlifting-coach/user-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/user-service
     newTag: latest
   - name: video-service
-    newName: public.ecr.aws/powerlifting-coach/video-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/video-service
     newTag: latest
   - name: settings-service
-    newName: public.ecr.aws/powerlifting-coach/settings-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/settings-service
     newTag: latest
   - name: program-service
-    newName: public.ecr.aws/powerlifting-coach/program-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/program-service
     newTag: latest
   - name: coach-service
-    newName: public.ecr.aws/powerlifting-coach/coach-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/coach-service
     newTag: latest
   - name: notification-service
-    newName: public.ecr.aws/powerlifting-coach/notification-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/notification-service
+    newTag: latest
+  - name: dm-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/dm-service
+    newTag: latest
+  - name: machine-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/machine-service
+    newTag: latest
+  - name: reminder-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/reminder-service
     newTag: latest
   - name: frontend
-    newName: public.ecr.aws/powerlifting-coach/frontend
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend
     newTag: latest
 
 commonLabels:

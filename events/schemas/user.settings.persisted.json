@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserSettingsPersisted",
+  "description": "Event emitted after settings-service successfully persists user settings",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "user.settings.persisted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Matches original user.settings.submitted client_generated_id"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "settings-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["settings_id"],
+      "properties": {
+        "settings_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Database ID of persisted settings record"
+        },
+        "original_event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Reference to original user.settings.submitted event"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "user.settings.persisted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T14:35:02Z",
+    "source_service": "settings-service",
+    "data": {
+      "settings_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "original_event_id": "550e8400-e29b-41d4-a716-446655440000"
+    }
+  }
+}

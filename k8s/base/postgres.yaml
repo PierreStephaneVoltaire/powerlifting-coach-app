@@ -1,8 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: app
+data:
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      SELECT 'CREATE DATABASE keycloak' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'keycloak')\gexec
+    EOSQL
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: powerlifting-coach
+  namespace: app
   labels:
     app: postgres
 spec:
@@ -35,13 +49,15 @@ spec:
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
+            memory: "128Mi"
+            cpu: "50m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "200m"
         livenessProbe:
           exec:
             command:
@@ -66,13 +82,16 @@ spec:
       - name: postgres-storage
         persistentVolumeClaim:
           claimName: postgres-pvc
+      - name: init-scripts
+        configMap:
+          name: postgres-init
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   selector:
     app: postgres
@@ -86,7 +105,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   accessModes:
     - ReadWriteOnce
@@ -94,12 +113,3 @@ spec:
     requests:
       storage: 10Gi
 
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres-secret
-  namespace: powerlifting-coach
-type: Opaque
-data:
-  password: cG93ZXJsaWZ0aW5nMTIz # powerlifting123 base64 encoded

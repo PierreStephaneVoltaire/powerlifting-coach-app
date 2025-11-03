@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FeedPostUpdated",
+  "description": "Event emitted when a feed post is updated",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "feed.post.updated"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "feed-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["post_id"],
+      "properties": {
+        "post_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "movement_label": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["kg", "lb"]}
+          }
+        },
+        "rpe": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "comment_text": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "passcode"]
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "feed.post.updated",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440001",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T15:10:00Z",
+    "source_service": "frontend",
+    "data": {
+      "post_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "comment_text": "Updated: Working on depth, felt very solid today",
+      "rpe": 8.0
+    }
+  }
+}

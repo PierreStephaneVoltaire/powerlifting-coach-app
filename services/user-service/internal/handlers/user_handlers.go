@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/powerlifting-coach-app/user-service/internal/models"
 	"github.com/powerlifting-coach-app/user-service/internal/repository"
 	"github.com/rs/zerolog/log"
