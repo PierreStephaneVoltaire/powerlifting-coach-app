@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: prod
+    permissions:
+      packages: write
+      contents: read
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     strategy:
@@ -31,7 +34,7 @@ jobs:
 
     - name: Login to GitHub Container Registry
       run: |
-        echo "${{ secrets.GHCR_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
     
     - name: Extract metadata and create GHCR tags
       id: meta
