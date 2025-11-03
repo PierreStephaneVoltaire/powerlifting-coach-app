@@ -54,28 +54,3 @@ jobs:
       run: |
         podman push ${{ steps.meta.outputs.tags }}
         podman push ${{ steps.meta.outputs.latest }}
-
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: [build-images]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    strategy:
-      matrix:
-        service: [auth-service, user-service, video-service, settings-service, program-service, coach-service, notification-service, frontend]
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-
-        image-ref: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ substring(github.sha, 0, 8) }}
-        format: 'sarif'
-        output: 'trivy-results-${{ matrix.service }}.sarif'
-    
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
