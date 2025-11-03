@@ -8,7 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # Re-introducing the custom path prefix for GHCR
   IMAGE_PREFIX: ghcr.io/powerlifting-coach
 
 jobs:
@@ -71,8 +70,8 @@ jobs:
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        # Updated image-ref to use the new IMAGE_PREFIX
-        image-ref: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }::8}
+
+        image-ref: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ substring(github.sha, 0, 8) }}
         format: 'sarif'
         output: 'trivy-results-${{ matrix.service }}.sarif'
     
