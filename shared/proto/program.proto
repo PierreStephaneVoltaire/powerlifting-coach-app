@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package powerlifting.v1;
+
+option go_package = "github.com/powerlifting-coach-app/shared/proto/program";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Lift types
+enum LiftType {
+  LIFT_TYPE_UNSPECIFIED = 0;
+  LIFT_TYPE_SQUAT = 1;
+  LIFT_TYPE_BENCH = 2;
+  LIFT_TYPE_DEADLIFT = 3;
+  LIFT_TYPE_ACCESSORY = 4;
+}
+
+// Training program
+message Program {
+  string id = 1;
+  string athlete_id = 2;
+  string name = 3;
+  string description = 4;
+  google.protobuf.Timestamp start_date = 5;
+  google.protobuf.Timestamp end_date = 6;
+  google.protobuf.Struct program_data = 7; // JSON program structure
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// Training session
+message TrainingSession {
+  string id = 1;
+  string program_id = 2;
+  string athlete_id = 3;
+  google.protobuf.Timestamp scheduled_date = 4;
+  google.protobuf.Timestamp completed_at = 5;
+  repeated Exercise exercises = 6;
+  string notes = 7;
+}
+
+// Exercise within a session
+message Exercise {
+  string id = 1;
+  LiftType lift_type = 2;
+  string name = 3;
+  repeated Set sets = 4;
+  string notes = 5;
+}
+
+// Individual set
+message Set {
+  int32 reps = 1;
+  double weight_kg = 2;
+  double rpe = 3; // Rate of Perceived Exertion
+  bool completed = 4;
+  string video_id = 5; // Reference to uploaded video
+}

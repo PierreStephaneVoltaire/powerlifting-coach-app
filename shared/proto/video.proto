@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package powerlifting.v1;
+
+option go_package = "github.com/powerlifting-coach-app/shared/proto/video";
+
+import "google/protobuf/timestamp.proto";
+
+// Video processing status
+enum VideoStatus {
+  VIDEO_STATUS_UNSPECIFIED = 0;
+  VIDEO_STATUS_UPLOADING = 1;
+  VIDEO_STATUS_PROCESSING = 2;
+  VIDEO_STATUS_READY = 3;
+  VIDEO_STATUS_FAILED = 4;
+}
+
+// Video metadata
+message Video {
+  string id = 1;
+  string athlete_id = 2;
+  string filename = 3;
+  string original_url = 4;
+  string processed_url = 5;
+  string thumbnail_url = 6;
+  string public_share_token = 7;
+  VideoStatus status = 8;
+  int64 size_bytes = 9;
+  double duration_seconds = 10;
+  google.protobuf.Timestamp uploaded_at = 11;
+  google.protobuf.Timestamp processed_at = 12;
+}
+
+// AI feedback on form
+message FormFeedback {
+  string id = 1;
+  string video_id = 2;
+  string feedback_text = 3;
+  double confidence_score = 4;
+  repeated FormIssue issues = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+// Specific form issues identified
+message FormIssue {
+  string type = 1; // e.g., "knee_cave", "forward_lean"
+  string description = 2;
+  double timestamp_seconds = 3;
+  double severity = 4; // 0-1 scale
+}

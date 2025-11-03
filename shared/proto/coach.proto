@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package powerlifting.v1;
+
+option go_package = "github.com/powerlifting-coach-app/shared/proto/coach";
+
+import "google/protobuf/timestamp.proto";
+
+// Coach feedback types
+enum FeedbackType {
+  FEEDBACK_TYPE_UNSPECIFIED = 0;
+  FEEDBACK_TYPE_PROGRAM_ADJUSTMENT = 1;
+  FEEDBACK_TYPE_FORM_CORRECTION = 2;
+  FEEDBACK_TYPE_GENERAL_NOTE = 3;
+  FEEDBACK_TYPE_MOTIVATION = 4;
+}
+
+// Coach feedback
+message CoachFeedback {
+  string id = 1;
+  string coach_id = 2;
+  string athlete_id = 3;
+  FeedbackType type = 4;
+  string content = 5;
+  string reference_id = 6; // Program, session, or video ID
+  bool incorporated_by_ai = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+// Access relationship between coach and athlete
+message CoachAccess {
+  string id = 1;
+  string coach_id = 2;
+  string athlete_id = 3;
+  string access_code = 4;
+  google.protobuf.Timestamp granted_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  bool is_active = 7;
+}
+
+// AI conversation with coach context
+message AIConversation {
+  string id = 1;
+  string athlete_id = 2;
+  repeated Message messages = 3;
+  bool coach_context_enabled = 4;
+  repeated string coach_feedback_ids = 5; // Feedback incorporated in this conversation
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// Individual message in conversation
+message Message {
+  string id = 1;
+  string role = 2; // "user", "assistant", "system"
+  string content = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}

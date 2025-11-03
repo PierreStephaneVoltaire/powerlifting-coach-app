@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package powerlifting.v1;
+
+option go_package = "github.com/powerlifting-coach-app/shared/proto/user";
+
+import "google/protobuf/timestamp.proto";
+
+// User types
+enum UserType {
+  USER_TYPE_UNSPECIFIED = 0;
+  USER_TYPE_ATHLETE = 1;
+  USER_TYPE_COACH = 2;
+}
+
+// Experience levels
+enum ExperienceLevel {
+  EXPERIENCE_LEVEL_UNSPECIFIED = 0;
+  EXPERIENCE_LEVEL_BEGINNER = 1;
+  EXPERIENCE_LEVEL_INTERMEDIATE = 2;
+  EXPERIENCE_LEVEL_ADVANCED = 3;
+  EXPERIENCE_LEVEL_ELITE = 4;
+}
+
+// User message
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  UserType type = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// Athlete profile
+message AthleteProfile {
+  string user_id = 1;
+  double weight_kg = 2;
+  ExperienceLevel experience_level = 3;
+  google.protobuf.Timestamp competition_date = 4;
+  string access_code = 5;
+  google.protobuf.Timestamp access_code_expires_at = 6;
+  repeated string coach_ids = 7;
+}
+
+// Coach profile
+message CoachProfile {
+  string user_id = 1;
+  string bio = 2;
+  repeated string certifications = 3;
+  int32 years_experience = 4;
+}
