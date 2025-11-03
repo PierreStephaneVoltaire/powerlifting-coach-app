@@ -15,7 +15,6 @@ import (
 	"github.com/powerlifting-coach-app/notification-service/internal/handlers"
 	"github.com/powerlifting-coach-app/notification-service/internal/notification"
 	"github.com/powerlifting-coach-app/notification-service/internal/queue"
-	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
 )
@@ -63,7 +62,6 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	router.Use(middleware.CORS())
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {

@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/powerlifting-coach-app/program-service/internal/models"
 )
 
