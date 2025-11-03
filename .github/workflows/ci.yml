@@ -35,7 +35,7 @@ jobs:
       id: meta
       run: |
         # Using the IMAGE_PREFIX environment variable for tagging
-        IMAGE_PATH="${{ env.IMAGE_PREFIX }}/${{ matrix.service }}"
+        IMAGE_PATH="${{ env.IMAGE_PREFIX }}-${{ matrix.service }}"
         SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
         LATEST_TAG="${IMAGE_PATH}:latest"
 
