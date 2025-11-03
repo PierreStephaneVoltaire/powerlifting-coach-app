@@ -3,7 +3,7 @@ module github.com/powerlifting-coach-app/video-service
 go 1.21
 
 require (
-	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.0.0
+	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.0
 	github.com/aws/aws-sdk-go v1.45.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.9.1
