@@ -1,6 +1,7 @@
 FROM public.ecr.aws/docker/library/node:18-alpine AS builder
 
 WORKDIR /app
+RUN apk add --no-cache git 
 
 COPY package*.json ./
 RUN npm ci
