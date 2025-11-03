@@ -5,7 +5,7 @@ WORKDIR /app
 # Install FFmpeg
 RUN apk add --no-cache ffmpeg
 
-COPY go.mod go.sum ./
+COPY go.mod ./
 RUN go mod download
 
 COPY . .
