@@ -3,7 +3,7 @@ FROM public.ecr.aws/docker/library/golang:1.21-alpine AS builder
 WORKDIR /app
 
 COPY go.mod ./
-COPY ../../shared ./shared
+
 
 RUN go mod download
 
