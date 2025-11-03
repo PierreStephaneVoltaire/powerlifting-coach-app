@@ -10,7 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/powerlifting-coach-app/settings-service/internal/config"
 	"github.com/powerlifting-coach-app/settings-service/internal/database"
 	"github.com/powerlifting-coach-app/settings-service/internal/handlers"

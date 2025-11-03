@@ -15,7 +15,7 @@ import (
 	"github.com/powerlifting-coach-app/notification-service/internal/handlers"
 	"github.com/powerlifting-coach-app/notification-service/internal/notification"
 	"github.com/powerlifting-coach-app/notification-service/internal/queue"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
 )

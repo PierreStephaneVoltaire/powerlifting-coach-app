@@ -10,7 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/powerlifting-coach-app/video-service/internal/models"
 	"github.com/powerlifting-coach-app/video-service/internal/queue"
 	"github.com/powerlifting-coach-app/video-service/internal/repository"

@@ -1,3 +1,3 @@
-module github.com/powerlifting-coach-app/shared
+module github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared
 
-go 1.24.1
+go 1.21

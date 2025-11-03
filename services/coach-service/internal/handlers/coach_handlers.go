@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/powerlifting-coach-app/coach-service/internal/models"
 	"github.com/powerlifting-coach-app/coach-service/internal/repository"
-	"github.com/powerlifting-coach-app/shared/middleware"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog/log"
 )
 

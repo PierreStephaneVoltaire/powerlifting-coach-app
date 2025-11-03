@@ -12,8 +12,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/aws/aws-sdk-go v1.45.0
 	github.com/streadway/amqp v1.1.0
-	github.com/powerlifting-coach-app/shared v0.1.0
+	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.0
 	github.com/h2non/filetype v1.1.3
 	github.com/disintegration/imaging v1.6.2
 )
-
