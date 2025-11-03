@@ -13,4 +13,3 @@ require (
 	github.com/powerlifting-coach-app/shared v0.0.0
 )
 
-replace github.com/powerlifting-coach-app/shared => ./shared

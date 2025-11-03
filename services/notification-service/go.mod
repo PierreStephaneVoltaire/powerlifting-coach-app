@@ -14,4 +14,3 @@ require (
 	github.com/sendgrid/rest v2.6.9+incompatible
 )
 
-replace github.com/powerlifting-coach-app/shared => ./shared

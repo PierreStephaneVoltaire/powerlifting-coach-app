@@ -17,4 +17,3 @@ require (
 	github.com/disintegration/imaging v1.6.2
 )
 
-replace github.com/powerlifting-coach-app/shared => ./shared

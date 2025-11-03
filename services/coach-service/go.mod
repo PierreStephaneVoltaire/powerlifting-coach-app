@@ -14,4 +14,3 @@ require (
 	github.com/streadway/amqp v1.1.0
 )
 
-replace github.com/powerlifting-coach-app/shared => ./shared
