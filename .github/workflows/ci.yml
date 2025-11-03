@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/pierrestephanevoltaire/powerlifting-coach
+  IMAGE_PREFIX: "ghcr.io/${{ github.actor }/powerlifting-coach"
 
 jobs:
   build-images:
@@ -57,5 +57,5 @@ jobs:
     
     - name: Push image to GHCR
       run: |
-        podman push ${{ steps.meta.outputs.tags }}
-        podman push ${{ steps.meta.outputs.latest }}
+        podman push --remove-signatures ${{ steps.meta.outputs.tags }}
+        podman push --remove-signatures  ${{ steps.meta.outputs.latest }}
