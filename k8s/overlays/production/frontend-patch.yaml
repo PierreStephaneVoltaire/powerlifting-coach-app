@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+      - name: frontend
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://api.LOADBALANCER_IP.nip.io"
+        - name: REACT_APP_AUTH_URL
+          value: "http://api.LOADBALANCER_IP.nip.io/auth"

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq
-  namespace: powerlifting-coach
+  namespace: app
   labels:
     app: rabbitmq
 spec:
@@ -38,11 +38,11 @@ spec:
           mountPath: /var/lib/rabbitmq
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
+            memory: "128Mi"
+            cpu: "50m"
           limits:
-            memory: "512Mi"
-            cpu: "200m"
+            memory: "256Mi"
+            cpu: "150m"
         livenessProbe:
           exec:
             command:
@@ -67,7 +67,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbitmq
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   selector:
     app: rabbitmq
@@ -85,7 +85,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rabbitmq-pvc
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   accessModes:
     - ReadWriteOnce
@@ -93,12 +93,3 @@ spec:
     requests:
       storage: 5Gi
 
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rabbitmq-secret
-  namespace: powerlifting-coach
-type: Opaque
-data:
-  password: Y2hhbmdlbWUxMjM= # changeme123 base64 encoded

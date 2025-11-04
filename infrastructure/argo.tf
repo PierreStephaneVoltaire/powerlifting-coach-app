@@ -30,23 +30,23 @@ resource "kubernetes_manifest" "app" {
     }
     "spec" = {
       "project" = "default"
-      
+
       "source" = {
         "repoURL"        = "https://github.com/PierreStephaneVoltaire/powerlifting-coach-app"
-        "path"           = "./k8s/overlays/production"  
-        "targetRevision" = "HEAD" 
+        "path"           = "./k8s/overlays/production"
+        "targetRevision" = "HEAD"
       }
 
       "destination" = {
-        "server"    = "https://kubernetes.default.svc" 
-        "namespace" = "app" 
+        "server"    = "https://kubernetes.default.svc"
+        "namespace" = "app"
       }
 
-   
+
       "syncPolicy" = {
         "automated" = {
-          "prune"    = true 
-          "selfHeal" = true 
+          "prune"    = true
+          "selfHeal" = true
         }
         "syncOptions" = [
           "CreateNamespace=true"

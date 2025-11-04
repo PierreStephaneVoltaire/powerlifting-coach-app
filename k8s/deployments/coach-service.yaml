@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: coach-service
-  namespace: powerlifting-coach
+  namespace: app
   labels:
     app: coach-service
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: coach-service
-        image: ghcr.io/powerlifting-coach-app/coach-service:latest
+        image: coach-service:latest
         ports:
         - containerPort: 8085
         env:
@@ -47,11 +47,11 @@ spec:
           value: "http://program-service:8084"
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "64Mi"
+            cpu: "50m"
           limits:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "128Mi"
+            cpu: "150m"
         livenessProbe:
           httpGet:
             path: /health
@@ -70,7 +70,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: coach-service
-  namespace: powerlifting-coach
+  namespace: app
 spec:
   selector:
     app: coach-service
