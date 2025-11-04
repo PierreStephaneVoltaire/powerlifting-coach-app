@@ -85,3 +85,13 @@ spec:
             name: keycloak
             port:
               number: 8080
+  - host: ai.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: openwebui
+            port:
+              number: 8080

@@ -34,6 +34,9 @@ patchesJson6902:
       - op: replace
         path: /spec/rules/2/host
         value: auth.${local.lb_ip}.nip.io
+      - op: replace
+        path: /spec/rules/3/host
+        value: ai.${local.lb_ip}.nip.io
 
 images:
   - name: auth-service
