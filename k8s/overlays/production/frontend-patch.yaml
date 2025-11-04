@@ -10,6 +10,6 @@ spec:
       - name: frontend
         env:
         - name: REACT_APP_API_URL
-          value: "http://api.LOADBALANCER_IP.nip.io"
+          value: "http://api.157.230.71.6.nip.io"
         - name: REACT_APP_AUTH_URL
-          value: "http://api.LOADBALANCER_IP.nip.io/auth"
+          value: "http://api.157.230.71.6.nip.io/auth"

@@ -20,13 +20,16 @@ patchesJson6902:
     patch: |-
       - op: replace
         path: /spec/rules/0/host
-        value: app.LOADBALANCER_IP.nip.io
+        value: app.157.230.71.6.nip.io
       - op: replace
         path: /spec/rules/1/host
-        value: api.LOADBALANCER_IP.nip.io
+        value: api.157.230.71.6.nip.io
       - op: replace
         path: /spec/rules/2/host
-        value: auth.LOADBALANCER_IP.nip.io
+        value: auth.157.230.71.6.nip.io
+      - op: replace
+        path: /spec/rules/3/host
+        value: ai.157.230.71.6.nip.io
 
 images:
   - name: auth-service

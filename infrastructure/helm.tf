@@ -1,16 +1,6 @@
-resource "kubernetes_namespace" "secrets" {
-  metadata {
-    name = "secrets"
-  }
-}
-resource "kubernetes_namespace" "data" {
-  metadata {
-    name = "data"
-  }
-}
-
-
 resource "helm_release" "nginx_ingress" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
   name             = "nginx-ingress"
   repository       = "https://kubernetes.github.io/ingress-nginx"
   chart            = "ingress-nginx"
@@ -44,6 +34,8 @@ resource "helm_release" "nginx_ingress" {
 }
 
 data "kubernetes_service" "nginx_ingress" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
   metadata {
     name      = "nginx-ingress-ingress-nginx-controller"
     namespace = "ingress-nginx"
@@ -55,6 +47,6 @@ data "kubernetes_service" "nginx_ingress" {
 }
 
 output "load_balancer_ip" {
-  value       = data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].ip
+  value       = var.kubernetes_resources_enabled ? data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : "not-yet-available"
   description = "Load balancer IP address"
 }

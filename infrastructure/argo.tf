@@ -1,32 +1,82 @@
 resource "kubernetes_namespace" "argocd" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
   metadata {
     name = "argocd"
   }
 }
-resource "kubernetes_namespace" "app" {
-  metadata {
-    name = "app"
-  }
-}
-
 
 resource "helm_release" "argocd" {
-  name       = "argocd"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  version    = "v9.0.5"
-  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  name          = "argocd"
+  repository    = "https://argoproj.github.io/argo-helm"
+  chart         = "argo-cd"
+  version       = "v9.0.5"
+  namespace     = kubernetes_namespace.argocd[0].metadata[0].name
+  wait          = true
+  wait_for_jobs = true
+  timeout       = 600
+
+  set {
+    name  = "configs.params.server\\.insecure"
+    value = "true"
+  }
+
   depends_on = [
     kubernetes_namespace.argocd
   ]
 }
+
+resource "kubernetes_ingress_v1" "argocd" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  metadata {
+    name      = "argocd-ingress"
+    namespace = kubernetes_namespace.argocd[0].metadata[0].name
+    annotations = {
+      "kubernetes.io/ingress.class"                    = "nginx"
+      "nginx.ingress.kubernetes.io/ssl-redirect"       = "false"
+      "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTP"
+      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "false"
+    }
+  }
+
+  spec {
+    rule {
+      host = "argocd.${local.lb_ip}.nip.io"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "argocd-server"
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.argocd,
+    data.kubernetes_service.nginx_ingress
+  ]
+}
+
 resource "kubernetes_manifest" "app" {
+  count = var.kubernetes_resources_enabled && var.argocd_resources_enabled ? 1 : 0
+
   manifest = {
     "apiVersion" = "argoproj.io/v1alpha1"
     "kind"       = "Application"
     "metadata" = {
       "name"      = "${var.project_name}"
-      "namespace" = kubernetes_namespace.argocd.metadata[0].name
+      "namespace" = kubernetes_namespace.argocd[0].metadata[0].name
     }
     "spec" = {
       "project" = "default"
@@ -55,6 +105,7 @@ resource "kubernetes_manifest" "app" {
     }
   }
   depends_on = [
-    helm_release.argocd
+    helm_release.argocd,
+    digitalocean_kubernetes_cluster.k8s
   ]
 }

@@ -59,24 +59,34 @@ output "region" {
 
 output "postgres_password" {
   description = "PostgreSQL database password"
-  value       = random_password.postgres_password.result
+  value       = var.kubernetes_resources_enabled ? random_password.postgres_password[0].result : "not-yet-generated"
   sensitive   = true
 }
 
 output "rabbitmq_password" {
   description = "RabbitMQ password"
-  value       = random_password.rabbitmq_password.result
+  value       = var.kubernetes_resources_enabled ? random_password.rabbitmq_password[0].result : "not-yet-generated"
   sensitive   = true
 }
 
 output "keycloak_client_secret" {
   description = "Keycloak client secret"
-  value       = random_password.keycloak_client_secret.result
+  value       = var.kubernetes_resources_enabled ? random_password.keycloak_client_secret[0].result : "not-yet-generated"
   sensitive   = true
 }
 
 output "keycloak_admin_password" {
   description = "Keycloak admin password"
-  value       = random_password.keycloak_admin_password.result
+  value       = var.kubernetes_resources_enabled ? random_password.keycloak_admin_password[0].result : "not-yet-generated"
   sensitive   = true
+}
+
+output "argocd_url" {
+  description = "ArgoCD UI URL"
+  value       = var.kubernetes_resources_enabled ? "http://argocd.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "argocd_admin_password" {
+  description = "ArgoCD admin password (get with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)"
+  value       = "Run: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
 }
