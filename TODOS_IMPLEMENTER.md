@@ -17,7 +17,7 @@
 
 ### Infrastructure Logging
 - [x] Create infra-health.log at repo root
-- [>] Add pod health check script in /scripts/pod-health-check.sh
+- [x] Add pod health check script in /scripts/pod-health-check.sh
 
 ---
 
