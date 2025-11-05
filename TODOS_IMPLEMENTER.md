@@ -331,8 +331,8 @@
 ## Story 13: Locks, Idempotency & Multi-Replica Safety
 
 ### Shared Library
-- [ ] Add shared/utils/idempotency.go with deduplication helper
-- [ ] Add shared/utils/locks.go with Postgres advisory lock wrapper
+- [x] Add shared/utils/idempotency.go with deduplication helper
+- [>] Add shared/utils/locks.go with Postgres advisory lock wrapper
 - [ ] Add shared/middleware/idempotency.go middleware for event consumers
 
 ### Services Updates
