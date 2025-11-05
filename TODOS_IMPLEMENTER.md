@@ -193,11 +193,11 @@
 - [ ] Create migration: program-service create workouts table
 
 ### Events
-- [ ] Create event schema: program.plan.created.json
-- [ ] Create event schema: program.plan.updated.json
-- [ ] Create event schema: program.plan.persisted.json
-- [ ] Create event schema: workout.started.json
-- [ ] Create event schema: workout.completed.json
+- [x] Create event schema: program.plan.created.json
+- [x] Create event schema: program.plan.updated.json
+- [x] Create event schema: program.plan.persisted.json
+- [x] Create event schema: workout.started.json
+- [x] Create event schema: workout.completed.json
 
 ### Backend - Program Service
 - [ ] Add RabbitMQ consumer for program.plan.created event

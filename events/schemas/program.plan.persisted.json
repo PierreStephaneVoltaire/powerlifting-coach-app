@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProgramPlanPersisted",
+  "description": "Event emitted after program-service successfully persists a program plan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "program.plan.persisted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Matches original program.plan.created/updated client_generated_id"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "program-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["plan_id"],
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "weeks_until_comp": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "program.plan.persisted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440030",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T10:00:02Z",
+    "source_service": "program-service",
+    "data": {
+      "plan_id": "d1e2f3a4-b5c6-7890-defg-123456789012",
+      "weeks_until_comp": 14
+    }
+  }
+}
