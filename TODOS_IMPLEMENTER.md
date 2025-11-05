@@ -21,6 +21,9 @@
 - **DM UI**: Conversation list and 1:1 chat view with pin attempts (Story 9)
 - **Plate Calculator**: Client-side plate calculation with telemetry (Story 11)
 - **Machine Notes**: Save equipment settings and preferences (Story 11)
+- **Video Upload**: File selection, metadata form, progress indicator (Story 5)
+- **Stale Data Banner**: Warning for outdated cache with refresh option (Story 3)
+- **Passcode Prompt**: Modal for feed access control with storage options (Story 12)
 
 ### Backend Services Implementation
 
@@ -53,17 +56,30 @@
 - Database schema with machine_type_enum (barbell, hack_squat, leg_press, hex_bar, cable, other)
 - Visibility control (public/private)
 - Persists brand, model, machine_type, settings
-- Implements idempotency pattern (Story 11)
+- Implements idempotency pattern
+- Emits machine.notes.persisted event (Story 11)
+
+#### Reminder Service (New - Complete)
+- Full microservice created from scratch
+- Consumes program.plan.persisted events
+- Creates reminders at 1 week, 2 weeks, and 4 weeks before competition
+- Background scheduler processes pending reminders every minute
+- Emits reminder.sent events
+- Database schema with reminder_status_enum (pending, sent, cancelled)
+- Port 8086 (Story 7)
 
 ### Key Technical Patterns Implemented
 - **Event-Driven Architecture**: All service communication via RabbitMQ with topic exchange
 - **Idempotency**: client_generated_id in all events, idempotency_keys table in each service
+- **Event Emissions**: All services emit persisted events after successful DB commits
 - **Offline-First Frontend**: IndexedDB queue persistence, exponential backoff (max 5 retries, capped at 60s)
 - **Manual Ack with Requeue**: RabbitMQ consumers use manual ack, requeue on transient failure
 - **Structured JSON Logging**: zerolog with consistent log patterns across all services
 - **Database Migrations**: golang-migrate with up/down migrations for all schema changes
 - **JSONB for Flexibility**: exercises_summary, pinned_attempts, metadata stored as JSONB
 - **Normalized Relationships**: Conversation participants normalized to ensure uniqueness
+- **Time-Based Scheduling**: Background ticker for processing pending reminders
+- **Data Freshness Monitoring**: Frontend hook to detect stale cached data (5-minute threshold)
 
 ---
 
@@ -134,8 +150,10 @@
 - [x] Add IndexedDB queue for offline writes
 - [x] Add exponential backoff retry logic
 - [x] Add "sync pending" UI indicator
-- [ ] Add "data may be out of date" banner for stale cache
+- [x] Add "data may be out of date" banner for stale cache
 - [x] Add queue persistence across reloads
+- [x] Create useDataFreshness hook (5-minute threshold)
+- [x] Create StaleDataBanner component with refresh option
 
 ---
 
@@ -188,11 +206,11 @@
 - [ ] Emit feed.post.created event after processing
 
 ### Frontend
-- [ ] Add video upload UI with progress indicator
-- [ ] Add metadata form: movement_label, weight, rpe, comment_text, visibility
+- [x] Add video upload UI with progress indicator
+- [x] Add metadata form: movement_label, weight, rpe, comment_text, visibility
+- [x] Enqueue upload locally if notification-service unreachable
 - [ ] Add background upload support
 - [ ] Add upload resume on app restart
-- [ ] Enqueue upload locally if notification-service unreachable
 
 ### OpenAPI
 - [ ] Update video-service OpenAPI spec with media endpoints
@@ -251,7 +269,7 @@
 - [x] Add RabbitMQ consumer for program.plan.created event
 - [x] Add idempotency using client_generated_id
 - [x] Persist programs to Postgres with comp_date and training_days_per_week
-- [ ] Emit program.plan.persisted event
+- [x] Emit program.plan.persisted event
 - [x] Add consumer for workout.started event
 - [x] Persist workout start_time to Postgres
 - [x] Add consumer for workout.completed event
@@ -259,11 +277,12 @@
 - [ ] Add RabbitMQ consumer for program.plan.updated event
 
 ### Backend - Reminder Service (NEW)
-- [ ] Create new service: reminder-service with Dockerfile and structure
-- [ ] Create migration: reminder-service create reminders table
-- [ ] Add consumer for program.plan.created to schedule reminders
+- [x] Create new service: reminder-service with Dockerfile and structure
+- [x] Create migration: reminder-service create reminders table
+- [x] Add consumer for program.plan.persisted to schedule reminders
+- [x] Add scheduler to publish reminder.sent events when due
+- [x] Create reminders at 1 week, 2 weeks, and 4 weeks before competition
 - [ ] Add consumer for program.plan.updated to update reminders
-- [ ] Add scheduler to publish reminder events when due
 
 ### Frontend
 - [x] Add program planner UI (create/edit plan)
@@ -372,10 +391,11 @@
 - [x] Emit feed.access.denied on failure
 
 ### Frontend
-- [ ] Add passcode prompt UI for protected feeds
-- [ ] Submit passcode via Notification service (feed.access.attempt)
-- [ ] Store access token in cookie/localStorage
-- [ ] Add UI option to choose cookie or localStorage
+- [x] Add passcode prompt UI for protected feeds
+- [x] Submit passcode via Notification service (feed.access.attempt)
+- [x] Store access token in cookie/localStorage
+- [x] Add UI option to choose cookie or localStorage
+- [x] Create PasscodePrompt component with modal dialog
 - [ ] Check feed visibility before showing posts
 
 ---
