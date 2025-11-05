@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MachineNotesSubmitted",
+  "description": "Event emitted when user submits machine/equipment notes",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "machine.notes.submitted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["machine_type", "notes"],
+      "properties": {
+        "machine_type": {
+          "type": "string",
+          "enum": ["barbell", "hack_squat", "leg_press", "hex_bar", "cable", "smith_machine", "other"]
+        },
+        "brand": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "gym_location": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "settings": {
+          "type": "object",
+          "description": "Machine-specific settings (seat position, etc)"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["private", "public"],
+          "default": "private"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "machine.notes.submitted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440051",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T18:10:00Z",
+    "source_service": "frontend",
+    "data": {
+      "machine_type": "hack_squat",
+      "brand": "Hammer Strength",
+      "model": "V-Squat",
+      "gym_location": "Downtown Gym",
+      "notes": "Foot position high on platform, toes slightly out. Pin 3 for safety. Feels heavier than advertised.",
+      "settings": {
+        "back_pad": "position_2",
+        "foot_position": "high"
+      },
+      "visibility": "private"
+    }
+  }
+}

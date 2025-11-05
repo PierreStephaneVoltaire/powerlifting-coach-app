@@ -266,9 +266,9 @@
 - [ ] Create migration: machine-service create machine_notes table
 
 ### Events
-- [ ] Create event schema: tools.platecalc.query.json (optional telemetry)
-- [ ] Create event schema: machine.notes.submitted.json
-- [ ] Create event schema: machine.notes.persisted.json
+- [x] Create event schema: tools.platecalc.query.json (optional telemetry)
+- [x] Create event schema: machine.notes.submitted.json
+- [x] Create event schema: machine.notes.persisted.json
 
 ### Backend - Machine Service
 - [ ] Create machine-service cmd/main.go with RabbitMQ consumer
