@@ -80,58 +80,49 @@
 
 ---
 
-## Story 4: Main Feed
+## Story 4: Main Feed (Consolidated into video-service)
 
 ### Database & Migrations
-- [ ] Create new service: feed-service with Dockerfile and structure
-- [ ] Create migration: feed-service create feed_posts table
+- [ ] Create migration: video-service add feed_posts table
 
 ### Events
 - [x] Create event schema: feed.post.created.json
 - [x] Create event schema: feed.post.updated.json
 - [x] Create event schema: feed.post.deleted.json
 
-### Backend - Feed Service
-- [ ] Create feed-service cmd/main.go with RabbitMQ consumer
-- [ ] Add consumer for feed.post.created event
-- [ ] Add consumer for feed.post.updated event
-- [ ] Add consumer for feed.post.deleted event
+### Backend - Video Service (Feed functionality)
+- [ ] Add RabbitMQ consumer for feed.post.created event
+- [ ] Add RabbitMQ consumer for feed.post.updated event
+- [ ] Add RabbitMQ consumer for feed.post.deleted event
 - [ ] Persist feed entries to Postgres (denormalized)
 - [ ] Add GET /api/v1/feed endpoint with cursor pagination
 - [ ] Add GET /api/v1/feed/:post_id endpoint
 
 ### Frontend
 - [ ] Add feed list UI with cursor-based pagination
-- [ ] Add cached feed fallback when feed-service unreachable
+- [ ] Add cached feed fallback when video-service unreachable
 - [ ] Add feed refresh logic
 
 ### OpenAPI
-- [ ] Generate OpenAPI spec for feed-service endpoints
+- [ ] Update video-service OpenAPI spec with feed endpoints
 
 ---
 
-## Story 5: Video Upload & Metadata
+## Story 5: Video Upload & Metadata (Consolidated into video-service)
 
 ### Database & Migrations
-- [ ] Create new service: media-service with Dockerfile and structure
-- [ ] Create migration: media-service create media_uploads table
-- [ ] Create new service: media-processing-service with Dockerfile and structure
+- [ ] Create migration: video-service add media metadata fields (movement_label, weight, rpe, visibility)
 
 ### Events
 - [x] Create event schema: media.upload_requested.json
 - [x] Create event schema: media.uploaded.json
 - [x] Create event schema: media.processed.json
 
-### Backend - Media Service
-- [ ] Create media-service cmd/main.go
-- [ ] Add POST /api/v1/media/presigned endpoint for upload URLs
+### Backend - Video Service (Media & Processing)
+- [ ] Add RabbitMQ consumer for media.upload_requested event
 - [ ] Add idempotency using client_generated_id
-- [ ] Store media metadata in Postgres
-- [ ] Emit media.uploaded event on successful upload
-
-### Backend - Media Processing Service
-- [ ] Create media-processing-service cmd/main.go with RabbitMQ consumer
-- [ ] Add consumer for media.uploaded event
+- [ ] Emit media.uploaded event after presigned upload complete
+- [ ] Add processing worker consumer for media.uploaded event
 - [ ] Add transcoding logic (stub initially)
 - [ ] Add thumbnail generation (stub initially)
 - [ ] Emit media.processed event with media_url, thumbnail_url
@@ -142,36 +133,32 @@
 - [ ] Add metadata form: movement_label, weight, rpe, comment_text, visibility
 - [ ] Add background upload support
 - [ ] Add upload resume on app restart
-- [ ] Enqueue upload locally if media-service unreachable
+- [ ] Enqueue upload locally if notification-service unreachable
 
 ### OpenAPI
-- [ ] Generate OpenAPI spec for media-service endpoints
+- [ ] Update video-service OpenAPI spec with media endpoints
 
 ---
 
-## Story 6: Comments & Interactions
+## Story 6: Comments & Interactions (Consolidated into video-service)
 
 ### Database & Migrations
-- [ ] Create new service: comments-service with Dockerfile and structure
-- [ ] Create migration: comments-service create comments table
+- [ ] Create migration: video-service add comments and likes tables
 
 ### Events
 - [x] Create event schema: comment.created.json
 - [x] Create event schema: comment.persisted.json
 - [x] Create event schema: interaction.liked.json
 
-### Backend - Comments Service
-- [ ] Create comments-service cmd/main.go with RabbitMQ consumer
-- [ ] Add consumer for comment.created event
+### Backend - Video Service (Comments & Likes)
+- [ ] Add RabbitMQ consumer for comment.created event
 - [ ] Add idempotency using client_generated_id
-- [ ] Persist comments to Postgres
+- [ ] Persist comments to Postgres (threaded with parent_comment_id)
 - [ ] Emit comment.persisted event
 - [ ] Add consumer for interaction.liked event
-- [ ] Persist likes to Postgres
-
-### Backend - Notification Service
-- [ ] Add event publishing for comment.created
-- [ ] Add event publishing for interaction.liked
+- [ ] Persist likes to Postgres (deduped by user_id + target_id)
+- [ ] Add GET /api/v1/posts/:post_id/comments endpoint
+- [ ] Add GET /api/v1/posts/:post_id/likes endpoint
 
 ### Frontend
 - [ ] Add comment input UI on posts
@@ -182,7 +169,7 @@
 - [ ] Emit interaction.liked via Notification service
 
 ### OpenAPI
-- [ ] Generate OpenAPI spec for comments-service endpoints
+- [ ] Update video-service OpenAPI spec with comment/like endpoints
 
 ---
 
@@ -337,12 +324,10 @@
 
 ### Services Updates
 - [ ] Update settings-service consumer to use idempotency middleware
-- [ ] Update feed-service consumer to use idempotency middleware
-- [ ] Update comments-service consumer to use idempotency middleware
+- [ ] Update video-service consumers to use idempotency middleware
 - [ ] Update program-service consumer to use idempotency middleware
 - [ ] Update dm-service consumer to use idempotency middleware
 - [ ] Update machine-service consumer to use idempotency middleware
-- [ ] Update media-service to use idempotency middleware
 - [ ] Update all consumers to use manual ack (ack after DB commit)
 - [ ] Update all consumers to requeue on transient failure
 
@@ -445,10 +430,7 @@
 ## Deployment & K8s
 
 ### Kubernetes Manifests
-- [ ] Add k8s deployment for feed-service
-- [ ] Add k8s deployment for media-service
-- [ ] Add k8s deployment for media-processing-service
-- [ ] Add k8s deployment for comments-service
+- [ ] Update k8s deployment for video-service (add consumer workers)
 - [ ] Add k8s deployment for dm-service
 - [ ] Add k8s deployment for reminder-service
 - [ ] Add k8s deployment for machine-service
