@@ -58,9 +58,9 @@
 - [x] Emit user.settings.failed on validation error
 
 ### Frontend
-- [ ] Create onboarding settings form UI with all required fields
+- [x] Create onboarding settings form UI with all required fields
 - [ ] Add offline queue support (IndexedDB) for settings submission
-- [ ] Submit settings to Notification service /api/v1/notify/events
+- [x] Submit settings to Notification service /api/v1/notify/events
 
 ### OpenAPI
 - [ ] Generate OpenAPI spec for notification-service /api/v1/notify/events endpoint
