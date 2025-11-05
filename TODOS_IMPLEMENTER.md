@@ -32,11 +32,16 @@
 - Updated comment_handlers.go to emit comment.persisted event after DB commit
 - Supports comment.created and interaction.liked event consumers
 - HTTP endpoints for feed, comments, likes (Story 4, 6)
+- Media upload processing with media_handlers.go (Story 5):
+  - HandleMediaUploadRequested: Creates upload records, emits media.uploaded
+  - HandleMediaUploaded: Simulates processing, emits media.processed and feed.post.created
+  - Migration 004 adds media metadata fields and upload tracking tables
 
 #### Program Service (Enhanced)
 - Created event consumer infrastructure (event_consumer.go)
-- Implemented program_event_handlers.go with three handlers:
+- Implemented program_event_handlers.go with four handlers:
   - HandleProgramPlanCreated: Persists programs with comp_date, training_days_per_week
+  - HandleProgramPlanUpdated: Updates existing programs, emits program.plan.persisted
   - HandleWorkoutStarted: Records workout start_time
   - HandleWorkoutCompleted: Stores duration, exercises_summary JSONB, notes
 - Created migration 002_add_event_tables.up.sql with programs, workout_sessions, idempotency_keys (Story 7)
@@ -188,7 +193,10 @@
 ## Story 5: Video Upload & Metadata (Consolidated into video-service)
 
 ### Database & Migrations
-- [ ] Create migration: video-service add media metadata fields (movement_label, weight, rpe, visibility)
+- [x] Create migration: video-service add media metadata fields (movement_label, weight, rpe, visibility)
+- [x] Create migration 004_add_media_metadata_fields with movement_label_enum and visibility_enum
+- [x] Add media_uploads table for tracking upload lifecycle
+- [x] Add media_idempotency_keys table for event deduplication
 
 ### Events
 - [x] Create event schema: media.upload_requested.json
@@ -196,14 +204,15 @@
 - [x] Create event schema: media.processed.json
 
 ### Backend - Video Service (Media & Processing)
-- [ ] Add RabbitMQ consumer for media.upload_requested event
-- [ ] Add idempotency using client_generated_id
-- [ ] Emit media.uploaded event after presigned upload complete
-- [ ] Add processing worker consumer for media.uploaded event
-- [ ] Add transcoding logic (stub initially)
-- [ ] Add thumbnail generation (stub initially)
-- [ ] Emit media.processed event with media_url, thumbnail_url
-- [ ] Emit feed.post.created event after processing
+- [x] Add RabbitMQ consumer for media.upload_requested event
+- [x] Add idempotency using client_generated_id
+- [x] Emit media.uploaded event after presigned upload complete
+- [x] Add processing worker consumer for media.uploaded event
+- [x] Add transcoding logic (stub initially)
+- [x] Add thumbnail generation (stub initially)
+- [x] Emit media.processed event with media_url, thumbnail_url
+- [x] Emit feed.post.created event after processing
+- [x] Created media_handlers.go with HandleMediaUploadRequested and HandleMediaUploaded
 
 ### Frontend
 - [x] Add video upload UI with progress indicator
@@ -244,7 +253,7 @@
 - [x] Add like/upvote button
 - [x] Emit comment.created via Notification service
 - [x] Emit interaction.liked via Notification service
-- [ ] Add cached comments fallback
+- [x] Add cached comments fallback with localStorage
 
 ### OpenAPI
 - [ ] Update video-service OpenAPI spec with comment/like endpoints
@@ -274,7 +283,8 @@
 - [x] Persist workout start_time to Postgres
 - [x] Add consumer for workout.completed event
 - [x] Persist workout duration, exercises_summary JSONB, notes to Postgres
-- [ ] Add RabbitMQ consumer for program.plan.updated event
+- [x] Add RabbitMQ consumer for program.plan.updated event
+- [x] HandleProgramPlanUpdated updates existing programs and emits program.plan.persisted
 
 ### Backend - Reminder Service (NEW)
 - [x] Create new service: reminder-service with Dockerfile and structure
