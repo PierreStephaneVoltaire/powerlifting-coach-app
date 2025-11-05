@@ -41,7 +41,8 @@
       "Bash(kubectl describe:*)",
       "WebFetch(domain:quay.io)",
       "Bash(docker pull:*)",
-      "Bash(kubectl exec:*)"
+      "Bash(kubectl exec:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
