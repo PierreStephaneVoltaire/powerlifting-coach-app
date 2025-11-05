@@ -51,8 +51,16 @@ func main() {
 		zlog.Fatal().Err(err).Msg("Failed to start consuming messages")
 	}
 
+	// Initialize queue publisher
+	publisher, err := queue.NewPublisher(cfg.RabbitMQURL)
+	if err != nil {
+		zlog.Fatal().Err(err).Msg("Failed to create queue publisher")
+	}
+	defer publisher.Close()
+
 	// Initialize HTTP handlers
 	h := handlers.NewHandlers(sender, cfg)
+	eventsHandler := handlers.NewEventsHandler(publisher)
 
 	// Set up Gin router
 	if cfg.Environment == "production" {
@@ -79,6 +87,7 @@ func main() {
 		v1.GET("/notifications/preferences/:user_id", h.GetPreferences)
 		v1.PUT("/notifications/preferences/:user_id", h.UpdatePreferences)
 		v1.GET("/notifications/history/:user_id", h.GetNotificationHistory)
+		v1.POST("/notify/events", eventsHandler.PublishEvent)
 	}
 
 	// Start HTTP server

@@ -46,8 +46,8 @@
 - [x] Create event schema: user.settings.failed.json
 
 ### Backend - Notification Service
-- [ ] Add POST /api/v1/notify/events endpoint to accept user.settings.submitted
-- [ ] Add RabbitMQ publisher for user.settings.submitted event
+- [x] Add POST /api/v1/notify/events endpoint to accept user.settings.submitted
+- [x] Add RabbitMQ publisher for user.settings.submitted event
 
 ### Backend - Settings Service
 - [ ] Add RabbitMQ consumer for user.settings.submitted
