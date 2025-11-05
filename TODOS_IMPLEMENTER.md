@@ -295,9 +295,9 @@
 (Uses existing settings-service user_settings table with passcode_hash)
 
 ### Events
-- [ ] Create event schema: feed.access.attempt.json
-- [ ] Create event schema: feed.access.granted.json
-- [ ] Create event schema: feed.access.denied.json
+- [x] Create event schema: feed.access.attempt.json
+- [x] Create event schema: feed.access.granted.json
+- [x] Create event schema: feed.access.denied.json
 
 ### Backend - Settings Service
 - [ ] Add consumer for feed.access.attempt event
