@@ -156,9 +156,9 @@
 - [ ] Create migration: comments-service create comments table
 
 ### Events
-- [ ] Create event schema: comment.created.json
-- [ ] Create event schema: comment.persisted.json
-- [ ] Create event schema: interaction.liked.json
+- [x] Create event schema: comment.created.json
+- [x] Create event schema: comment.persisted.json
+- [x] Create event schema: interaction.liked.json
 
 ### Backend - Comments Service
 - [ ] Create comments-service cmd/main.go with RabbitMQ consumer

@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CommentCreated",
+  "description": "Event emitted when a user creates a comment on a post",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "comment.created"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["post_id", "comment_text"],
+      "properties": {
+        "post_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID of the post being commented on"
+        },
+        "parent_comment_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID of parent comment if this is a reply"
+        },
+        "comment_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "comment.created",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440020",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T16:00:00Z",
+    "source_service": "frontend",
+    "data": {
+      "post_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "comment_text": "Great depth on that squat! Form looks solid."
+    }
+  }
+}

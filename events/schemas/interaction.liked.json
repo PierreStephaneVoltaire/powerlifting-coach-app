@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InteractionLiked",
+  "description": "Event emitted when a user likes a post or comment",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "interaction.liked"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User who performed the like"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["target_type", "target_id"],
+      "properties": {
+        "target_type": {
+          "type": "string",
+          "enum": ["post", "comment"],
+          "description": "Type of entity being liked"
+        },
+        "target_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID of the post or comment"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["like", "unlike"],
+          "default": "like"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "interaction.liked",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440021",
+    "user_id": "8d0f7780-8536-51ef-b827-557fc2f91bf8",
+    "timestamp": "2025-11-05T16:05:00Z",
+    "source_service": "frontend",
+    "data": {
+      "target_type": "post",
+      "target_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "action": "like"
+    }
+  }
+}
