@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/powerlifting-coach-app/settings-service/internal/queue"
@@ -15,12 +16,14 @@ import (
 type SettingsEventHandler struct {
 	db        *sql.DB
 	publisher *queue.Publisher
+	jwtSecret string
 }
 
-func NewSettingsEventHandler(db *sql.DB, publisher *queue.Publisher) *SettingsEventHandler {
+func NewSettingsEventHandler(db *sql.DB, publisher *queue.Publisher, jwtSecret string) *SettingsEventHandler {
 	return &SettingsEventHandler{
 		db:        db,
 		publisher: publisher,
+		jwtSecret: jwtSecret,
 	}
 }
 
@@ -306,4 +309,127 @@ func (h *SettingsEventHandler) emitFailedEvent(ctx context.Context, clientGenID,
 	}
 
 	return h.publisher.PublishEvent(ctx, "user.settings.failed", event)
+}
+
+type FeedAccessAttemptEvent struct {
+	SchemaVersion     string    `json:"schema_version"`
+	EventType         string    `json:"event_type"`
+	ClientGeneratedID string    `json:"client_generated_id"`
+	UserID            string    `json:"user_id"`
+	Timestamp         time.Time `json:"timestamp"`
+	SourceService     string    `json:"source_service"`
+	Data              struct {
+		FeedOwnerID string `json:"feed_owner_id"`
+		Passcode    string `json:"passcode"`
+	} `json:"data"`
+}
+
+func (h *SettingsEventHandler) HandleFeedAccessAttempt(ctx context.Context, payload []byte) error {
+	var event FeedAccessAttemptEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal feed.access.attempt event")
+		return h.emitAccessDeniedEvent(ctx, "", "", "", "FEED_NOT_FOUND")
+	}
+
+	feedOwnerID, err := uuid.Parse(event.Data.FeedOwnerID)
+	if err != nil {
+		log.Error().Err(err).Str("feed_owner_id", event.Data.FeedOwnerID).Msg("Invalid feed_owner_id")
+		return h.emitAccessDeniedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, "FEED_NOT_FOUND")
+	}
+
+	query := `
+	SELECT passcode_hash, feed_visibility
+	FROM user_settings
+	WHERE user_id = $1
+	`
+
+	var passcodeHash sql.NullString
+	var feedVisibility sql.NullString
+	err = h.db.QueryRowContext(ctx, query, feedOwnerID).Scan(&passcodeHash, &feedVisibility)
+	if err == sql.ErrNoRows {
+		log.Warn().Str("feed_owner_id", event.Data.FeedOwnerID).Msg("Feed owner not found")
+		return h.emitAccessDeniedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, "FEED_NOT_FOUND")
+	}
+
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to query feed settings")
+		return h.emitAccessDeniedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, "FEED_NOT_FOUND")
+	}
+
+	if !feedVisibility.Valid || feedVisibility.String != "passcode" {
+		log.Warn().Str("feed_owner_id", event.Data.FeedOwnerID).Msg("Feed is not passcode-protected")
+		return h.emitAccessDeniedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, "FEED_NOT_PROTECTED")
+	}
+
+	if !passcodeHash.Valid || passcodeHash.String == "" {
+		log.Warn().Str("feed_owner_id", event.Data.FeedOwnerID).Msg("Passcode hash not set")
+		return h.emitAccessDeniedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, "INVALID_PASSCODE")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(passcodeHash.String), []byte(event.Data.Passcode))
+	if err != nil {
+		log.Warn().Str("feed_owner_id", event.Data.FeedOwnerID).Msg("Invalid passcode")
+		return h.emitAccessDeniedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, "INVALID_PASSCODE")
+	}
+
+	expiresAt := time.Now().Add(24 * time.Hour)
+	token, err := h.generateAccessToken(event.UserID, event.Data.FeedOwnerID, expiresAt)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to generate access token")
+		return h.emitAccessDeniedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, "INVALID_PASSCODE")
+	}
+
+	log.Info().
+		Str("user_id", event.UserID).
+		Str("feed_owner_id", event.Data.FeedOwnerID).
+		Msg("Feed access granted")
+
+	return h.emitAccessGrantedEvent(ctx, event.ClientGeneratedID, event.UserID, event.Data.FeedOwnerID, token, expiresAt)
+}
+
+func (h *SettingsEventHandler) generateAccessToken(userID, feedOwnerID string, expiresAt time.Time) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id":       userID,
+		"feed_owner_id": feedOwnerID,
+		"exp":           expiresAt.Unix(),
+		"iat":           time.Now().Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(h.jwtSecret))
+}
+
+func (h *SettingsEventHandler) emitAccessGrantedEvent(ctx context.Context, clientGenID, userID, feedOwnerID, accessToken string, expiresAt time.Time) error {
+	event := map[string]interface{}{
+		"schema_version":      "1.0.0",
+		"event_type":          "feed.access.granted",
+		"client_generated_id": clientGenID,
+		"user_id":             userID,
+		"timestamp":           time.Now().UTC().Format(time.RFC3339),
+		"source_service":      "settings-service",
+		"data": map[string]interface{}{
+			"feed_owner_id": feedOwnerID,
+			"access_token":  accessToken,
+			"expires_at":    expiresAt.Format(time.RFC3339),
+		},
+	}
+
+	return h.publisher.PublishEvent(ctx, "feed.access.granted", event)
+}
+
+func (h *SettingsEventHandler) emitAccessDeniedEvent(ctx context.Context, clientGenID, userID, feedOwnerID, reason string) error {
+	event := map[string]interface{}{
+		"schema_version":      "1.0.0",
+		"event_type":          "feed.access.denied",
+		"client_generated_id": clientGenID,
+		"user_id":             userID,
+		"timestamp":           time.Now().UTC().Format(time.RFC3339),
+		"source_service":      "settings-service",
+		"data": map[string]interface{}{
+			"feed_owner_id": feedOwnerID,
+			"reason":        reason,
+		},
+	}
+
+	return h.publisher.PublishEvent(ctx, "feed.access.denied", event)
 }

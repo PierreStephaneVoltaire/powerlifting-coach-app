@@ -7,6 +7,7 @@ toolchain go1.24.9
 require (
 	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.0
 	github.com/gin-gonic/gin v1.11.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1

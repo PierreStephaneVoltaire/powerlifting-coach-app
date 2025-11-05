@@ -53,10 +53,11 @@ func main() {
 	}
 	defer eventConsumer.Close()
 
-	settingsEventHandler := handlers.NewSettingsEventHandler(db.DB, publisher)
+	settingsEventHandler := handlers.NewSettingsEventHandler(db.DB, publisher, cfg.JWTSecret)
 	eventConsumer.RegisterHandler("user.settings.submitted", settingsEventHandler.HandleUserSettingsSubmitted)
+	eventConsumer.RegisterHandler("feed.access.attempt", settingsEventHandler.HandleFeedAccessAttempt)
 
-	routingKeys := []string{"user.settings.submitted"}
+	routingKeys := []string{"user.settings.submitted", "feed.access.attempt"}
 	if err := eventConsumer.StartConsuming("settings-service.events", routingKeys); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start consuming events")
 	}
