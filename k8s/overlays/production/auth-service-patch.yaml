@@ -10,4 +10,4 @@ spec:
       - name: auth-service
         env:
         - name: KEYCLOAK_URL
-          value: "http://auth.157.230.71.6.nip.io"
+          value: "http://auth.159.203.51.197.nip.io"

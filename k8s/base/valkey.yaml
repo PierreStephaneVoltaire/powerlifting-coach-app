@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: valkey
-        image: public.ecr.aws/docker/library/valkey:7-alpine
+        image: public.ecr.aws/nexhealth/docker.io/valkey/valkey:8.1-alpine
         ports:
         - containerPort: 6379
         command:

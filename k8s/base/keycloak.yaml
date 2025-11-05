@@ -20,7 +20,6 @@ spec:
         image: quay.io/keycloak/keycloak:23.0
         args:
           - start
-          - --optimized
           - --proxy=edge
           - --hostname-strict=false
           - --http-enabled=true
