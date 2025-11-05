@@ -83,7 +83,7 @@
 ## Story 4: Main Feed (Consolidated into video-service)
 
 ### Database & Migrations
-- [ ] Create migration: video-service add feed_posts table
+- [x] Create migration: video-service add feed_posts table
 
 ### Events
 - [x] Create event schema: feed.post.created.json
