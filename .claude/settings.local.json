@@ -49,7 +49,9 @@
       "Bash(gh run list:*)",
       "Bash(kubectl scale:*)",
       "Bash(kubectl top:*)",
-      "Bash(kubectl apply:*)"
+      "Bash(kubectl apply:*)",
+      "Bash(./scripts/pod-health-check.sh:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
