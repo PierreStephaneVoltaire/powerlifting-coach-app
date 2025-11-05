@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: rabbitmq
-        image: public.ecr.aws/docker/library/rabbitmq:3-management-alpine
+        image: public.ecr.aws/docker/library/rabbitmq:4-management-alpine
         ports:
         - containerPort: 5672
           name: amqp

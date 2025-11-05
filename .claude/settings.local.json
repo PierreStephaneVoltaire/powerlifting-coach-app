@@ -46,7 +46,10 @@
       "Bash(kubectl delete:*)",
       "Bash(kubectl patch:*)",
       "Bash(docker run:*)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(kubectl scale:*)",
+      "Bash(kubectl top:*)",
+      "Bash(kubectl apply:*)"
     ],
     "deny": [],
     "ask": []

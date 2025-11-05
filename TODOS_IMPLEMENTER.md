@@ -11,8 +11,8 @@
 ## Operational Setup (Story 14, 16, 17)
 
 ### Event Schemas & Directories
-- [ ] Create /events/schemas/ directory structure
-- [ ] Create /specs/ directory for OpenAPI specs
+- [x] Create /events/schemas/ directory structure
+- [>] Create /specs/ directory for OpenAPI specs
 - [ ] Create /ai/templates/ directory for AI prompt templates
 
 ### Infrastructure Logging
