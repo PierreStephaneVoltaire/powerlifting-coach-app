@@ -278,11 +278,11 @@
 - [ ] Emit machine.notes.persisted event
 
 ### Frontend
-- [ ] Add plate calculator UI (client-side logic)
-- [ ] Add machine notes UI (create/edit notes)
-- [ ] Add plate inventory settings
-- [ ] Emit machine.notes.submitted via Notification service
-- [ ] Optionally emit tools.platecalc.query for telemetry
+- [x] Add plate calculator UI (client-side logic)
+- [x] Add machine notes UI (create/edit notes)
+- [x] Add plate inventory settings
+- [x] Emit machine.notes.submitted via Notification service
+- [x] Optionally emit tools.platecalc.query for telemetry
 
 ### OpenAPI
 - [ ] Generate OpenAPI spec for machine-service endpoints
