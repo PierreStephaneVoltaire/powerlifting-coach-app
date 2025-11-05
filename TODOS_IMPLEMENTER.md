@@ -12,8 +12,8 @@
 
 ### Event Schemas & Directories
 - [x] Create /events/schemas/ directory structure
-- [>] Create /specs/ directory for OpenAPI specs
-- [ ] Create /ai/templates/ directory for AI prompt templates
+- [x] Create /specs/ directory for OpenAPI specs
+- [>] Create /ai/templates/ directory for AI prompt templates
 
 ### Infrastructure Logging
 - [ ] Create infra-health.log at repo root
