@@ -161,12 +161,12 @@
 - [x] Add GET /api/v1/posts/:post_id/likes endpoint
 
 ### Frontend
-- [ ] Add comment input UI on posts
-- [ ] Add threaded comment display
-- [ ] Add like/upvote button
+- [x] Add comment input UI on posts
+- [x] Add threaded comment display
+- [x] Add like/upvote button
 - [ ] Add cached comments fallback
-- [ ] Emit comment.created via Notification service
-- [ ] Emit interaction.liked via Notification service
+- [x] Emit comment.created via Notification service
+- [x] Emit interaction.liked via Notification service
 
 ### OpenAPI
 - [ ] Update video-service OpenAPI spec with comment/like endpoints

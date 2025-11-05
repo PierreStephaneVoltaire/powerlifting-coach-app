@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/utils/api';
 import { useFeedCache } from '@/hooks/useFeedCache';
+import { useAuthStore } from '@/store/authStore';
 import { FeedPost } from '@/types';
+import { CommentSection } from './CommentSection';
 
 export const FeedList: React.FC = () => {
+  const { user } = useAuthStore();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isStale, setIsStale] = useState(false);
+  const [expandedPost, setExpandedPost] = useState<string | null>(null);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
   const { getCachedFeed, cacheFeed } = useFeedCache();
 
@@ -56,6 +61,39 @@ export const FeedList: React.FC = () => {
   const handleLoadMore = () => {
     if (!isLoading && hasMore && cursor) {
       loadFeed(cursor);
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    if (!user) return;
+
+    const isLiked = likedPosts.has(postId);
+    const newLikedPosts = new Set(likedPosts);
+
+    if (isLiked) {
+      newLikedPosts.delete(postId);
+    } else {
+      newLikedPosts.add(postId);
+    }
+
+    setLikedPosts(newLikedPosts);
+
+    const updatedPosts = posts.map(p =>
+      p.post_id === postId
+        ? { ...p, likes_count: (p.likes_count || 0) + (isLiked ? -1 : 1) }
+        : p
+    );
+    setPosts(updatedPosts);
+
+    try {
+      await apiClient.submitLike(user.id, 'post', postId, isLiked ? 'unlike' : 'like');
+      console.info('Like toggled', { post_id: postId, action: isLiked ? 'unlike' : 'like' });
+    } catch (err: any) {
+      console.error('Failed to submit like', err);
+      if (!err.queued) {
+        setLikedPosts(likedPosts);
+        setPosts(posts);
+      }
     }
   };
 
@@ -124,19 +162,48 @@ export const FeedList: React.FC = () => {
             )}
 
             <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
-              <button className="hover:text-blue-600 flex items-center gap-1">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              <button
+                onClick={() => handleLike(post.post_id)}
+                className={`flex items-center gap-1 transition-colors ${
+                  likedPosts.has(post.post_id)
+                    ? 'text-red-600 hover:text-red-700'
+                    : 'hover:text-blue-600'
+                }`}
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill={likedPosts.has(post.post_id) ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
                 </svg>
                 <span>{post.likes_count || 0}</span>
               </button>
-              <button className="hover:text-blue-600 flex items-center gap-1">
+              <button
+                onClick={() => setExpandedPost(expandedPost === post.post_id ? null : post.post_id)}
+                className="hover:text-blue-600 flex items-center gap-1"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
                 </svg>
                 <span>{post.comments_count || 0}</span>
               </button>
             </div>
+
+            {expandedPost === post.post_id && (
+              <CommentSection postId={post.post_id} />
+            )}
           </div>
         ))}
       </div>
