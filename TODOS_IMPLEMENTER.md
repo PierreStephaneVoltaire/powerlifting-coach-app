@@ -13,10 +13,10 @@
 ### Event Schemas & Directories
 - [x] Create /events/schemas/ directory structure
 - [x] Create /specs/ directory for OpenAPI specs
-- [>] Create /ai/templates/ directory for AI prompt templates
+- [x] Create /ai/templates/ directory for AI prompt templates
 
 ### Infrastructure Logging
-- [ ] Create infra-health.log at repo root
+- [>] Create infra-health.log at repo root
 - [ ] Add pod health check script in /scripts/pod-health-check.sh
 
 ---
