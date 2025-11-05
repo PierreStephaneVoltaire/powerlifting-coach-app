@@ -43,7 +43,7 @@
 ### Events
 - [x] Create event schema: user.settings.submitted.json
 - [x] Create event schema: user.settings.persisted.json
-- [>] Create event schema: user.settings.failed.json
+- [x] Create event schema: user.settings.failed.json
 
 ### Backend - Notification Service
 - [ ] Add POST /api/v1/notify/events endpoint to accept user.settings.submitted
