@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DMMessageSent",
+  "description": "Event emitted when a user sends a direct message",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "dm.message.sent"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Sender user ID"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service", "ai-agent-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["conversation_id", "recipient_id", "message_body"],
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recipient_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "message_body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "message_type": {
+          "type": "string",
+          "enum": ["text", "ai_coach_request", "system"],
+          "default": "text"
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "media_id": {"type": "string", "format": "uuid"},
+              "media_url": {"type": "string", "format": "uri"},
+              "media_type": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "dm.message.sent",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440040",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T17:00:00Z",
+    "source_service": "frontend",
+    "data": {
+      "conversation_id": "f1a2b3c4-d5e6-7890-fghi-345678901234",
+      "recipient_id": "8d0f7780-8536-51ef-b827-557fc2f91bf8",
+      "message_body": "Hey, how should I approach deload week?",
+      "message_type": "text",
+      "attachments": []
+    }
+  }
+}

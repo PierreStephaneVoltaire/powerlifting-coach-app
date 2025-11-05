@@ -232,9 +232,9 @@
 - [ ] Create migration: dm-service create messages table
 
 ### Events
-- [ ] Create event schema: dm.message.sent.json
-- [ ] Create event schema: dm.message.persisted.json
-- [ ] Create event schema: dm.pin.attempts.json
+- [x] Create event schema: dm.message.sent.json
+- [x] Create event schema: dm.message.persisted.json
+- [x] Create event schema: dm.pin.attempts.json
 
 ### Backend - DM Service
 - [ ] Create dm-service cmd/main.go with RabbitMQ consumer

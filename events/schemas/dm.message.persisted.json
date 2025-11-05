@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DMMessagePersisted",
+  "description": "Event emitted after dm-service persists a message",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "dm.message.persisted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Matches original dm.message.sent client_generated_id"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "const": "dm-service"
+    },
+    "data": {
+      "type": "object",
+      "required": ["message_id", "conversation_id"],
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "dm.message.persisted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440040",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T17:00:01Z",
+    "source_service": "dm-service",
+    "data": {
+      "message_id": "g2b3c4d5-e6f7-8901-ghij-456789012345",
+      "conversation_id": "f1a2b3c4-d5e6-7890-fghi-345678901234"
+    }
+  }
+}
