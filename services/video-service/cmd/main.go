@@ -113,7 +113,7 @@ func main() {
 		{
 			// Public endpoints
 			videos.GET("/shared/:token", videoHandlers.GetSharedVideo)
-			
+
 			// Protected endpoints
 			videos.Use(middleware.AuthMiddleware(authConfig))
 			{
@@ -122,6 +122,24 @@ func main() {
 				videos.GET("/", videoHandlers.GetMyVideos)
 				videos.GET("/:id", videoHandlers.GetVideo)
 				videos.DELETE("/:id", videoHandlers.DeleteVideo)
+			}
+		}
+
+		feed := v1.Group("/feed")
+		{
+			feed.Use(middleware.AuthMiddleware(authConfig))
+			{
+				feed.GET("/", feedHandlers.GetFeed)
+				feed.GET("/:post_id", feedHandlers.GetFeedPost)
+			}
+		}
+
+		posts := v1.Group("/posts")
+		{
+			posts.Use(middleware.AuthMiddleware(authConfig))
+			{
+				posts.GET("/:post_id/comments", commentHandlers.GetPostComments)
+				posts.GET("/:post_id/likes", commentHandlers.GetPostLikes)
 			}
 		}
 	}

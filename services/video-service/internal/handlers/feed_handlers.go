@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
@@ -199,4 +202,187 @@ func (h *FeedHandlers) HandleFeedPostDeleted(ctx context.Context, payload []byte
 		Msg("Feed post deleted")
 
 	return nil
+}
+
+type FeedPostResponse struct {
+	ID            string    `json:"id"`
+	PostID        string    `json:"post_id"`
+	UserID        string    `json:"user_id"`
+	VideoID       *string   `json:"video_id"`
+	Visibility    string    `json:"visibility"`
+	MovementLabel string    `json:"movement_label"`
+	Weight        *struct {
+		Value float64 `json:"value"`
+		Unit  string  `json:"unit"`
+	} `json:"weight"`
+	RPE           *float64  `json:"rpe"`
+	CommentText   string    `json:"comment_text"`
+	CommentsCount int       `json:"comments_count"`
+	LikesCount    int       `json:"likes_count"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+func (h *FeedHandlers) GetFeed(c *gin.Context) {
+	limit := 20
+	if limitParam := c.Query("limit"); limitParam != "" {
+		fmt.Sscanf(limitParam, "%d", &limit)
+		if limit > 100 {
+			limit = 100
+		}
+		if limit < 1 {
+			limit = 20
+		}
+	}
+
+	cursor := c.Query("cursor")
+	var cursorTime time.Time
+	if cursor != "" {
+		var err error
+		cursorTime, err = time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cursor format"})
+			return
+		}
+	} else {
+		cursorTime = time.Now()
+	}
+
+	visibility := c.Query("visibility")
+	if visibility == "" {
+		visibility = "public"
+	}
+
+	query := `
+	SELECT id, post_id, user_id, video_id, visibility, movement_label,
+		   weight_value, weight_unit, rpe, comment_text,
+		   comments_count, likes_count, created_at, updated_at
+	FROM feed_posts
+	WHERE visibility = $1 AND created_at < $2
+	ORDER BY created_at DESC
+	LIMIT $3
+	`
+
+	rows, err := h.db.QueryContext(c.Request.Context(), query, visibility, cursorTime, limit)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to query feed posts")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch feed"})
+		return
+	}
+	defer rows.Close()
+
+	var posts []FeedPostResponse
+	for rows.Next() {
+		var post FeedPostResponse
+		var videoID sql.NullString
+		var weightValue sql.NullFloat64
+		var weightUnit sql.NullString
+		var rpe sql.NullFloat64
+
+		err := rows.Scan(
+			&post.ID, &post.PostID, &post.UserID, &videoID, &post.Visibility,
+			&post.MovementLabel, &weightValue, &weightUnit, &rpe, &post.CommentText,
+			&post.CommentsCount, &post.LikesCount, &post.CreatedAt, &post.UpdatedAt,
+		)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to scan feed post")
+			continue
+		}
+
+		if videoID.Valid {
+			post.VideoID = &videoID.String
+		}
+
+		if weightValue.Valid && weightUnit.Valid {
+			post.Weight = &struct {
+				Value float64 `json:"value"`
+				Unit  string  `json:"unit"`
+			}{
+				Value: weightValue.Float64,
+				Unit:  weightUnit.String,
+			}
+		}
+
+		if rpe.Valid {
+			post.RPE = &rpe.Float64
+		}
+
+		posts = append(posts, post)
+	}
+
+	var nextCursor *string
+	if len(posts) == limit {
+		cursorStr := posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+		nextCursor = &cursorStr
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"posts":       posts,
+		"next_cursor": nextCursor,
+	})
+}
+
+func (h *FeedHandlers) GetFeedPost(c *gin.Context) {
+	postID := c.Param("post_id")
+	if postID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "post_id is required"})
+		return
+	}
+
+	postUUID, err := uuid.Parse(postID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post_id"})
+		return
+	}
+
+	query := `
+	SELECT id, post_id, user_id, video_id, visibility, movement_label,
+		   weight_value, weight_unit, rpe, comment_text,
+		   comments_count, likes_count, created_at, updated_at
+	FROM feed_posts
+	WHERE post_id = $1
+	`
+
+	var post FeedPostResponse
+	var videoID sql.NullString
+	var weightValue sql.NullFloat64
+	var weightUnit sql.NullString
+	var rpe sql.NullFloat64
+
+	err = h.db.QueryRowContext(c.Request.Context(), query, postUUID).Scan(
+		&post.ID, &post.PostID, &post.UserID, &videoID, &post.Visibility,
+		&post.MovementLabel, &weightValue, &weightUnit, &rpe, &post.CommentText,
+		&post.CommentsCount, &post.LikesCount, &post.CreatedAt, &post.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		return
+	}
+
+	if err != nil {
+		log.Error().Err(err).Str("post_id", postID).Msg("Failed to query feed post")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch post"})
+		return
+	}
+
+	if videoID.Valid {
+		post.VideoID = &videoID.String
+	}
+
+	if weightValue.Valid && weightUnit.Valid {
+		post.Weight = &struct {
+			Value float64 `json:"value"`
+			Unit  string  `json:"unit"`
+		}{
+			Value: weightValue.Float64,
+			Unit:  weightUnit.String,
+		}
+	}
+
+	if rpe.Valid {
+		post.RPE = &rpe.Float64
+	}
+
+	c.JSON(http.StatusOK, post)
 }
