@@ -92,7 +92,7 @@ resource "kubernetes_secret" "app_secrets" {
   }
 
   data = {
-    database-url           = "postgresql://app_user:${urlencode(random_password.postgres_password[0].result)}@postgres:5432/powerlifting_app"
+    database-url           = "postgresql://app_user:${urlencode(random_password.postgres_password[0].result)}@postgres:5432/powerlifting_app?sslmode=disable"
     rabbitmq-url           = "amqp://admin:${urlencode(random_password.rabbitmq_password[0].result)}@rabbitmq:5672/"
     keycloak-client-secret = random_password.keycloak_client_secret[0].result
     spaces-key             = digitalocean_spaces_key.default.access_key

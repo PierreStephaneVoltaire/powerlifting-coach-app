@@ -30,7 +30,7 @@ spec:
         - name: KC_DB
           value: "postgres"
         - name: KC_DB_URL
-          value: "jdbc:postgresql://postgres:5432/keycloak"
+          value: "jdbc:postgresql://postgres:5432/keycloak?sslmode=disable"
         - name: KC_DB_USERNAME
           value: "app_user"
         - name: KC_DB_PASSWORD
