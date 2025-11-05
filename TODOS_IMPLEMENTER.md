@@ -87,8 +87,8 @@
 - [ ] Create migration: feed-service create feed_posts table
 
 ### Events
-- [ ] Create event schema: feed.post.created.json
-- [ ] Create event schema: feed.post.updated.json
+- [x] Create event schema: feed.post.created.json
+- [>] Create event schema: feed.post.updated.json
 - [ ] Create event schema: feed.post.deleted.json
 
 ### Backend - Feed Service

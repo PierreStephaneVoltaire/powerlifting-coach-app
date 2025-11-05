@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FeedPostCreated",
+  "description": "Event emitted when a new feed post is created after media processing",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "feed.post.created"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["media-processing-service", "frontend"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["post_id", "media_id", "visibility"],
+      "properties": {
+        "post_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "media_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "media_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "thumbnail_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "movement_label": {
+          "type": "string",
+          "description": "Type of lift (e.g., squat, bench, deadlift)"
+        },
+        "weight": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["kg", "lb"]}
+          }
+        },
+        "rpe": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Rate of Perceived Exertion"
+        },
+        "comment_text": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "passcode"]
+        },
+        "passcode_required": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "feed.post.created",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T15:00:00Z",
+    "source_service": "media-processing-service",
+    "data": {
+      "post_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "media_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "media_url": "https://cdn.example.com/videos/b2c3d4e5.mp4",
+      "thumbnail_url": "https://cdn.example.com/thumbnails/b2c3d4e5.jpg",
+      "movement_label": "squat",
+      "weight": {"value": 180, "unit": "kg"},
+      "rpe": 8.5,
+      "comment_text": "Working on depth, felt solid",
+      "visibility": "public",
+      "passcode_required": false
+    }
+  }
+}
