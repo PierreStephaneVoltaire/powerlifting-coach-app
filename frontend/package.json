@@ -55,12 +55,6 @@
     "@typescript-eslint/parser": "^6.9.1"
   },
   "overrides": {
-    "ajv": "6.12.6",
-    "ajv-keywords": "3.5.2",
-    "schema-utils": "3.3.0",
-    "fork-ts-checker-webpack-plugin": {
-      "schema-utils": "3.3.0"
-    }
   },
   "proxy": "http://localhost:8080"
 }

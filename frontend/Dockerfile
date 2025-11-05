@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/node:18-alpine AS builder
+FROM public.ecr.aws/docker/library/node:16-alpine AS builder
 
 WORKDIR /app
 RUN apk add --no-cache git 
