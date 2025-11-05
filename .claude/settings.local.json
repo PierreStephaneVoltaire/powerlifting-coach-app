@@ -44,7 +44,9 @@
       "Bash(kubectl exec:*)",
       "Bash(npm run build:*)",
       "Bash(kubectl delete:*)",
-      "Bash(kubectl patch:*)"
+      "Bash(kubectl patch:*)",
+      "Bash(docker run:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": [],
     "ask": []
