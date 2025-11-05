@@ -143,7 +143,7 @@
 - [x] Submit settings to Notification service /api/v1/notify/events
 
 ### OpenAPI
-- [ ] Generate OpenAPI spec for notification-service /api/v1/notify/events endpoint
+- [>] Generate OpenAPI spec for notification-service /api/v1/notify/events endpoint
 - [ ] Generate OpenAPI spec for settings-service read endpoints
 
 ---
@@ -345,7 +345,7 @@
 - [ ] Add media attachment support (reuse media upload)
 - [x] Emit dm.message.sent via Notification service
 - [x] Emit dm.pin.attempts via Notification service
-- [ ] Add cached messages fallback
+- [x] Add cached messages fallback
 
 ### OpenAPI
 - [ ] Generate OpenAPI spec for dm-service endpoints
@@ -427,7 +427,7 @@
 - [ ] Update all consumers to requeue on transient failure
 
 ### Documentation
-- [ ] Document lock acquisition/release behavior in INTEGRATION_NOTES.md
+- [x] Document lock acquisition/release behavior in INTEGRATION_NOTES.md
 
 ---
 
@@ -446,9 +446,9 @@
 ### Database & Migrations
 - [ ] Create migration: ai-agent-service create ai_prompt_templates table
 - [ ] Create migration: insert default prompt templates (idempotent upsert)
-- [ ] Create /ai/templates/coach_workout_completed.txt
-- [ ] Create /ai/templates/coach_dm_response.txt
-- [ ] Create /ai/templates/coach_program_adjustment.txt
+- [x] Create /ai/templates/coach_workout_completed.txt
+- [x] Create /ai/templates/coach_dm_response.txt
+- [x] Create /ai/templates/coach_program_adjustment.txt
 
 ---
 
@@ -465,7 +465,7 @@
 
 ### Integration
 - [ ] Add pod health check to CI/CD workflow (run after commit)
-- [ ] Document pod health check usage in INTEGRATION_NOTES.md
+- [x] Document pod health check usage in INTEGRATION_NOTES.md
 
 ---
 
@@ -503,9 +503,9 @@
 ## Testing Documentation
 
 ### Integration Notes
-- [ ] Add RabbitMQ event simulation instructions to INTEGRATION_NOTES.md
-- [ ] Add consumer dev mode instructions to INTEGRATION_NOTES.md
-- [ ] Add local testing setup to INTEGRATION_NOTES.md
+- [x] Add RabbitMQ event simulation instructions to INTEGRATION_NOTES.md
+- [x] Add consumer dev mode instructions to INTEGRATION_NOTES.md
+- [x] Add local testing setup to INTEGRATION_NOTES.md
 
 ### Test TODOs (not implemented, just documented)
 - [ ] Add test TODO: auth.user.logged_in event flow
