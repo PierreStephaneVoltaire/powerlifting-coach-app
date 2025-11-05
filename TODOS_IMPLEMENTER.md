@@ -204,13 +204,13 @@
 - [ ] Add scheduler to publish reminder events when due
 
 ### Frontend
-- [ ] Add program planner UI (create/edit plan)
-- [ ] Add workout list UI showing weeks until comp
-- [ ] Add start workout button
-- [ ] Add complete workout form with duration and summary
-- [ ] Emit program.plan.created/updated via Notification service
-- [ ] Emit workout.started via Notification service
-- [ ] Emit workout.completed via Notification service
+- [x] Add program planner UI (create/edit plan)
+- [x] Add workout list UI showing weeks until comp
+- [x] Add start workout button
+- [x] Add complete workout form with duration and summary
+- [x] Emit program.plan.created/updated via Notification service
+- [x] Emit workout.started via Notification service
+- [x] Emit workout.completed via Notification service
 
 ### OpenAPI
 - [ ] Generate OpenAPI spec for program-service endpoints
