@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MediaUploaded",
+  "description": "Event emitted after media is successfully uploaded to storage",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "media.uploaded"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "media-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["media_id", "filename", "storage_url"],
+      "properties": {
+        "media_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "storage_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "content_type": {
+          "type": "string"
+        },
+        "size_bytes": {
+          "type": "integer"
+        },
+        "movement_label": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["kg", "lb"]}
+          }
+        },
+        "rpe": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "comment_text": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "passcode"]
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "media.uploaded",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440010",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T14:52:00Z",
+    "source_service": "media-service",
+    "data": {
+      "media_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "filename": "squat_180kg.mp4",
+      "storage_url": "s3://bucket/raw/b2c3d4e5-f6a7-8901-bcde-f12345678901.mp4",
+      "content_type": "video/mp4",
+      "size_bytes": 52428800,
+      "movement_label": "squat",
+      "weight": {"value": 180, "unit": "kg"},
+      "rpe": 8.5,
+      "comment_text": "Working on depth",
+      "visibility": "public"
+    }
+  }
+}

@@ -118,9 +118,9 @@
 - [ ] Create new service: media-processing-service with Dockerfile and structure
 
 ### Events
-- [ ] Create event schema: media.upload_requested.json
-- [ ] Create event schema: media.uploaded.json
-- [ ] Create event schema: media.processed.json
+- [x] Create event schema: media.upload_requested.json
+- [x] Create event schema: media.uploaded.json
+- [x] Create event schema: media.processed.json
 
 ### Backend - Media Service
 - [ ] Create media-service cmd/main.go
