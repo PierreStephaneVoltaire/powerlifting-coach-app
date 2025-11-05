@@ -50,12 +50,12 @@
 - [x] Add RabbitMQ publisher for user.settings.submitted event
 
 ### Backend - Settings Service
-- [ ] Add RabbitMQ consumer for user.settings.submitted
-- [ ] Add idempotency check using client_generated_id (Postgres advisory lock)
-- [ ] Add validation logic for settings
-- [ ] Persist settings to Postgres
-- [ ] Emit user.settings.persisted on success
-- [ ] Emit user.settings.failed on validation error
+- [x] Add RabbitMQ consumer for user.settings.submitted
+- [x] Add idempotency check using client_generated_id (Postgres advisory lock)
+- [x] Add validation logic for settings
+- [x] Persist settings to Postgres
+- [x] Emit user.settings.persisted on success
+- [x] Emit user.settings.failed on validation error
 
 ### Frontend
 - [ ] Create onboarding settings form UI with all required fields
@@ -94,9 +94,9 @@
 - [x] Add RabbitMQ consumer for feed.post.created event
 - [x] Add RabbitMQ consumer for feed.post.updated event
 - [x] Add RabbitMQ consumer for feed.post.deleted event
-- [ ] Persist feed entries to Postgres (denormalized)
-- [ ] Add GET /api/v1/feed endpoint with cursor pagination
-- [ ] Add GET /api/v1/feed/:post_id endpoint
+- [x] Persist feed entries to Postgres (denormalized)
+- [x] Add GET /api/v1/feed endpoint with cursor pagination
+- [x] Add GET /api/v1/feed/:post_id endpoint
 
 ### Frontend
 - [ ] Add feed list UI with cursor-based pagination
@@ -157,8 +157,8 @@
 - [ ] Emit comment.persisted event
 - [x] Add consumer for interaction.liked event
 - [x] Persist likes to Postgres (deduped by user_id + target_id)
-- [ ] Add GET /api/v1/posts/:post_id/comments endpoint
-- [ ] Add GET /api/v1/posts/:post_id/likes endpoint
+- [x] Add GET /api/v1/posts/:post_id/comments endpoint
+- [x] Add GET /api/v1/posts/:post_id/likes endpoint
 
 ### Frontend
 - [ ] Add comment input UI on posts
@@ -300,11 +300,11 @@
 - [x] Create event schema: feed.access.denied.json
 
 ### Backend - Settings Service
-- [ ] Add consumer for feed.access.attempt event
-- [ ] Validate passcode against passcode_hash
-- [ ] Generate short-lived access token on success
-- [ ] Emit feed.access.granted with token
-- [ ] Emit feed.access.denied on failure
+- [x] Add consumer for feed.access.attempt event
+- [x] Validate passcode against passcode_hash
+- [x] Generate short-lived access token on success
+- [x] Emit feed.access.granted with token
+- [x] Emit feed.access.denied on failure
 
 ### Frontend
 - [ ] Add passcode prompt UI for protected feeds
