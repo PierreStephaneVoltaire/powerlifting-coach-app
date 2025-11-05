@@ -99,9 +99,9 @@
 - [x] Add GET /api/v1/feed/:post_id endpoint
 
 ### Frontend
-- [ ] Add feed list UI with cursor-based pagination
-- [ ] Add cached feed fallback when video-service unreachable
-- [ ] Add feed refresh logic
+- [x] Add feed list UI with cursor-based pagination
+- [x] Add cached feed fallback when video-service unreachable
+- [x] Add feed refresh logic
 
 ### OpenAPI
 - [ ] Update video-service OpenAPI spec with feed endpoints

@@ -193,17 +193,17 @@ export interface FeedPost {
   id: string;
   post_id: string;
   user_id: string;
+  user_name?: string;
   video_id?: string;
   visibility: 'public' | 'passcode';
   movement_label: string;
-  weight?: {
-    value: number;
-    unit: 'kg' | 'lb';
-  };
+  weight?: string;
   rpe?: number;
   comment_text: string;
   comments_count: number;
   likes_count: number;
+  media_url?: string;
+  thumbnail_url?: string;
   created_at: string;
   updated_at: string;
 }
