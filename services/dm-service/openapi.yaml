@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: DM Service API
+  description: Handles direct messaging via event-driven architecture
+  version: 1.0.0
+  contact:
+    name: Powerlifting Coach App
+    email: support@powerliftingcoach.app
+
+servers:
+  - url: http://localhost:8084
+    description: Local development
+  - url: https://api.powerliftingcoach.app/dm
+    description: Production
+
+tags:
+  - name: health
+    description: Health check endpoints
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - health
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: dm-service
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code

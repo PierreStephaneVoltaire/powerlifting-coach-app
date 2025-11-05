@@ -1,0 +1,616 @@
+openapi: 3.0.3
+info:
+  title: Settings Service API
+  description: Manages user settings and application configuration
+  version: 1.0.0
+  contact:
+    name: Powerlifting Coach App
+    email: support@powerliftingcoach.app
+
+servers:
+  - url: http://localhost:8083
+    description: Local development
+  - url: https://api.powerliftingcoach.app/settings
+    description: Production
+
+tags:
+  - name: health
+    description: Health check endpoints
+  - name: user-settings
+    description: User-specific settings
+  - name: app-settings
+    description: Application-wide settings
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - health
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  /api/v1/settings/app/public:
+    get:
+      summary: Get public application settings
+      tags:
+        - app-settings
+      operationId: getPublicAppSettings
+      responses:
+        '200':
+          description: Public application settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    type: object
+                    additionalProperties: true
+                    description: Key-value pairs of public settings
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/settings/user:
+    get:
+      summary: Get user settings
+      tags:
+        - user-settings
+      operationId: getUserSettings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User settings not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update user settings
+      tags:
+        - user-settings
+      operationId: updateUserSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettingsUpdate'
+      responses:
+        '200':
+          description: User settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/settings/app:
+    get:
+      summary: Get all application settings
+      tags:
+        - app-settings
+      operationId: getAllAppSettings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All application settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppSetting'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create application setting
+      tags:
+        - app-settings
+      operationId: createAppSetting
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+                - value
+              properties:
+                key:
+                  type: string
+                  description: Setting key
+                value:
+                  type: string
+                  description: Setting value
+                description:
+                  type: string
+                  description: Setting description
+                is_public:
+                  type: boolean
+                  description: Whether this setting is publicly accessible
+      responses:
+        '201':
+          description: Application setting created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/settings/app/{key}:
+    get:
+      summary: Get application setting by key
+      tags:
+        - app-settings
+      operationId: getAppSetting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Setting key
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Application setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSetting'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update application setting
+      tags:
+        - app-settings
+      operationId: updateAppSetting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Setting key
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: New setting value
+                description:
+                  type: string
+                  description: New setting description
+                is_public:
+                  type: boolean
+                  description: Whether this setting is publicly accessible
+      responses:
+        '200':
+          description: Application setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete application setting
+      tags:
+        - app-settings
+      operationId: deleteAppSetting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Setting key
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Application setting deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserSettings:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        weight:
+          type: number
+          format: float
+          description: User weight in kg or lbs
+        age:
+          type: integer
+          description: User age
+        target_weight_class:
+          type: string
+          description: Target weight class for competition
+        weeks_until_comp:
+          type: integer
+          description: Weeks until next competition
+        squat_goal:
+          type: number
+          format: float
+          description: Squat goal weight
+        bench_goal:
+          type: number
+          format: float
+          description: Bench press goal weight
+        dead_goal:
+          type: number
+          format: float
+          description: Deadlift goal weight
+        most_important_lift:
+          type: string
+          enum: [squat, bench, deadlift]
+        least_important_lift:
+          type: string
+          enum: [squat, bench, deadlift]
+        recovery_rating_squat:
+          type: integer
+          minimum: 1
+          maximum: 5
+        recovery_rating_bench:
+          type: integer
+          minimum: 1
+          maximum: 5
+        recovery_rating_dead:
+          type: integer
+          minimum: 1
+          maximum: 5
+        training_days_per_week:
+          type: integer
+          minimum: 1
+          maximum: 7
+        session_length_minutes:
+          type: integer
+          description: Average session duration in minutes
+        weight_plan:
+          type: string
+          description: Weight management plan
+        form_issues:
+          type: string
+          description: Known form issues
+        injuries:
+          type: string
+          description: Current or past injuries
+        evaluate_feasibility:
+          type: boolean
+          description: Whether AI should evaluate goal feasibility
+        federation:
+          type: string
+          description: Competition federation
+        knee_sleeve:
+          type: boolean
+          description: Whether user uses knee sleeves
+        deadlift_style:
+          type: string
+          enum: [conventional, sumo]
+        squat_stance:
+          type: string
+          enum: [narrow, medium, wide]
+        add_per_month:
+          type: number
+          format: float
+          description: Target weight addition per month
+        volume_preference:
+          type: string
+          enum: [low, medium, high]
+        recovers_from_heavy_deads:
+          type: boolean
+        height:
+          type: number
+          format: float
+          description: User height in cm or inches
+        past_competitions:
+          type: string
+          description: Past competition history
+        feed_visibility:
+          type: string
+          enum: [public, private, passcode]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserSettingsUpdate:
+      type: object
+      properties:
+        weight:
+          type: number
+          format: float
+        age:
+          type: integer
+        target_weight_class:
+          type: string
+        weeks_until_comp:
+          type: integer
+        squat_goal:
+          type: number
+          format: float
+        bench_goal:
+          type: number
+          format: float
+        dead_goal:
+          type: number
+          format: float
+        most_important_lift:
+          type: string
+          enum: [squat, bench, deadlift]
+        least_important_lift:
+          type: string
+          enum: [squat, bench, deadlift]
+        recovery_rating_squat:
+          type: integer
+          minimum: 1
+          maximum: 5
+        recovery_rating_bench:
+          type: integer
+          minimum: 1
+          maximum: 5
+        recovery_rating_dead:
+          type: integer
+          minimum: 1
+          maximum: 5
+        training_days_per_week:
+          type: integer
+          minimum: 1
+          maximum: 7
+        session_length_minutes:
+          type: integer
+        weight_plan:
+          type: string
+        form_issues:
+          type: string
+        injuries:
+          type: string
+        evaluate_feasibility:
+          type: boolean
+        federation:
+          type: string
+        knee_sleeve:
+          type: boolean
+        deadlift_style:
+          type: string
+          enum: [conventional, sumo]
+        squat_stance:
+          type: string
+          enum: [narrow, medium, wide]
+        add_per_month:
+          type: number
+          format: float
+        volume_preference:
+          type: string
+          enum: [low, medium, high]
+        recovers_from_heavy_deads:
+          type: boolean
+        height:
+          type: number
+          format: float
+        past_competitions:
+          type: string
+        feed_visibility:
+          type: string
+          enum: [public, private, passcode]
+
+    AppSetting:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Setting key
+        value:
+          type: string
+          description: Setting value
+        description:
+          type: string
+          description: Setting description
+        is_public:
+          type: boolean
+          description: Whether this setting is publicly accessible
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
