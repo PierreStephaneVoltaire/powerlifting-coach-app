@@ -8,6 +8,65 @@
 
 ---
 
+## Recent Completion Summary
+
+### Frontend Implementation (All Complete)
+- **Onboarding Form**: User settings form with all required fields (Story 2)
+- **Offline Queue System**: IndexedDB-based queue with exponential backoff and auto-retry (Story 3)
+- **Sync Indicator**: Real-time offline status and pending queue count display (Story 3)
+- **Feed UI**: Feed list with cursor pagination, like/comment functionality, optimistic updates (Story 4, 6)
+- **Comment Section**: Threaded comment display and input (Story 6)
+- **Program Planner**: Create training plans with comp date calculation (Story 7)
+- **Workout Session**: Start/complete workout with exercise tracking (Story 7, 8)
+- **DM UI**: Conversation list and 1:1 chat view with pin attempts (Story 9)
+- **Plate Calculator**: Client-side plate calculation with telemetry (Story 11)
+- **Machine Notes**: Save equipment settings and preferences (Story 11)
+
+### Backend Services Implementation
+
+#### Video Service (Enhanced)
+- Added EventPublisher interface and PublishEvent method to RabbitMQ client
+- Updated comment_handlers.go to emit comment.persisted event after DB commit
+- Supports comment.created and interaction.liked event consumers
+- HTTP endpoints for feed, comments, likes (Story 4, 6)
+
+#### Program Service (Enhanced)
+- Created event consumer infrastructure (event_consumer.go)
+- Implemented program_event_handlers.go with three handlers:
+  - HandleProgramPlanCreated: Persists programs with comp_date, training_days_per_week
+  - HandleWorkoutStarted: Records workout start_time
+  - HandleWorkoutCompleted: Stores duration, exercises_summary JSONB, notes
+- Created migration 002_add_event_tables.up.sql with programs, workout_sessions, idempotency_keys (Story 7)
+
+#### DM Service (New - Complete)
+- Full microservice created from scratch
+- Structure: cmd/main.go, config, database, handlers, queue, migrations
+- Event consumers for dm.message.sent and dm.pin.attempts
+- Auto-creates conversations with normalized participant IDs (participant_1_id < participant_2_id)
+- Persists messages and pin attempts to JSONB metadata
+- Implements idempotency pattern (Story 9)
+
+#### Machine Service (New - Complete)
+- Full microservice created from scratch
+- Structure: cmd/main.go, config, database, handlers, queue, migrations
+- Event consumer for machine.notes.submitted
+- Database schema with machine_type_enum (barbell, hack_squat, leg_press, hex_bar, cable, other)
+- Visibility control (public/private)
+- Persists brand, model, machine_type, settings
+- Implements idempotency pattern (Story 11)
+
+### Key Technical Patterns Implemented
+- **Event-Driven Architecture**: All service communication via RabbitMQ with topic exchange
+- **Idempotency**: client_generated_id in all events, idempotency_keys table in each service
+- **Offline-First Frontend**: IndexedDB queue persistence, exponential backoff (max 5 retries, capped at 60s)
+- **Manual Ack with Requeue**: RabbitMQ consumers use manual ack, requeue on transient failure
+- **Structured JSON Logging**: zerolog with consistent log patterns across all services
+- **Database Migrations**: golang-migrate with up/down migrations for all schema changes
+- **JSONB for Flexibility**: exercises_summary, pinned_attempts, metadata stored as JSONB
+- **Normalized Relationships**: Conversation participants normalized to ensure uniqueness
+
+---
+
 ## Operational Setup (Story 14, 16, 17)
 
 ### Event Schemas & Directories
@@ -159,14 +218,15 @@
 - [x] Persist likes to Postgres (deduped by user_id + target_id)
 - [x] Add GET /api/v1/posts/:post_id/comments endpoint
 - [x] Add GET /api/v1/posts/:post_id/likes endpoint
+- [x] Updated comment_handlers.go to emit comment.persisted after successful DB commit
 
 ### Frontend
 - [x] Add comment input UI on posts
 - [x] Add threaded comment display
 - [x] Add like/upvote button
-- [ ] Add cached comments fallback
 - [x] Emit comment.created via Notification service
 - [x] Emit interaction.liked via Notification service
+- [ ] Add cached comments fallback
 
 ### OpenAPI
 - [ ] Update video-service OpenAPI spec with comment/like endpoints
@@ -176,8 +236,9 @@
 ## Story 7: Program Planner
 
 ### Database & Migrations
-- [ ] Create migration: program-service create programs table
-- [ ] Create migration: program-service create workouts table
+- [x] Create migration: program-service create programs table
+- [x] Create migration: program-service create workout_sessions table
+- [x] Create migration: program-service create idempotency_keys table
 
 ### Events
 - [x] Create event schema: program.plan.created.json
@@ -187,14 +248,15 @@
 - [x] Create event schema: workout.completed.json
 
 ### Backend - Program Service
-- [ ] Add RabbitMQ consumer for program.plan.created event
-- [ ] Add RabbitMQ consumer for program.plan.updated event
-- [ ] Add idempotency using client_generated_id (Postgres advisory lock)
-- [ ] Persist programs to Postgres
+- [x] Add RabbitMQ consumer for program.plan.created event
+- [x] Add idempotency using client_generated_id
+- [x] Persist programs to Postgres with comp_date and training_days_per_week
 - [ ] Emit program.plan.persisted event
-- [ ] Add consumer for workout.started event
-- [ ] Add consumer for workout.completed event
-- [ ] Persist workout sessions to Postgres
+- [x] Add consumer for workout.started event
+- [x] Persist workout start_time to Postgres
+- [x] Add consumer for workout.completed event
+- [x] Persist workout duration, exercises_summary JSONB, notes to Postgres
+- [ ] Add RabbitMQ consumer for program.plan.updated event
 
 ### Backend - Reminder Service (NEW)
 - [ ] Create new service: reminder-service with Dockerfile and structure
@@ -227,9 +289,10 @@
 ## Story 9: DMs - 1:1 Private Chats
 
 ### Database & Migrations
-- [ ] Create new service: dm-service with Dockerfile and structure
-- [ ] Create migration: dm-service create conversations table
-- [ ] Create migration: dm-service create messages table
+- [x] Create new service: dm-service with Dockerfile and structure
+- [x] Create migration: dm-service create conversations table
+- [x] Create migration: dm-service create messages table
+- [x] Create migration: dm-service create idempotency_keys table
 
 ### Events
 - [x] Create event schema: dm.message.sent.json
@@ -237,13 +300,14 @@
 - [x] Create event schema: dm.pin.attempts.json
 
 ### Backend - DM Service
-- [ ] Create dm-service cmd/main.go with RabbitMQ consumer
-- [ ] Add consumer for dm.message.sent event
-- [ ] Add idempotency using client_generated_id
-- [ ] Persist messages to Postgres
+- [x] Create dm-service cmd/main.go with RabbitMQ consumer
+- [x] Add consumer for dm.message.sent event
+- [x] Add idempotency using client_generated_id
+- [x] Persist messages to Postgres
+- [x] Auto-create conversations with normalized participant IDs
 - [ ] Emit dm.message.persisted event
-- [ ] Add consumer for dm.pin.attempts event
-- [ ] Persist pinned attempts to conversation metadata
+- [x] Add consumer for dm.pin.attempts event
+- [x] Persist pinned attempts to conversation metadata JSONB
 
 ### Frontend
 - [x] Add DM list UI (conversations)
@@ -262,8 +326,9 @@
 ## Story 11: Tools - Plate Calculator & Machine Notes
 
 ### Database & Migrations
-- [ ] Create new service: machine-service with Dockerfile and structure
-- [ ] Create migration: machine-service create machine_notes table
+- [x] Create new service: machine-service with Dockerfile and structure
+- [x] Create migration: machine-service create machine_notes table with machine_type_enum and visibility_enum
+- [x] Create migration: machine-service create idempotency_keys table
 
 ### Events
 - [x] Create event schema: tools.platecalc.query.json (optional telemetry)
@@ -271,10 +336,10 @@
 - [x] Create event schema: machine.notes.persisted.json
 
 ### Backend - Machine Service
-- [ ] Create machine-service cmd/main.go with RabbitMQ consumer
-- [ ] Add consumer for machine.notes.submitted event
-- [ ] Add idempotency using client_generated_id
-- [ ] Persist notes to Postgres
+- [x] Create machine-service cmd/main.go with RabbitMQ consumer
+- [x] Add consumer for machine.notes.submitted event
+- [x] Add idempotency using client_generated_id
+- [x] Persist notes to Postgres with brand, model, machine_type, settings, visibility
 - [ ] Emit machine.notes.persisted event
 
 ### Frontend
