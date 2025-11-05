@@ -10,6 +10,9 @@ resources:
   - program-service.yaml
   - coach-service.yaml
   - notification-service.yaml
+  - dm-service.yaml
+  - machine-service.yaml
+  - reminder-service.yaml
   - frontend.yaml
   - postgres.yaml
   - valkey.yaml
@@ -39,6 +42,15 @@ images:
     newTag: latest
   - name: notification-service
     newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/notification-service
+    newTag: latest
+  - name: dm-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/dm-service
+    newTag: latest
+  - name: machine-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/machine-service
+    newTag: latest
+  - name: reminder-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/reminder-service
     newTag: latest
   - name: frontend
     newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend

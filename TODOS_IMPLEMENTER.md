@@ -334,7 +334,7 @@
 - [x] Add idempotency using client_generated_id
 - [x] Persist messages to Postgres
 - [x] Auto-create conversations with normalized participant IDs
-- [ ] Emit dm.message.persisted event
+- [x] Emit dm.message.persisted event
 - [x] Add consumer for dm.pin.attempts event
 - [x] Persist pinned attempts to conversation metadata JSONB
 
@@ -369,7 +369,7 @@
 - [x] Add consumer for machine.notes.submitted event
 - [x] Add idempotency using client_generated_id
 - [x] Persist notes to Postgres with brand, model, machine_type, settings, visibility
-- [ ] Emit machine.notes.persisted event
+- [x] Emit machine.notes.persisted event
 
 ### Frontend
 - [x] Add plate calculator UI (client-side logic)
@@ -522,15 +522,24 @@
 
 ---
 
+## CI/CD & GitHub Actions
+
+### GitHub Actions
+- [x] Update .github/workflows/ci.yml matrix to include dm-service, machine-service, reminder-service
+- [x] Docker images will be built and pushed to GHCR for all new services
+
+---
+
 ## Deployment & K8s
 
 ### Kubernetes Manifests
+- [x] Add k8s deployment for dm-service (port 8084)
+- [x] Add k8s deployment for machine-service (port 8085)
+- [x] Add k8s deployment for reminder-service (port 8086)
+- [x] Update k8s/base/kustomization.yaml with new services
+- [x] Add image mappings for dm-service, machine-service, reminder-service to GHCR
 - [ ] Update k8s deployment for video-service (add consumer workers)
-- [ ] Add k8s deployment for dm-service
-- [ ] Add k8s deployment for reminder-service
-- [ ] Add k8s deployment for machine-service
 - [ ] Add k8s deployment for ai-agent-service (stub)
-- [ ] Update k8s/base/kustomization.yaml with new services
 - [ ] Update infrastructure/helm.tf with new services
 
 ---

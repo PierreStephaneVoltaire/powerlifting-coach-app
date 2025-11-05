@@ -22,7 +22,7 @@ jobs:
     
     strategy:
       matrix:
-        service: [auth-service, user-service, video-service, settings-service, program-service, coach-service, notification-service, frontend]
+        service: [auth-service, user-service, video-service, settings-service, program-service, coach-service, notification-service, dm-service, machine-service, reminder-service, frontend]
     
     steps:
     - uses: actions/checkout@v4
