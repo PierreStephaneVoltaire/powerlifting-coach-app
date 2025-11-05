@@ -16,6 +16,7 @@ import (
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/handlers"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
+	"github.com/powerlifting-coach-app/program-service/internal/queue"
 	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -40,6 +41,28 @@ func main() {
 
 	if err := db.RunMigrations("./migrations"); err != nil {
 		log.Fatal().Err(err).Msg("Failed to run migrations")
+	}
+
+	eventConsumer, err := queue.NewEventConsumer(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create event consumer")
+	}
+	defer eventConsumer.Close()
+
+	programEventHandlers := handlers.NewProgramEventHandlers(db.DB)
+
+	eventConsumer.RegisterHandler("program.plan.created", programEventHandlers.HandleProgramPlanCreated)
+	eventConsumer.RegisterHandler("workout.started", programEventHandlers.HandleWorkoutStarted)
+	eventConsumer.RegisterHandler("workout.completed", programEventHandlers.HandleWorkoutCompleted)
+
+	routingKeys := []string{
+		"program.plan.created",
+		"workout.started",
+		"workout.completed",
+	}
+
+	if err := eventConsumer.StartConsuming("program-service.events", routingKeys); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start event consumer")
 	}
 
 	programRepo := repository.NewProgramRepository(db.DB)
