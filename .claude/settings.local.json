@@ -43,7 +43,8 @@
       "Bash(docker pull:*)",
       "Bash(kubectl exec:*)",
       "Bash(npm run build:*)",
-      "Bash(kubectl delete:*)"
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl patch:*)"
     ],
     "deny": [],
     "ask": []
