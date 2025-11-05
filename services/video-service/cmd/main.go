@@ -53,9 +53,36 @@ func main() {
 	}
 	defer queueClient.Close()
 
+	eventConsumer, err := queue.NewEventConsumer(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create event consumer")
+	}
+	defer eventConsumer.Close()
+
+	feedHandlers := handlers.NewFeedHandlers(db.DB)
+	commentHandlers := handlers.NewCommentHandlers(db.DB)
+
+	eventConsumer.RegisterHandler("feed.post.created", feedHandlers.HandleFeedPostCreated)
+	eventConsumer.RegisterHandler("feed.post.updated", feedHandlers.HandleFeedPostUpdated)
+	eventConsumer.RegisterHandler("feed.post.deleted", feedHandlers.HandleFeedPostDeleted)
+	eventConsumer.RegisterHandler("comment.created", commentHandlers.HandleCommentCreated)
+	eventConsumer.RegisterHandler("interaction.liked", commentHandlers.HandleInteractionLiked)
+
+	routingKeys := []string{
+		"feed.post.created",
+		"feed.post.updated",
+		"feed.post.deleted",
+		"comment.created",
+		"interaction.liked",
+	}
+
+	if err := eventConsumer.StartConsuming("video-service.events", routingKeys); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start event consumer")
+	}
+
 	videoRepo := repository.NewVideoRepository(db.DB)
 	videoHandlers := handlers.NewVideoHandlers(
-		videoRepo, spacesClient, queueClient, 
+		videoRepo, spacesClient, queueClient,
 		cfg.MaxFileSize, cfg.AllowedExtensions,
 	)
 
