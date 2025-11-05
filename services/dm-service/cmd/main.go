@@ -45,7 +45,7 @@ func main() {
 	}
 	defer eventConsumer.Close()
 
-	dmEventHandlers := handlers.NewDMEventHandlers(db.DB)
+	dmEventHandlers := handlers.NewDMEventHandlers(db.DB, eventConsumer)
 
 	eventConsumer.RegisterHandler("dm.message.sent", dmEventHandlers.HandleDMMessageSent)
 	eventConsumer.RegisterHandler("dm.pin.attempts", dmEventHandlers.HandleDMPinAttempts)

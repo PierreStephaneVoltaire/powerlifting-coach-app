@@ -49,7 +49,7 @@ func main() {
 	}
 	defer eventConsumer.Close()
 
-	programEventHandlers := handlers.NewProgramEventHandlers(db.DB)
+	programEventHandlers := handlers.NewProgramEventHandlers(db.DB, eventConsumer)
 
 	eventConsumer.RegisterHandler("program.plan.created", programEventHandlers.HandleProgramPlanCreated)
 	eventConsumer.RegisterHandler("workout.started", programEventHandlers.HandleWorkoutStarted)

@@ -10,12 +10,20 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type DMEventHandlers struct {
-	db *sql.DB
+type EventPublisher interface {
+	PublishEvent(routingKey string, event interface{}) error
 }
 
-func NewDMEventHandlers(db *sql.DB) *DMEventHandlers {
-	return &DMEventHandlers{db: db}
+type DMEventHandlers struct {
+	db        *sql.DB
+	publisher EventPublisher
+}
+
+func NewDMEventHandlers(db *sql.DB, publisher EventPublisher) *DMEventHandlers {
+	return &DMEventHandlers{
+		db:        db,
+		publisher: publisher,
+	}
 }
 
 type DMMessageSentEvent struct {
@@ -124,6 +132,27 @@ func (h *DMEventHandlers) HandleDMMessageSent(ctx context.Context, payload []byt
 		Str("conversation_id", conversationID.String()).
 		Str("sender_id", event.Data.SenderID).
 		Msg("DM message persisted")
+
+	if h.publisher != nil {
+		persistedEvent := map[string]interface{}{
+			"schema_version":      "1.0.0",
+			"event_type":          "dm.message.persisted",
+			"client_generated_id": event.ClientGeneratedID,
+			"user_id":             event.UserID,
+			"timestamp":           event.Timestamp,
+			"source_service":      "dm-service",
+			"data": map[string]interface{}{
+				"message_id":      messageID.String(),
+				"conversation_id": conversationID.String(),
+				"sender_id":       event.Data.SenderID,
+				"recipient_id":    event.Data.RecipientID,
+				"message_body":    event.Data.MessageBody,
+			},
+		}
+		if err := h.publisher.PublishEvent("dm.message.persisted", persistedEvent); err != nil {
+			log.Error().Err(err).Msg("Failed to publish dm.message.persisted event")
+		}
+	}
 
 	return nil
 }

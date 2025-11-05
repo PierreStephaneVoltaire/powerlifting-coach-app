@@ -45,7 +45,7 @@ func main() {
 	}
 	defer eventConsumer.Close()
 
-	machineEventHandlers := handlers.NewMachineEventHandlers(db.DB)
+	machineEventHandlers := handlers.NewMachineEventHandlers(db.DB, eventConsumer)
 
 	eventConsumer.RegisterHandler("machine.notes.submitted", machineEventHandlers.HandleMachineNotesSubmitted)
 

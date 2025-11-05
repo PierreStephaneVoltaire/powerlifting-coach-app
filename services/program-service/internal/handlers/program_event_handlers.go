@@ -11,12 +11,20 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type ProgramEventHandlers struct {
-	db *sql.DB
+type EventPublisher interface {
+	PublishEvent(routingKey string, event interface{}) error
 }
 
-func NewProgramEventHandlers(db *sql.DB) *ProgramEventHandlers {
-	return &ProgramEventHandlers{db: db}
+type ProgramEventHandlers struct {
+	db        *sql.DB
+	publisher EventPublisher
+}
+
+func NewProgramEventHandlers(db *sql.DB, publisher EventPublisher) *ProgramEventHandlers {
+	return &ProgramEventHandlers{
+		db:        db,
+		publisher: publisher,
+	}
 }
 
 type ProgramPlanCreatedEvent struct {
@@ -100,6 +108,28 @@ func (h *ProgramEventHandlers) HandleProgramPlanCreated(ctx context.Context, pay
 		Str("user_id", event.UserID).
 		Str("name", event.Data.Name).
 		Msg("Program plan created")
+
+	if h.publisher != nil {
+		persistedEvent := map[string]interface{}{
+			"schema_version":      "1.0.0",
+			"event_type":          "program.plan.persisted",
+			"client_generated_id": event.ClientGeneratedID,
+			"user_id":             event.UserID,
+			"timestamp":           time.Now().UTC().Format(time.RFC3339),
+			"source_service":      "program-service",
+			"data": map[string]interface{}{
+				"program_id":            programID.String(),
+				"name":                  event.Data.Name,
+				"start_date":            event.Data.StartDate,
+				"comp_date":             event.Data.CompDate,
+				"training_days_per_week": event.Data.TrainingDaysPerWeek,
+				"notes":                 event.Data.Notes,
+			},
+		}
+		if err := h.publisher.PublishEvent("program.plan.persisted", persistedEvent); err != nil {
+			log.Error().Err(err).Msg("Failed to publish program.plan.persisted event")
+		}
+	}
 
 	return nil
 }

@@ -10,12 +10,20 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type MachineEventHandlers struct {
-	db *sql.DB
+type EventPublisher interface {
+	PublishEvent(routingKey string, event interface{}) error
 }
 
-func NewMachineEventHandlers(db *sql.DB) *MachineEventHandlers {
-	return &MachineEventHandlers{db: db}
+type MachineEventHandlers struct {
+	db        *sql.DB
+	publisher EventPublisher
+}
+
+func NewMachineEventHandlers(db *sql.DB, publisher EventPublisher) *MachineEventHandlers {
+	return &MachineEventHandlers{
+		db:        db,
+		publisher: publisher,
+	}
 }
 
 type MachineNotesSubmittedEvent struct {
@@ -93,6 +101,28 @@ func (h *MachineEventHandlers) HandleMachineNotesSubmitted(ctx context.Context, 
 		Str("user_id", event.UserID).
 		Str("machine_type", event.Data.MachineType).
 		Msg("Machine note persisted")
+
+	if h.publisher != nil {
+		persistedEvent := map[string]interface{}{
+			"schema_version":      "1.0.0",
+			"event_type":          "machine.notes.persisted",
+			"client_generated_id": event.ClientGeneratedID,
+			"user_id":             event.UserID,
+			"timestamp":           event.Timestamp,
+			"source_service":      "machine-service",
+			"data": map[string]interface{}{
+				"note_id":      noteID.String(),
+				"brand":        event.Data.Brand,
+				"model":        event.Data.Model,
+				"machine_type": event.Data.MachineType,
+				"settings":     event.Data.Settings,
+				"visibility":   event.Data.Visibility,
+			},
+		}
+		if err := h.publisher.PublishEvent("machine.notes.persisted", persistedEvent); err != nil {
+			log.Error().Err(err).Msg("Failed to publish machine.notes.persisted event")
+		}
+	}
 
 	return nil
 }

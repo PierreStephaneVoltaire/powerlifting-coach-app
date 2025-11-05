@@ -166,6 +166,31 @@ func (c *EventConsumer) handleMessage(msg amqp.Delivery) {
 		Msg("Event processed successfully")
 }
 
+func (c *EventConsumer) PublishEvent(routingKey string, event interface{}) error {
+	body, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+
+	err = c.channel.Publish(
+		AppEventsExchange,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Body:         body,
+			DeliveryMode: amqp.Persistent,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to publish event: %w", err)
+	}
+
+	log.Info().Str("routing_key", routingKey).Msg("Event published")
+	return nil
+}
+
 func (c *EventConsumer) Close() {
 	if c.channel != nil {
 		c.channel.Close()
