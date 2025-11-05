@@ -332,8 +332,8 @@
 
 ### Shared Library
 - [x] Add shared/utils/idempotency.go with deduplication helper
-- [>] Add shared/utils/locks.go with Postgres advisory lock wrapper
-- [ ] Add shared/middleware/idempotency.go middleware for event consumers
+- [x] Add shared/utils/locks.go with Postgres advisory lock wrapper
+- [>] Add shared/middleware/idempotency.go middleware for event consumers
 
 ### Services Updates
 - [ ] Update settings-service consumer to use idempotency middleware
