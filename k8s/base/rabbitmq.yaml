@@ -50,6 +50,7 @@ spec:
             - status
           initialDelaySeconds: 60
           periodSeconds: 30
+          timeoutSeconds: 10
         readinessProbe:
           exec:
             command:
@@ -57,6 +58,7 @@ spec:
             - ping
           initialDelaySeconds: 20
           periodSeconds: 10
+          timeoutSeconds: 5
       volumes:
       - name: rabbitmq-storage
         persistentVolumeClaim:

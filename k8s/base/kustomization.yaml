@@ -16,7 +16,6 @@ resources:
   - rabbitmq.yaml
   - keycloak.yaml
   - litellm.yaml
-  - openwebui.yaml
   - ingress.yaml
 
 images:
