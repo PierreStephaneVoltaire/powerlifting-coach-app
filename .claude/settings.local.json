@@ -40,7 +40,8 @@
       "Bash(terraform init:*)",
       "Bash(kubectl describe:*)",
       "WebFetch(domain:quay.io)",
-      "Bash(docker pull:*)"
+      "Bash(docker pull:*)",
+      "Bash(kubectl exec:*)"
     ],
     "deny": [],
     "ask": []
