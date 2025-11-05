@@ -88,8 +88,8 @@
 
 ### Events
 - [x] Create event schema: feed.post.created.json
-- [>] Create event schema: feed.post.updated.json
-- [ ] Create event schema: feed.post.deleted.json
+- [x] Create event schema: feed.post.updated.json
+- [x] Create event schema: feed.post.deleted.json
 
 ### Backend - Feed Service
 - [ ] Create feed-service cmd/main.go with RabbitMQ consumer
