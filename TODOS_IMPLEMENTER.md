@@ -292,7 +292,7 @@
 - [x] Add consumer for program.plan.persisted to schedule reminders
 - [x] Add scheduler to publish reminder.sent events when due
 - [x] Create reminders at 1 week, 2 weeks, and 4 weeks before competition
-- [ ] Add consumer for program.plan.updated to update reminders
+- [x] Add consumer for program.plan.updated to update reminders
 
 ### Frontend
 - [x] Add program planner UI (create/edit plan)
@@ -455,10 +455,10 @@
 ## Story 17: Pod Health Checks & Log Policy
 
 ### Scripts
-- [ ] Create /scripts/pod-health-check.sh script
-- [ ] Add kubectl get pods check
-- [ ] Add kubectl logs check for crashloop pods
-- [ ] Append results to infra-health.log
+- [x] Create /scripts/pod-health-check.sh script
+- [x] Add kubectl get pods check
+- [x] Add kubectl logs check for crashloop pods
+- [x] Append results to infra-health.log
 
 ### Events
 - [ ] Create event schema: infra.pods.issue_detected.json
