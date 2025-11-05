@@ -48,9 +48,11 @@ func main() {
 	reminderEventHandlers := handlers.NewReminderEventHandlers(db.DB, eventConsumer)
 
 	eventConsumer.RegisterHandler("program.plan.persisted", reminderEventHandlers.HandleProgramPlanPersisted)
+	eventConsumer.RegisterHandler("program.plan.updated", reminderEventHandlers.HandleProgramPlanUpdated)
 
 	routingKeys := []string{
 		"program.plan.persisted",
+		"program.plan.updated",
 	}
 
 	if err := eventConsumer.StartConsuming("reminder-service.events", routingKeys); err != nil {
