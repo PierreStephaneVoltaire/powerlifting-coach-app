@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserSettingsSubmitted",
+  "description": "Event emitted when user submits onboarding settings form",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "user.settings.submitted"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "notification-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["weight", "age", "training_days_per_week"],
+      "properties": {
+        "weight": {
+          "type": "object",
+          "required": ["value", "unit"],
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["kg", "lb"]}
+          }
+        },
+        "age": {"type": "integer", "minimum": 13, "maximum": 120},
+        "target_weight_class": {"type": "string"},
+        "weeks_until_comp": {"type": "integer", "minimum": 0},
+        "squat_goal": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["kg", "lb"]}
+          }
+        },
+        "bench_goal": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["kg", "lb"]}
+          }
+        },
+        "dead_goal": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["kg", "lb"]}
+          }
+        },
+        "most_important_lift": {"type": "string", "enum": ["squat", "bench", "deadlift"]},
+        "least_important_lift": {"type": "string", "enum": ["squat", "bench", "deadlift"]},
+        "recovery_rating_squat": {"type": "integer", "minimum": 1, "maximum": 5},
+        "recovery_rating_bench": {"type": "integer", "minimum": 1, "maximum": 5},
+        "recovery_rating_dead": {"type": "integer", "minimum": 1, "maximum": 5},
+        "training_days_per_week": {"type": "integer", "minimum": 1, "maximum": 7},
+        "session_length_minutes": {"type": "integer", "minimum": 15, "maximum": 300},
+        "weight_plan": {"type": "string", "enum": ["gain", "lose", "maintain"]},
+        "form_issues": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "injuries": {"type": "string"},
+        "evaluate_feasibility": {"type": "boolean"},
+        "federation": {"type": "string"},
+        "knee_sleeve": {"type": "string"},
+        "deadlift_style": {"type": "string", "enum": ["sumo", "conventional"]},
+        "squat_stance": {"type": "string", "enum": ["wide", "narrow", "medium"]},
+        "add_per_month": {"type": "string", "enum": ["2.5kg", "5kg", "none"]},
+        "volume_preference": {"type": "string", "enum": ["low", "high", "medium"]},
+        "recovers_from_heavy_deads": {"type": "boolean"},
+        "height": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "unit": {"type": "string", "enum": ["cm", "in"]}
+          }
+        },
+        "past_competitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date_range": {"type": "string"},
+              "squat_attempts": {"type": "array", "items": {"type": "number"}},
+              "bench_attempts": {"type": "array", "items": {"type": "number"}},
+              "deadlift_attempts": {"type": "array", "items": {"type": "number"}},
+              "total": {"type": "number"}
+            }
+          }
+        },
+        "feed_visibility": {"type": "string", "enum": ["public", "passcode"]},
+        "passcode": {"type": "string", "minLength": 4}
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "user.settings.submitted",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T14:35:00Z",
+    "source_service": "frontend",
+    "data": {
+      "weight": {"value": 93.5, "unit": "kg"},
+      "age": 28,
+      "target_weight_class": "93kg",
+      "weeks_until_comp": 16,
+      "squat_goal": {"value": 200, "unit": "kg"},
+      "bench_goal": {"value": 140, "unit": "kg"},
+      "dead_goal": {"value": 230, "unit": "kg"},
+      "most_important_lift": "squat",
+      "least_important_lift": "bench",
+      "recovery_rating_squat": 4,
+      "recovery_rating_bench": 5,
+      "recovery_rating_dead": 3,
+      "training_days_per_week": 4,
+      "session_length_minutes": 90,
+      "weight_plan": "maintain",
+      "form_issues": ["squat depth", "bench path"],
+      "injuries": "Minor lower back strain",
+      "evaluate_feasibility": true,
+      "federation": "IPF",
+      "knee_sleeve": "SBD",
+      "deadlift_style": "conventional",
+      "squat_stance": "medium",
+      "add_per_month": "2.5kg",
+      "volume_preference": "medium",
+      "recovers_from_heavy_deads": true,
+      "height": {"value": 180, "unit": "cm"},
+      "past_competitions": [
+        {
+          "date_range": "2024-06",
+          "squat_attempts": [180, 190, 195],
+          "bench_attempts": [120, 127.5, 130],
+          "deadlift_attempts": [210, 220, 227.5],
+          "total": 552.5
+        }
+      ],
+      "feed_visibility": "public"
+    }
+  }
+}
