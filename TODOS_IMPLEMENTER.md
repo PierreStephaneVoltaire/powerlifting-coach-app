@@ -246,12 +246,12 @@
 - [ ] Persist pinned attempts to conversation metadata
 
 ### Frontend
-- [ ] Add DM list UI (conversations)
-- [ ] Add DM chat UI (1:1 messages)
-- [ ] Add pin attempts button
+- [x] Add DM list UI (conversations)
+- [x] Add DM chat UI (1:1 messages)
+- [x] Add pin attempts button
 - [ ] Add media attachment support (reuse media upload)
-- [ ] Emit dm.message.sent via Notification service
-- [ ] Emit dm.pin.attempts via Notification service
+- [x] Emit dm.message.sent via Notification service
+- [x] Emit dm.pin.attempts via Notification service
 - [ ] Add cached messages fallback
 
 ### OpenAPI
