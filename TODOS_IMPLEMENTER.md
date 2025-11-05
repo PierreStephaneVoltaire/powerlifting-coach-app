@@ -143,7 +143,7 @@
 ## Story 6: Comments & Interactions (Consolidated into video-service)
 
 ### Database & Migrations
-- [ ] Create migration: video-service add comments and likes tables
+- [x] Create migration: video-service add comments and likes tables
 
 ### Events
 - [x] Create event schema: comment.created.json
