@@ -59,8 +59,15 @@ func main() {
 	}
 	defer eventConsumer.Close()
 
+	eventPublisher, err := queue.NewRabbitMQClient(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create event publisher")
+	}
+	defer eventPublisher.Close()
+
 	feedHandlers := handlers.NewFeedHandlers(db.DB)
 	commentHandlers := handlers.NewCommentHandlers(db.DB)
+	commentHandlers.SetPublisher(eventPublisher)
 
 	eventConsumer.RegisterHandler("feed.post.created", feedHandlers.HandleFeedPostCreated)
 	eventConsumer.RegisterHandler("feed.post.updated", feedHandlers.HandleFeedPostUpdated)

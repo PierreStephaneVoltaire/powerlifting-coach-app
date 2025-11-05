@@ -13,12 +13,21 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type EventPublisher interface {
+	PublishEvent(routingKey string, event interface{}) error
+}
+
 type CommentHandlers struct {
-	db *sql.DB
+	db        *sql.DB
+	publisher EventPublisher
 }
 
 func NewCommentHandlers(db *sql.DB) *CommentHandlers {
-	return &CommentHandlers{db: db}
+	return &CommentHandlers{db: db, publisher: nil}
+}
+
+func (h *CommentHandlers) SetPublisher(publisher EventPublisher) {
+	h.publisher = publisher
 }
 
 type CommentCreatedEvent struct {
@@ -93,6 +102,27 @@ func (h *CommentHandlers) HandleCommentCreated(ctx context.Context, payload []by
 		Str("post_id", event.Data.PostID).
 		Str("user_id", event.UserID).
 		Msg("Comment created")
+
+	if h.publisher != nil {
+		persistedEvent := map[string]interface{}{
+			"schema_version":      "1.0.0",
+			"event_type":          "comment.persisted",
+			"client_generated_id": event.ClientGeneratedID,
+			"user_id":             event.UserID,
+			"timestamp":           time.Now().UTC().Format(time.RFC3339),
+			"source_service":      "video-service",
+			"data": map[string]interface{}{
+				"comment_id":        commentID.String(),
+				"post_id":           event.Data.PostID,
+				"parent_comment_id": event.Data.ParentCommentID,
+				"comment_text":      event.Data.CommentText,
+			},
+		}
+
+		if err := h.publisher.PublishEvent("comment.persisted", persistedEvent); err != nil {
+			log.Error().Err(err).Msg("Failed to publish comment.persisted event")
+		}
+	}
 
 	return nil
 }

@@ -154,7 +154,7 @@
 - [x] Add RabbitMQ consumer for comment.created event
 - [x] Add idempotency using client_generated_id
 - [x] Persist comments to Postgres (threaded with parent_comment_id)
-- [ ] Emit comment.persisted event
+- [x] Emit comment.persisted event
 - [x] Add consumer for interaction.liked event
 - [x] Persist likes to Postgres (deduped by user_id + target_id)
 - [x] Add GET /api/v1/posts/:post_id/comments endpoint
