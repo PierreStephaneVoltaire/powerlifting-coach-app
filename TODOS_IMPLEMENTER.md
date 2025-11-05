@@ -16,8 +16,8 @@
 - [x] Create /ai/templates/ directory for AI prompt templates
 
 ### Infrastructure Logging
-- [>] Create infra-health.log at repo root
-- [ ] Add pod health check script in /scripts/pod-health-check.sh
+- [x] Create infra-health.log at repo root
+- [>] Add pod health check script in /scripts/pod-health-check.sh
 
 ---
 
