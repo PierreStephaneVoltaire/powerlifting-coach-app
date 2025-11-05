@@ -91,9 +91,9 @@
 - [x] Create event schema: feed.post.deleted.json
 
 ### Backend - Video Service (Feed functionality)
-- [ ] Add RabbitMQ consumer for feed.post.created event
-- [ ] Add RabbitMQ consumer for feed.post.updated event
-- [ ] Add RabbitMQ consumer for feed.post.deleted event
+- [x] Add RabbitMQ consumer for feed.post.created event
+- [x] Add RabbitMQ consumer for feed.post.updated event
+- [x] Add RabbitMQ consumer for feed.post.deleted event
 - [ ] Persist feed entries to Postgres (denormalized)
 - [ ] Add GET /api/v1/feed endpoint with cursor pagination
 - [ ] Add GET /api/v1/feed/:post_id endpoint
@@ -151,12 +151,12 @@
 - [x] Create event schema: interaction.liked.json
 
 ### Backend - Video Service (Comments & Likes)
-- [ ] Add RabbitMQ consumer for comment.created event
-- [ ] Add idempotency using client_generated_id
-- [ ] Persist comments to Postgres (threaded with parent_comment_id)
+- [x] Add RabbitMQ consumer for comment.created event
+- [x] Add idempotency using client_generated_id
+- [x] Persist comments to Postgres (threaded with parent_comment_id)
 - [ ] Emit comment.persisted event
-- [ ] Add consumer for interaction.liked event
-- [ ] Persist likes to Postgres (deduped by user_id + target_id)
+- [x] Add consumer for interaction.liked event
+- [x] Persist likes to Postgres (deduped by user_id + target_id)
 - [ ] Add GET /api/v1/posts/:post_id/comments endpoint
 - [ ] Add GET /api/v1/posts/:post_id/likes endpoint
 
