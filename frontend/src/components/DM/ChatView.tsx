@@ -30,8 +30,43 @@ export const ChatView: React.FC = () => {
   const [recipientId] = useState('recipient-id');
 
   useEffect(() => {
+    if (conversationId) {
+      loadMessages();
+    }
+  }, [conversationId]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const loadMessages = async () => {
+    if (!conversationId) return;
+
+    try {
+      const response = await apiClient.getConversationMessages(conversationId);
+      setMessages(response.messages || []);
+
+      const cacheKey = `dm_messages_${conversationId}`;
+      localStorage.setItem(cacheKey, JSON.stringify({
+        messages: response.messages || [],
+        timestamp: Date.now(),
+      }));
+    } catch (err) {
+      console.error('Failed to load messages', err);
+
+      const cacheKey = `dm_messages_${conversationId}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const { messages: cachedMessages } = JSON.parse(cached);
+          setMessages(cachedMessages);
+          console.info('Loaded messages from cache');
+        } catch (parseErr) {
+          console.error('Failed to parse cached messages', parseErr);
+        }
+      }
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

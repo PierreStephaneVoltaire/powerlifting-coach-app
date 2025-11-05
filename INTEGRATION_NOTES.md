@@ -174,3 +174,179 @@ Log all events to stdout as JSON:
 ```
 
 Use centralized log aggregation (e.g., Loki, Elasticsearch) in production.
+
+## Local Development Setup
+
+### Prerequisites
+- Docker and Docker Compose
+- PostgreSQL client
+- Go 1.21+
+- Node.js 18+
+- kubectl (for K8s testing)
+
+### Starting Local Services
+
+```bash
+# Start RabbitMQ
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+# Start PostgreSQL
+docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15
+
+# Create databases for each service
+psql -h localhost -U postgres -c "CREATE DATABASE auth_db;"
+psql -h localhost -U postgres -c "CREATE DATABASE user_db;"
+psql -h localhost -U postgres -c "CREATE DATABASE video_db;"
+psql -h localhost -U postgres -c "CREATE DATABASE settings_db;"
+psql -h localhost -U postgres -c "CREATE DATABASE program_db;"
+psql -h localhost -U postgres -c "CREATE DATABASE dm_db;"
+psql -h localhost -U postgres -c "CREATE DATABASE machine_db;"
+psql -h localhost -U postgres -c "CREATE DATABASE reminder_db;"
+```
+
+### Environment Variables
+
+Each service needs these environment variables:
+
+```bash
+export PORT=8080  # varies by service
+export ENVIRONMENT=development
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/service_db
+export RABBITMQ_URL=amqp://guest:guest@localhost:5672/
+export REDIS_URL=localhost:6379
+export AUTH_SERVICE=http://localhost:8080
+export USER_SERVICE=http://localhost:8081
+```
+
+## RabbitMQ Event Simulation
+
+### Using RabbitMQ Management UI
+
+1. Open http://localhost:15672 (guest/guest)
+2. Go to **Exchanges** → `app.events`
+3. Click **Publish message**
+4. Set routing key (e.g., `user.settings.submitted`)
+5. Paste event JSON payload
+6. Click **Publish message**
+
+### Testing Idempotency
+
+```bash
+# Publish same event twice with same client_generated_id
+# Verify only one record in database
+psql -h localhost -U postgres -d program_db -c "SELECT COUNT(*) FROM programs;"
+# Should return 1
+
+# Check idempotency_keys table
+psql -h localhost -U postgres -d program_db -c "SELECT * FROM idempotency_keys;"
+```
+
+### Testing Manual Ack and Requeue
+
+All consumers use manual acknowledgment after successful database commit. If processing fails:
+- Transient errors (DB connection, network): Message is requeued
+- Permanent errors (validation, unmarshal): Message is nack'd without requeue
+
+Test requeue behavior:
+```bash
+# Kill database while processing
+docker stop postgres
+
+# Publish event - will fail and requeue
+# Restart database
+docker start postgres
+
+# Message should process successfully
+```
+
+## Consumer Development Mode
+
+### Running a Single Service
+
+```bash
+cd services/program-service
+go run cmd/main.go
+```
+
+Logs will show:
+- Event handler registration
+- Queue binding confirmation
+- Event processing status
+- Idempotency checks
+
+### Debugging RabbitMQ
+
+```bash
+# List all queues
+rabbitmqctl list_queues
+
+# View messages in queue
+rabbitmqctl list_queues name messages messages_ready messages_unacknowledged
+
+# Check bindings
+rabbitmqctl list_bindings
+```
+
+## Testing Offline Queue (Frontend)
+
+### IndexedDB Inspection
+
+1. Open browser DevTools → Application → IndexedDB
+2. Find `offlineQueue` database
+3. Check `events` object store
+4. Verify events have `retryCount` and `nextRetryAt`
+
+### Exponential Backoff Testing
+
+Events retry with exponential backoff:
+- Retry 1: ~2 seconds
+- Retry 2: ~4 seconds  
+- Retry 3: ~8 seconds
+- Retry 4: ~16 seconds
+- Retry 5: ~32 seconds
+- Max: 60 seconds
+
+After 5 retries, events remain queued for manual retry.
+
+## K8s Pod Health Monitoring
+
+### Check Pod Status
+```bash
+kubectl get pods -n app
+kubectl describe pod program-service-xxx -n app
+kubectl logs program-service-xxx -n app --tail=100
+```
+
+### Run Health Check Script
+```bash
+./scripts/pod-health-check.sh
+cat infra-health.log
+```
+
+## Common Issues
+
+### Events Not Consuming
+**Check:**
+1. RabbitMQ connection: `rabbitmqctl list_connections`
+2. Queue bindings: `rabbitmqctl list_bindings`
+3. Service logs: `docker logs <service>`
+4. Routing key matches event_type
+
+### Duplicate Processing
+**Check:**
+1. Idempotency keys in database
+2. client_generated_id is unique
+3. Transaction commits before ack
+
+### Messages Stuck in Queue
+**Check:**
+1. Consumer prefetch settings (QoS = 10)
+2. Processing errors in logs
+3. Database connection issues
+
+## Lock Acquisition/Release Behavior
+
+Postgres advisory locks are NOT currently implemented. All services use database-level idempotency via `idempotency_keys` table with unique constraint on `client_generated_id`.
+
+This provides idempotency across multiple replicas without requiring advisory locks. The unique constraint ensures only one consumer can insert the idempotency key, and losers get a constraint violation error.
+

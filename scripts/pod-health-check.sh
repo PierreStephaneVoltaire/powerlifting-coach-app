@@ -1,55 +1,97 @@
 #!/bin/bash
 
+# Pod Health Check Script
+# Checks Kubernetes pod status and logs issues to infra-health.log
+
 set -e
 
-TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+NAMESPACE="app"
 LOG_FILE="infra-health.log"
-NAMESPACES=("default" "powerlifting-coach")
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-echo "Running pod health check at $TIMESTAMP" >&2
+echo "=== Pod Health Check - $TIMESTAMP ===" >> "$LOG_FILE"
 
-check_pods() {
-    local namespace=$1
-    local all_pods=$(kubectl get pods -n "$namespace" -o json 2>/dev/null || echo '{"items":[]}')
+# Check if kubectl is available
+if ! command -v kubectl &> /dev/null; then
+    echo "ERROR: kubectl not found. Please install kubectl." | tee -a "$LOG_FILE"
+    exit 1
+fi
 
-    local not_ready=$(echo "$all_pods" | jq -r '.items[] | select(.status.phase != "Running" or (.status.conditions[] | select(.type == "Ready" and .status != "True"))) | .metadata.name' 2>/dev/null || echo "")
+# Check if namespace exists
+if ! kubectl get namespace "$NAMESPACE" &> /dev/null; then
+    echo "ERROR: Namespace '$NAMESPACE' does not exist." | tee -a "$LOG_FILE"
+    exit 1
+fi
 
-    local crashloop=$(echo "$all_pods" | jq -r '.items[] | select(.status.containerStatuses[]?.state.waiting.reason == "CrashLoopBackOff") | .metadata.name' 2>/dev/null || echo "")
+echo "Checking pods in namespace: $NAMESPACE" | tee -a "$LOG_FILE"
 
-    if [ -n "$not_ready" ] || [ -n "$crashloop" ]; then
-        local pod_list=()
+# Get all pods
+PODS=$(kubectl get pods -n "$NAMESPACE" -o json)
 
-        while IFS= read -r pod; do
-            [ -z "$pod" ] && continue
-            pod_list+=("\"$pod\"")
+# Check for pods not in Running state
+NOT_RUNNING=$(echo "$PODS" | jq -r '.items[] | select(.status.phase != "Running") | .metadata.name')
 
-            echo "Pod $pod in $namespace is not ready. Fetching logs..." >&2
-            kubectl logs "$pod" -n "$namespace" --tail=50 2>&1 | head -20 >&2 || echo "Failed to fetch logs for $pod" >&2
-        done <<< "$not_ready"
+if [ -n "$NOT_RUNNING" ]; then
+    echo "WARNING: Found pods not in Running state:" | tee -a "$LOG_FILE"
+    echo "$NOT_RUNNING" | tee -a "$LOG_FILE"
 
-        while IFS= read -r pod; do
-            [ -z "$pod" ] && continue
-            if [[ ! " ${pod_list[@]} " =~ " \"$pod\" " ]]; then
-                pod_list+=("\"$pod\"")
-            fi
+    # Get details for each non-running pod
+    for POD in $NOT_RUNNING; do
+        echo "--- Details for $POD ---" >> "$LOG_FILE"
+        kubectl describe pod "$POD" -n "$NAMESPACE" >> "$LOG_FILE" 2>&1
+        echo "" >> "$LOG_FILE"
+    done
+else
+    echo "SUCCESS: All pods are in Running state." | tee -a "$LOG_FILE"
+fi
 
-            echo "Pod $pod in $namespace is in CrashLoopBackOff. Fetching logs..." >&2
-            kubectl logs "$pod" -n "$namespace" --tail=50 2>&1 | head -20 >&2 || echo "Failed to fetch logs for $pod" >&2
-        done <<< "$crashloop"
+# Check for CrashLoopBackOff
+CRASHLOOP=$(echo "$PODS" | jq -r '.items[] | select(.status.containerStatuses[]?.state.waiting?.reason == "CrashLoopBackOff") | .metadata.name')
 
-        local pods_json=$(IFS=,; echo "${pod_list[*]}")
-        echo "{\"timestamp\": \"$TIMESTAMP\", \"level\": \"error\", \"msg\": \"Unhealthy pods detected in namespace $namespace\", \"namespace\": \"$namespace\", \"pods\": [$pods_json]}" >> "$LOG_FILE"
-    else
-        echo "{\"timestamp\": \"$TIMESTAMP\", \"level\": \"info\", \"msg\": \"All pods healthy in namespace $namespace\", \"namespace\": \"$namespace\"}" >> "$LOG_FILE"
-    fi
-}
+if [ -n "$CRASHLOOP" ]; then
+    echo "CRITICAL: Found pods in CrashLoopBackOff:" | tee -a "$LOG_FILE"
+    echo "$CRASHLOOP" | tee -a "$LOG_FILE"
 
-for ns in "${NAMESPACES[@]}"; do
-    if kubectl get namespace "$ns" &>/dev/null; then
-        check_pods "$ns"
-    else
-        echo "{\"timestamp\": \"$TIMESTAMP\", \"level\": \"info\", \"msg\": \"Namespace $ns does not exist, skipping\", \"namespace\": \"$ns\"}" >> "$LOG_FILE"
-    fi
-done
+    # Get logs for crashlooping pods
+    for POD in $CRASHLOOP; do
+        echo "--- Logs for $POD ---" >> "$LOG_FILE"
+        kubectl logs "$POD" -n "$NAMESPACE" --tail=50 >> "$LOG_FILE" 2>&1
+        echo "" >> "$LOG_FILE"
 
-echo "Pod health check complete. Results appended to $LOG_FILE" >&2
+        # Get previous logs if available
+        echo "--- Previous logs for $POD ---" >> "$LOG_FILE"
+        kubectl logs "$POD" -n "$NAMESPACE" --previous --tail=50 >> "$LOG_FILE" 2>&1 || echo "No previous logs available" >> "$LOG_FILE"
+        echo "" >> "$LOG_FILE"
+    done
+fi
+
+# Check pod restarts
+HIGH_RESTARTS=$(echo "$PODS" | jq -r '.items[] | select(.status.containerStatuses[]?.restartCount > 5) | .metadata.name + " (restarts: " + (.status.containerStatuses[0].restartCount | tostring) + ")"')
+
+if [ -n "$HIGH_RESTARTS" ]; then
+    echo "WARNING: Found pods with high restart counts:" | tee -a "$LOG_FILE"
+    echo "$HIGH_RESTARTS" | tee -a "$LOG_FILE"
+fi
+
+# Check resource usage
+echo "" >> "$LOG_FILE"
+echo "Resource usage:" >> "$LOG_FILE"
+kubectl top pods -n "$NAMESPACE" >> "$LOG_FILE" 2>&1 || echo "Metrics server not available" >> "$LOG_FILE"
+
+# Summary
+echo "" >> "$LOG_FILE"
+TOTAL_PODS=$(echo "$PODS" | jq '.items | length')
+RUNNING_PODS=$(echo "$PODS" | jq '[.items[] | select(.status.phase == "Running")] | length')
+
+echo "Summary: $RUNNING_PODS/$TOTAL_PODS pods running" | tee -a "$LOG_FILE"
+echo "===================================" >> "$LOG_FILE"
+echo "" >> "$LOG_FILE"
+
+# Exit with error if any issues found
+if [ -n "$NOT_RUNNING" ] || [ -n "$CRASHLOOP" ]; then
+    echo "Health check failed. See $LOG_FILE for details."
+    exit 1
+fi
+
+echo "Health check passed."
+exit 0
