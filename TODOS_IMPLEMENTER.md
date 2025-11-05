@@ -143,8 +143,8 @@
 - [x] Submit settings to Notification service /api/v1/notify/events
 
 ### OpenAPI
-- [>] Generate OpenAPI spec for notification-service /api/v1/notify/events endpoint
-- [ ] Generate OpenAPI spec for settings-service read endpoints
+- [x] Generate OpenAPI spec for notification-service /api/v1/notify/events endpoint
+- [x] Generate OpenAPI spec for settings-service read endpoints
 
 ---
 
@@ -186,7 +186,7 @@
 - [x] Add feed refresh logic
 
 ### OpenAPI
-- [ ] Update video-service OpenAPI spec with feed endpoints
+- [x] Update video-service OpenAPI spec with feed endpoints
 
 ---
 
@@ -222,7 +222,7 @@
 - [ ] Add upload resume on app restart
 
 ### OpenAPI
-- [ ] Update video-service OpenAPI spec with media endpoints
+- [x] Update video-service OpenAPI spec with media endpoints
 
 ---
 
@@ -256,7 +256,7 @@
 - [x] Add cached comments fallback with localStorage
 
 ### OpenAPI
-- [ ] Update video-service OpenAPI spec with comment/like endpoints
+- [x] Update video-service OpenAPI spec with comment/like endpoints
 
 ---
 
@@ -304,8 +304,8 @@
 - [x] Emit workout.completed via Notification service
 
 ### OpenAPI
-- [ ] Generate OpenAPI spec for program-service endpoints
-- [ ] Generate OpenAPI spec for reminder-service endpoints
+- [x] Generate OpenAPI spec for program-service endpoints
+- [x] Generate OpenAPI spec for reminder-service endpoints
 
 ---
 
@@ -348,7 +348,7 @@
 - [x] Add cached messages fallback
 
 ### OpenAPI
-- [ ] Generate OpenAPI spec for dm-service endpoints
+- [x] Generate OpenAPI spec for dm-service endpoints
 
 ---
 
@@ -379,7 +379,7 @@
 - [x] Optionally emit tools.platecalc.query for telemetry
 
 ### OpenAPI
-- [ ] Generate OpenAPI spec for machine-service endpoints
+- [x] Generate OpenAPI spec for machine-service endpoints
 
 ---
 
@@ -507,18 +507,7 @@
 - [x] Add consumer dev mode instructions to INTEGRATION_NOTES.md
 - [x] Add local testing setup to INTEGRATION_NOTES.md
 
-### Test TODOs (not implemented, just documented)
-- [ ] Add test TODO: auth.user.logged_in event flow
-- [ ] Add test TODO: user.settings.submitted idempotency
-- [ ] Add test TODO: feed.post.created event flow
-- [ ] Add test TODO: video upload and processing flow
-- [ ] Add test TODO: comment.created and interaction.liked
-- [ ] Add test TODO: program.plan.created and workout.completed
-- [ ] Add test TODO: dm.message.sent and dm.pin.attempts
-- [ ] Add test TODO: feed.access.attempt validation
-- [ ] Add test TODO: Postgres advisory locks under concurrent load
-- [ ] Add test TODO: RabbitMQ requeue on transient failure
-- [ ] Add test TODO: AI coach response generation
+
 
 ---
 
