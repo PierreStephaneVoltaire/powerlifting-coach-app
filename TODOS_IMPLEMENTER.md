@@ -37,8 +37,8 @@
 ## Story 2: Onboarding Settings Form
 
 ### Database & Migrations
-- [ ] Create migration: settings-service add onboarding fields to user_settings table
-- [ ] Add fields: weight, age, target_weight_class, weeks_until_comp, squat_goal, bench_goal, dead_goal, most_important_lift, least_important_lift, recovery_rating_squat, recovery_rating_bench, recovery_rating_dead, training_days_per_week, session_length_minutes, weight_plan, form_issues, injuries, evaluate_feasibility, federation, knee_sleeve, deadlift_style, squat_stance, add_per_month, volume_preference, recovers_from_heavy_deads, height, past_competitions, feed_visibility, passcode_hash
+- [x] Create migration: settings-service add onboarding fields to user_settings table
+- [x] Add fields: weight, age, target_weight_class, weeks_until_comp, squat_goal, bench_goal, dead_goal, most_important_lift, least_important_lift, recovery_rating_squat, recovery_rating_bench, recovery_rating_dead, training_days_per_week, session_length_minutes, weight_plan, form_issues, injuries, evaluate_feasibility, federation, knee_sleeve, deadlift_style, squat_stance, add_per_month, volume_preference, recovers_from_heavy_deads, height, past_competitions, feed_visibility, passcode_hash
 
 ### Events
 - [x] Create event schema: user.settings.submitted.json
