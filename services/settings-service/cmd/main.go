@@ -14,6 +14,7 @@ import (
 	"github.com/powerlifting-coach-app/settings-service/internal/config"
 	"github.com/powerlifting-coach-app/settings-service/internal/database"
 	"github.com/powerlifting-coach-app/settings-service/internal/handlers"
+	"github.com/powerlifting-coach-app/settings-service/internal/queue"
 	"github.com/powerlifting-coach-app/settings-service/internal/repository"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -38,6 +39,26 @@ func main() {
 
 	if err := db.RunMigrations("./migrations"); err != nil {
 		log.Fatal().Err(err).Msg("Failed to run migrations")
+	}
+
+	publisher, err := queue.NewPublisher(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create RabbitMQ publisher")
+	}
+	defer publisher.Close()
+
+	eventConsumer, err := queue.NewEventConsumer(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create event consumer")
+	}
+	defer eventConsumer.Close()
+
+	settingsEventHandler := handlers.NewSettingsEventHandler(db.DB, publisher)
+	eventConsumer.RegisterHandler("user.settings.submitted", settingsEventHandler.HandleUserSettingsSubmitted)
+
+	routingKeys := []string{"user.settings.submitted"}
+	if err := eventConsumer.StartConsuming("settings-service.events", routingKeys); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start consuming events")
 	}
 
 	settingsRepo := repository.NewSettingsRepository(db.DB)
