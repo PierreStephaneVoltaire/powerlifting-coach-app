@@ -90,3 +90,18 @@ output "argocd_admin_password" {
   description = "ArgoCD admin password (get with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)"
   value       = "Run: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
 }
+
+output "frontend_url" {
+  description = "Frontend application URL"
+  value       = var.kubernetes_resources_enabled ? "http://app.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "api_url" {
+  description = "API base URL"
+  value       = var.kubernetes_resources_enabled ? "http://api.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "auth_url" {
+  description = "Keycloak authentication URL"
+  value       = var.kubernetes_resources_enabled ? "http://auth.${local.lb_ip}.nip.io" : "not-yet-available"
+}

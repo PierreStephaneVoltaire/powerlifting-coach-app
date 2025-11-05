@@ -38,27 +38,29 @@ spec:
           mountPath: /var/lib/rabbitmq
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "50m"
-          limits:
             memory: "256Mi"
-            cpu: "150m"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
         livenessProbe:
           exec:
             command:
             - rabbitmq-diagnostics
             - status
-          initialDelaySeconds: 60
+          initialDelaySeconds: 120
           periodSeconds: 30
           timeoutSeconds: 10
+          failureThreshold: 6
         readinessProbe:
           exec:
             command:
             - rabbitmq-diagnostics
             - ping
-          initialDelaySeconds: 20
+          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 3
       volumes:
       - name: rabbitmq-storage
         persistentVolumeClaim:
