@@ -52,11 +52,13 @@ func main() {
 	programEventHandlers := handlers.NewProgramEventHandlers(db.DB, eventConsumer)
 
 	eventConsumer.RegisterHandler("program.plan.created", programEventHandlers.HandleProgramPlanCreated)
+	eventConsumer.RegisterHandler("program.plan.updated", programEventHandlers.HandleProgramPlanUpdated)
 	eventConsumer.RegisterHandler("workout.started", programEventHandlers.HandleWorkoutStarted)
 	eventConsumer.RegisterHandler("workout.completed", programEventHandlers.HandleWorkoutCompleted)
 
 	routingKeys := []string{
 		"program.plan.created",
+		"program.plan.updated",
 		"workout.started",
 		"workout.completed",
 	}

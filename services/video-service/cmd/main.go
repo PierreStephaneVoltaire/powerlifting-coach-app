@@ -68,12 +68,15 @@ func main() {
 	feedHandlers := handlers.NewFeedHandlers(db.DB)
 	commentHandlers := handlers.NewCommentHandlers(db.DB)
 	commentHandlers.SetPublisher(eventPublisher)
+	mediaHandlers := handlers.NewMediaEventHandlers(db.DB, eventPublisher)
 
 	eventConsumer.RegisterHandler("feed.post.created", feedHandlers.HandleFeedPostCreated)
 	eventConsumer.RegisterHandler("feed.post.updated", feedHandlers.HandleFeedPostUpdated)
 	eventConsumer.RegisterHandler("feed.post.deleted", feedHandlers.HandleFeedPostDeleted)
 	eventConsumer.RegisterHandler("comment.created", commentHandlers.HandleCommentCreated)
 	eventConsumer.RegisterHandler("interaction.liked", commentHandlers.HandleInteractionLiked)
+	eventConsumer.RegisterHandler("media.upload_requested", mediaHandlers.HandleMediaUploadRequested)
+	eventConsumer.RegisterHandler("media.uploaded", mediaHandlers.HandleMediaUploaded)
 
 	routingKeys := []string{
 		"feed.post.created",
@@ -81,6 +84,8 @@ func main() {
 		"feed.post.deleted",
 		"comment.created",
 		"interaction.liked",
+		"media.upload_requested",
+		"media.uploaded",
 	}
 
 	if err := eventConsumer.StartConsuming("video-service.events", routingKeys); err != nil {

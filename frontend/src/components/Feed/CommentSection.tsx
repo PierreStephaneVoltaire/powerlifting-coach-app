@@ -23,8 +23,26 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
     try {
       const response = await apiClient.getPostComments(postId);
       setComments(response.comments || []);
+
+      const cacheKey = `comments_${postId}`;
+      localStorage.setItem(cacheKey, JSON.stringify({
+        comments: response.comments || [],
+        timestamp: Date.now(),
+      }));
     } catch (err) {
       console.error('Failed to load comments', err);
+
+      const cacheKey = `comments_${postId}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const { comments: cachedComments } = JSON.parse(cached);
+          setComments(cachedComments);
+          console.info('Loaded comments from cache');
+        } catch (parseErr) {
+          console.error('Failed to parse cached comments', parseErr);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
