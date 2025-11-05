@@ -24,7 +24,7 @@
 ## Story 1: Login & Auth Gate
 
 ### Events
-- [ ] Create event schema: auth.user.logged_in.json
+- [x] Create event schema: auth.user.logged_in.json
 
 ### Frontend
 - [ ] Add Keycloak OIDC flow integration

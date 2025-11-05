@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuthUserLoggedIn",
+  "description": "Event emitted when a user successfully authenticates via Keycloak",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "client_generated_id",
+    "user_id",
+    "timestamp",
+    "source_service",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "auth.user.logged_in"
+    },
+    "client_generated_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Client-generated UUID for idempotency"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID of the authenticated user"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "source_service": {
+      "type": "string",
+      "enum": ["frontend", "auth-service"]
+    },
+    "data": {
+      "type": "object",
+      "required": ["session_id"],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "Keycloak session ID"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["athlete", "coach", "admin", "video_public"]
+          },
+          "description": "Keycloak groups the user belongs to"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "example": {
+    "schema_version": "1.0.0",
+    "event_type": "auth.user.logged_in",
+    "client_generated_id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "timestamp": "2025-11-05T14:30:00Z",
+    "source_service": "frontend",
+    "data": {
+      "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "groups": ["athlete"],
+      "email": "user@example.com",
+      "username": "powerlifter123"
+    }
+  }
+}
