@@ -59,7 +59,7 @@
 
 ### Frontend
 - [x] Create onboarding settings form UI with all required fields
-- [ ] Add offline queue support (IndexedDB) for settings submission
+- [x] Add offline queue support (IndexedDB) for settings submission
 - [x] Submit settings to Notification service /api/v1/notify/events
 
 ### OpenAPI
@@ -71,12 +71,12 @@
 ## Story 3: Frontend Resilience
 
 ### Frontend
-- [ ] Add network timeout handling for all API calls
-- [ ] Add IndexedDB queue for offline writes
-- [ ] Add exponential backoff retry logic
-- [ ] Add "sync pending" UI indicator
+- [x] Add network timeout handling for all API calls
+- [x] Add IndexedDB queue for offline writes
+- [x] Add exponential backoff retry logic
+- [x] Add "sync pending" UI indicator
 - [ ] Add "data may be out of date" banner for stale cache
-- [ ] Add queue persistence across reloads
+- [x] Add queue persistence across reloads
 
 ---
 
