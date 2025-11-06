@@ -59,14 +59,14 @@ func (s *Service) getAdminToken(ctx context.Context) (*gocloak.JWT, error) {
 		return s.adminToken, nil
 	}
 
-	token, err := s.client.LoginAdmin(ctx, "admin", "changeme123", "master")
+	token, err := s.client.LoginAdmin(ctx, s.config.KeycloakAdminUser, s.config.KeycloakAdminPassword, "master")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get admin token: %w", err)
 	}
 
 	s.adminToken = token
 	s.tokenExpiry = time.Now().Add(time.Duration(token.ExpiresIn-60) * time.Second)
-	
+
 	return token, nil
 }
 

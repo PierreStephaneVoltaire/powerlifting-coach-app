@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuthStore } from '../../stores/authStore';
-import { useOfflineQueue } from '../../utils/offlineQueue';
+import { useAuthStore } from '@/store/authStore';
+import { offlineQueue } from '@/utils/offlineQueue';
 
 interface PasscodePromptProps {
   targetUserId: string;
@@ -14,7 +14,6 @@ const PasscodePrompt: React.FC<PasscodePromptProps> = ({
   onCancel,
 }) => {
   const { user } = useAuthStore();
-  const { enqueue } = useOfflineQueue();
 
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
@@ -45,7 +44,7 @@ const PasscodePrompt: React.FC<PasscodePromptProps> = ({
     };
 
     try {
-      await enqueue(feedAccessAttemptEvent);
+      await offlineQueue.enqueue(feedAccessAttemptEvent);
 
       const mockToken = `access_token_${Date.now()}`;
       localStorage.setItem(`feed_access_${targetUserId}`, mockToken);

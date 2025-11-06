@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuthStore } from '../../stores/authStore';
-import { useOfflineQueue } from '../../utils/offlineQueue';
+import { useAuthStore } from '@/store/authStore';
+import { offlineQueue } from '@/utils/offlineQueue';
 
 interface VideoUploadProps {
   onUploadComplete?: () => void;
@@ -8,7 +8,6 @@ interface VideoUploadProps {
 
 const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
   const { user } = useAuthStore();
-  const { enqueue } = useOfflineQueue();
 
   const [file, setFile] = useState<File | null>(null);
   const [movementLabel, setMovementLabel] = useState('');
@@ -63,7 +62,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
         });
       }, 200);
 
-      await enqueue(mediaUploadRequestedEvent);
+      await offlineQueue.enqueue(mediaUploadRequestedEvent);
 
       clearInterval(interval);
       setUploadProgress(100);

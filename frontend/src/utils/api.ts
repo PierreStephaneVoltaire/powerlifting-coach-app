@@ -323,6 +323,11 @@ class ApiClient {
     return this.submitEvent(event);
   }
 
+  async getConversationMessages(conversationId: string) {
+    const response = await this.client.get(`/api/v1/dm/conversations/${conversationId}/messages`);
+    return response.data;
+  }
+
   async getPendingEventsCount(): Promise<number> {
     return offlineQueue.getPendingCount();
   }

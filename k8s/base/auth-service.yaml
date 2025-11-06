@@ -36,6 +36,11 @@ spec:
             secretKeyRef:
               name: app-secrets
               key: keycloak-client-secret
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: keycloak-admin-password
         resources:
           requests:
             memory: "32Mi"
