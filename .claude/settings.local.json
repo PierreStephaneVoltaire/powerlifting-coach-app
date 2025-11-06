@@ -54,7 +54,9 @@
       "Bash(echo:*)",
       "Bash(tree:*)",
       "Bash(test:*)",
-      "Bash(kubectl run:*)"
+      "Bash(kubectl run:*)",
+      "Bash(docker tag:*)",
+      "Bash(docker push:*)"
     ],
     "deny": [],
     "ask": []
