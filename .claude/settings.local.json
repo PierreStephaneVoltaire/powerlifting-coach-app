@@ -52,7 +52,8 @@
       "Bash(kubectl apply:*)",
       "Bash(./scripts/pod-health-check.sh:*)",
       "Bash(echo:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

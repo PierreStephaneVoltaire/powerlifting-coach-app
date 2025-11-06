@@ -10,6 +10,6 @@ spec:
       - name: frontend
         env:
         - name: REACT_APP_API_URL
-          value: "http://api.209.38.12.124.nip.io"
+          value: "http://api.159.203.50.157.nip.io"
         - name: REACT_APP_AUTH_URL
-          value: "http://api.209.38.12.124.nip.io/auth"
+          value: "http://api.159.203.50.157.nip.io/auth"
