@@ -58,9 +58,38 @@ commonLabels:
   environment: production
 
 replicas:
+  # Infrastructure
   - name: postgres
     count: 1
   - name: valkey
     count: 1
   - name: rabbitmq
     count: 1
+  # Story 1 & 2 Services
+  - name: frontend
+    count: 1
+  - name: keycloak
+    count: 1
+  - name: notification-service
+    count: 1
+  - name: settings-service
+    count: 1
+  # Disabled Services (not needed for Story 1 & 2)
+  - name: auth-service
+    count: 0
+  - name: coach-service
+    count: 0
+  - name: dm-service
+    count: 0
+  - name: machine-service
+    count: 0
+  - name: program-service
+    count: 0
+  - name: reminder-service
+    count: 0
+  - name: user-service
+    count: 0
+  - name: video-service
+    count: 0
+  - name: litellm
+    count: 0
