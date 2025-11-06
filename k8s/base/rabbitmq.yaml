@@ -48,18 +48,18 @@ spec:
             command:
             - rabbitmq-diagnostics
             - status
-          initialDelaySeconds: 120
+          initialDelaySeconds: 180
           periodSeconds: 30
-          timeoutSeconds: 10
+          timeoutSeconds: 30
           failureThreshold: 6
         readinessProbe:
           exec:
             command:
             - rabbitmq-diagnostics
             - ping
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 15
           failureThreshold: 3
       volumes:
       - name: rabbitmq-storage
