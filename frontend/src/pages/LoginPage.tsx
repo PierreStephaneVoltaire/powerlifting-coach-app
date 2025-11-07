@@ -44,7 +44,20 @@ export const LoginPage: React.FC = () => {
 
       await apiClient.submitEvent(event);
 
-      navigate(response.user.needs_onboarding ? '/onboarding' : '/feed');
+      // Check if user has completed onboarding by trying to fetch settings
+      try {
+        await apiClient.getUserSettings();
+        // Settings exist, user has completed onboarding
+        navigate('/feed');
+      } catch (settingsErr: any) {
+        // Settings don't exist (404), user needs onboarding
+        if (settingsErr.response?.status === 404) {
+          navigate('/onboarding');
+        } else {
+          // Other error, default to feed
+          navigate('/feed');
+        }
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       console.error('Response data:', err.response?.data);
