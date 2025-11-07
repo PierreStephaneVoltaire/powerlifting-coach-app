@@ -77,3 +77,62 @@ resource "helm_release" "metrics_server" {
     digitalocean_kubernetes_cluster.k8s
   ]
 }
+
+resource "helm_release" "argocd_image_updater" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  name             = "argocd-image-updater"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argocd-image-updater"
+  namespace        = "argocd"
+  create_namespace = false
+  wait             = true
+  wait_for_jobs    = true
+
+  set {
+    name  = "config.argocd.plaintext"
+    value = "true"
+  }
+
+  set {
+    name  = "config.argocd.serverAddress"
+    value = "http://argocd-server.argocd.svc.cluster.local"
+  }
+
+  set {
+    name  = "config.argocd.insecure"
+    value = "true"
+  }
+
+  # Enable support for public registries without authentication
+  set {
+    name  = "config.registries[0].name"
+    value = "GitHub Container Registry"
+  }
+
+  set {
+    name  = "config.registries[0].prefix"
+    value = "ghcr.io"
+  }
+
+  set {
+    name  = "config.registries[0].api_url"
+    value = "https://ghcr.io"
+  }
+
+  set {
+    name  = "config.registries[0].ping"
+    value = "true"
+  }
+
+  # Log level for debugging
+  set {
+    name  = "config.logLevel"
+    value = "debug"
+  }
+
+  timeout = 10 * 60
+  depends_on = [
+    helm_release.argocd
+  ]
+}
