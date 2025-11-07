@@ -16,6 +16,7 @@ type Config struct {
 	JWTSecret              string
 	DatabaseURL            string
 	Environment            string
+	SettingsServiceURL     string
 }
 
 func Load() *Config {
@@ -30,6 +31,7 @@ func Load() *Config {
 		JWTSecret:             getEnv("JWT_SECRET", "your-secret-key"),
 		DatabaseURL:           getEnv("DATABASE_URL", ""),
 		Environment:           getEnv("ENVIRONMENT", "development"),
+		SettingsServiceURL:    getEnv("SETTINGS_SERVICE_URL", "http://settings-service:8080"),
 	}
 }
 
