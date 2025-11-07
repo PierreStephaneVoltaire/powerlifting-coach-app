@@ -8,3 +8,6 @@ spec:
     spec:
       containers:
       - name: auth-service
+        env:
+        - name: KEYCLOAK_URL
+          value: "http://auth.152.42.144.167.nip.io"
