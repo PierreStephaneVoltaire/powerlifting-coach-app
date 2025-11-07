@@ -2,6 +2,9 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -73,9 +76,47 @@ func AuthMiddleware(config AuthConfig) gin.HandlerFunc {
 }
 
 func validateToken(ctx context.Context, token, authServiceURL string) (*Claims, error) {
-	// TODO: Implement token validation with auth service
-	// This would make an HTTP request to the auth service to validate the JWT
-	return nil, nil
+	req, err := http.NewRequestWithContext(ctx, "POST", authServiceURL+"/api/v1/auth/validate", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("token validation failed: %s", string(body))
+	}
+
+	var result struct {
+		Valid    bool     `json:"valid"`
+		UserID   string   `json:"user_id"`
+		Email    string   `json:"email"`
+		UserType string   `json:"user_type"`
+		Roles    []string `json:"roles"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !result.Valid {
+		return nil, fmt.Errorf("token is not valid")
+	}
+
+	return &Claims{
+		UserID:   result.UserID,
+		Email:    result.Email,
+		UserType: result.UserType,
+		Roles:    result.Roles,
+	}, nil
 }
 
 func hasRole(roles []string, requiredRole string) bool {
