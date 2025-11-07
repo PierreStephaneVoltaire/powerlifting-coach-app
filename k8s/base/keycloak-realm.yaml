@@ -19,10 +19,10 @@ data:
         {
           "clientId": "powerlifting-coach-app",
           "enabled": true,
-          "publicClient": false,
+          "publicClient": true,
           "directAccessGrantsEnabled": true,
-          "serviceAccountsEnabled": true,
-          "authorizationServicesEnabled": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
           "redirectUris": ["*"],
           "webOrigins": ["*"],
           "protocol": "openid-connect"

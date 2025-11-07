@@ -31,11 +31,6 @@ spec:
           value: "powerlifting-coach"
         - name: KEYCLOAK_CLIENT_ID
           value: "powerlifting-coach-app"
-        - name: KEYCLOAK_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: keycloak-client-secret
         - name: KEYCLOAK_ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
