@@ -18,6 +18,15 @@ export const LoginPage: React.FC = () => {
 
     try {
       const response = await apiClient.login(email, password);
+
+      // Validate response structure
+      if (!response || !response.tokens || !response.user) {
+        console.error('Invalid response structure:', response);
+        setError('Login succeeded but received invalid response format. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
       login(response.tokens, response);
 
       const event = {
@@ -37,7 +46,26 @@ export const LoginPage: React.FC = () => {
 
       navigate(response.user.needs_onboarding ? '/onboarding' : '/feed');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      console.error('Response data:', err.response?.data);
+      console.error('Response status:', err.response?.status);
+
+      // Handle different error scenarios
+      if (err.response) {
+        // Server responded with error status
+        const errorMessage = err.response.data?.error || err.response.data?.message;
+        if (errorMessage) {
+          setError(errorMessage);
+        } else {
+          setError(`Login failed (${err.response.status}). Please try again.`);
+        }
+      } else if (err.request) {
+        // Request made but no response
+        setError('Cannot connect to server. Please check your connection.');
+      } else {
+        // Something else went wrong
+        setError(err.message || 'Login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
