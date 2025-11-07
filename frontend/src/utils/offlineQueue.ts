@@ -1,5 +1,6 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
+import { generateUUID } from '@/utils/uuid';
 interface QueuedEvent {
   id: string;
   event: any;
@@ -52,7 +53,7 @@ class OfflineQueue {
     await this.init();
     if (!this.db) throw new Error('Failed to init DB');
 
-    const id = event.client_generated_id || crypto.randomUUID();
+    const id = event.client_generated_id || generateUUID();
     const queuedEvent: QueuedEvent = {
       id,
       event,

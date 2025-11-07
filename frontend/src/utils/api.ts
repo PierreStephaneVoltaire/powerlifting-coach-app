@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { AuthTokens } from '@/types';
 import { offlineQueue } from './offlineQueue';
 
+import { generateUUID } from '@/utils/uuid';
 // Use empty string so requests go to same origin, nginx proxies to backend services
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const DEFAULT_TIMEOUT = 30000;
@@ -261,7 +262,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'user.settings.submitted',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -275,7 +276,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'comment.created',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -293,7 +294,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'interaction.liked',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -311,7 +312,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'feed.access.attempt',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { offlineQueue } from '@/utils/offlineQueue';
 
+import { generateUUID } from '@/utils/uuid';
 interface VideoUploadProps {
   onUploadComplete?: () => void;
 }
@@ -35,7 +36,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
     const mediaUploadRequestedEvent = {
       schema_version: '1.0.0',
       event_type: 'media.upload_requested',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: user.id,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',

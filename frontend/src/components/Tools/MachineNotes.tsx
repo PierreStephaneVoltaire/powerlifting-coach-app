@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
 
+import { generateUUID } from '@/utils/uuid';
 interface MachineNote {
   note_id: string;
   brand: string;
@@ -38,7 +39,7 @@ export const MachineNotes: React.FC = () => {
     setError(null);
 
     try {
-      const noteId = crypto.randomUUID();
+      const noteId = generateUUID();
       const event = {
         schema_version: '1.0.0',
         event_type: 'machine.notes.submitted',

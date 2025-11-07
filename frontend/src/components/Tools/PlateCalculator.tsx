@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
 
+import { generateUUID } from '@/utils/uuid';
 interface PlateInventory {
   '25kg': number;
   '20kg': number;
@@ -90,7 +91,7 @@ export const PlateCalculator: React.FC = () => {
       const event = {
         schema_version: '1.0.0',
         event_type: 'tools.platecalc.query',
-        client_generated_id: crypto.randomUUID(),
+        client_generated_id: generateUUID(),
         user_id: user.id,
         timestamp: new Date().toISOString(),
         source_service: 'frontend',

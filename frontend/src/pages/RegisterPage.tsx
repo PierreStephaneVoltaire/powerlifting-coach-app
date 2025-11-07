@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/utils/api';
 
+import { generateUUID } from '@/utils/uuid';
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuthStore();
@@ -34,7 +35,7 @@ export const RegisterPage: React.FC = () => {
       const event = {
         schema_version: '1.0.0',
         event_type: 'auth.user.logged_in',
-        client_generated_id: crypto.randomUUID(),
+        client_generated_id: generateUUID(),
         user_id: response.user.id,
         timestamp: new Date().toISOString(),
         source_service: 'frontend',
