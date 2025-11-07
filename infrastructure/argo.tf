@@ -71,12 +71,38 @@ resource "kubernetes_ingress_v1" "argocd" {
 resource "kubernetes_manifest" "app" {
   count = var.kubernetes_resources_enabled && var.argocd_resources_enabled ? 1 : 0
 
+  field_manager {
+    force_conflicts = true
+  }
+
   manifest = {
     "apiVersion" = "argoproj.io/v1alpha1"
     "kind"       = "Application"
     "metadata" = {
       "name"      = "${var.project_name}"
       "namespace" = kubernetes_namespace.argocd[0].metadata[0].name
+      "annotations" = {
+        # Configure ArgoCD Image Updater with Kubernetes API write-back
+        "argocd-image-updater.argoproj.io/image-list" = join(",", [
+          "auth-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/auth-service:latest",
+          "user-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/user-service:latest",
+          "video-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/video-service:latest",
+          "settings-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/settings-service:latest",
+          "program-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/program-service:latest",
+          "coach-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/coach-service:latest",
+          "notification-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/notification-service:latest",
+          "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend:latest"
+        ])
+        "argocd-image-updater.argoproj.io/write-back-method" = "argocd"
+        "argocd-image-updater.argoproj.io/auth-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/user-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/video-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/settings-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/program-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/coach-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/notification-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/frontend.update-strategy" = "latest"
+      }
     }
     "spec" = {
       "project" = "default"

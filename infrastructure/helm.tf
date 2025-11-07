@@ -104,6 +104,13 @@ resource "helm_release" "argocd_image_updater" {
     value = "true"
   }
 
+  # Use Kubernetes API write-back (argocd method)
+  # This writes directly to the Application resource, no Git needed
+  set {
+    name  = "config.applicationsAPIKind"
+    value = "kubernetes"
+  }
+
   # Enable support for public registries without authentication
   set {
     name  = "config.registries[0].name"

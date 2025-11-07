@@ -120,7 +120,7 @@ spec:
       - name: auth-service
         env:
         - name: KEYCLOAK_URL
-          value: "http://auth.${local.lb_ip}.nip.io"
+          value: "http://keycloak:8080"
 EOT
 
   depends_on = [data.kubernetes_service.nginx_ingress]
