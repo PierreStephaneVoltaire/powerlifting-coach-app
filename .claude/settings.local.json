@@ -57,7 +57,8 @@
       "Bash(kubectl run:*)",
       "Bash(docker tag:*)",
       "Bash(docker push:*)",
-      "Bash(kubectl kustomize:*)"
+      "Bash(kubectl kustomize:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

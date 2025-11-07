@@ -35,6 +35,7 @@ spec:
           - --proxy=edge
           - --hostname-strict=false
           - --http-enabled=true
+          - --import-realm
         ports:
         - containerPort: 8080
           name: http
@@ -63,6 +64,10 @@ spec:
           value: "true"
         - name: PROXY_ADDRESS_FORWARDING
           value: "true"
+        volumeMounts:
+        - name: realm-config
+          mountPath: /opt/keycloak/data/import
+          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -86,6 +91,10 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 10
           failureThreshold: 3
+      volumes:
+      - name: realm-config
+        configMap:
+          name: keycloak-realm
 
 ---
 apiVersion: v1

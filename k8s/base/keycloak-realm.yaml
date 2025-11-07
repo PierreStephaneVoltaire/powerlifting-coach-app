@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  namespace: app
+data:
+  powerlifting-coach-realm.json: |
+    {
+      "realm": "powerlifting-coach",
+      "enabled": true,
+      "sslRequired": "none",
+      "registrationAllowed": true,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "clients": [
+        {
+          "clientId": "powerlifting-coach-app",
+          "enabled": true,
+          "publicClient": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": false,
+          "redirectUris": ["*"],
+          "webOrigins": ["*"],
+          "protocol": "openid-connect"
+        }
+      ]
+    }
