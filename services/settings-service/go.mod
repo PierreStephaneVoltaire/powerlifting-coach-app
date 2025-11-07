@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.34.0
 	github.com/streadway/amqp v1.1.0
 	golang.org/x/crypto v0.43.0
 )
@@ -53,3 +53,5 @@ require (
 	golang.org/x/tools v0.37.0 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
 )
+
+replace github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared => ../../shared

@@ -1,15 +1,19 @@
 FROM public.ecr.aws/docker/library/golang:alpine AS builder
 
 WORKDIR /app
-RUN apk add --no-cache git 
+RUN apk add --no-cache git
 
-COPY go.mod go.sum ./
+# Copy shared module first
+COPY shared /shared
+
+# Copy service files
+COPY services/settings-service/go.mod services/settings-service/go.sum ./
 ENV GOPROXY=https://proxy.golang.org,direct
 ENV GOPRIVATE=github.com/PierreStephaneVoltaire/powerlifting-coach-app/*
 
 RUN go mod download
 
-COPY . .
+COPY services/settings-service/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
 
 FROM public.ecr.aws/docker/library/alpine:latest
