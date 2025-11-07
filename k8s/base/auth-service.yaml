@@ -26,7 +26,7 @@ spec:
         - name: ENVIRONMENT
           value: "production"
         - name: KEYCLOAK_URL
-          value: "http://auth.DOMAIN_PLACEHOLDER"
+          value: "http://keycloak:8080"
         - name: KEYCLOAK_REALM
           value: "powerlifting-coach"
         - name: KEYCLOAK_CLIENT_ID

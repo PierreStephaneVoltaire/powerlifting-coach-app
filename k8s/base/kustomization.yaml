@@ -18,6 +18,7 @@ resources:
   - valkey.yaml
   - rabbitmq.yaml
   - keycloak.yaml
+  - keycloak-init.yaml
   - litellm.yaml
   - ingress.yaml
 

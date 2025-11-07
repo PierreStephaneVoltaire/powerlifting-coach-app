@@ -15,6 +15,18 @@ spec:
       labels:
         app: keycloak
     spec:
+      initContainers:
+      - name: init-db
+        image: public.ecr.aws/docker/library/postgres:15-alpine
+        command: ['sh', '-c', 'until psql -h postgres -U $POSTGRES_USER -d powerlifting_app -c "SELECT 1" > /dev/null 2>&1; do echo "Waiting for postgres..."; sleep 2; done && psql -h postgres -U $POSTGRES_USER -d powerlifting_app -tc "SELECT 1 FROM pg_database WHERE datname = ''keycloak''" | grep -q 1 || psql -h postgres -U $POSTGRES_USER -d powerlifting_app -c "CREATE DATABASE keycloak"']
+        env:
+        - name: POSTGRES_USER
+          value: "app_user"
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
       containers:
       - name: keycloak
         image: quay.io/keycloak/keycloak:23.0

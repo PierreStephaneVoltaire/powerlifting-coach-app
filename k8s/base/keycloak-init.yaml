@@ -1,0 +1,78 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-init
+  namespace: app
+  labels:
+    app: keycloak-init
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+      - name: wait-for-keycloak
+        image: curlimages/curl:latest
+        command:
+        - sh
+        - -c
+        - |
+          until curl -f http://keycloak:8080/health/ready > /dev/null 2>&1; do
+            echo "Waiting for Keycloak to be ready..."
+            sleep 5
+          done
+          echo "Keycloak is ready!"
+      containers:
+      - name: init-realm
+        image: quay.io/keycloak/keycloak:23.0
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+
+          # Wait a bit more for Keycloak to be fully ready
+          sleep 10
+
+          cd /opt/keycloak/bin
+
+          # Configure kcadm
+          ./kcadm.sh config credentials --server http://keycloak:8080 --realm master --user admin --password "$KEYCLOAK_ADMIN_PASSWORD"
+
+          # Check if realm exists
+          if ! ./kcadm.sh get realms/powerlifting-coach > /dev/null 2>&1; then
+            echo "Creating realm: powerlifting-coach"
+            ./kcadm.sh create realms -s realm=powerlifting-coach -s enabled=true
+          else
+            echo "Realm powerlifting-coach already exists"
+          fi
+
+          # Check if client exists
+          CLIENT_ID=$(./kcadm.sh get clients -r powerlifting-coach --fields id,clientId | grep -B1 "powerlifting-coach-app" | grep "\"id\"" | sed 's/.*"id" : "\(.*\)".*/\1/' || echo "")
+
+          if [ -z "$CLIENT_ID" ]; then
+            echo "Creating client: powerlifting-coach-app"
+            ./kcadm.sh create clients -r powerlifting-coach \
+              -s clientId=powerlifting-coach-app \
+              -s enabled=true \
+              -s secret="$KEYCLOAK_CLIENT_SECRET" \
+              -s 'redirectUris=["*"]' \
+              -s 'webOrigins=["*"]' \
+              -s directAccessGrantsEnabled=true \
+              -s serviceAccountsEnabled=true \
+              -s publicClient=false
+          else
+            echo "Client powerlifting-coach-app already exists"
+          fi
+
+          echo "Keycloak initialization complete!"
+        env:
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secret
+              key: admin-password
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: keycloak-client-secret
