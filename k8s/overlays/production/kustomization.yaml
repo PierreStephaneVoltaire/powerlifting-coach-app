@@ -27,6 +27,9 @@ patchesJson6902:
       - op: replace
         path: /spec/rules/2/host
         value: auth.152.42.144.68.nip.io
+      - op: replace
+        path: /spec/rules/1/http/paths/0/path
+        value: /api/v1/auth
 
 images:
   - name: auth-service
