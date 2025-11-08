@@ -4,51 +4,31 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	shareddb "github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/database"
 )
 
-type Database struct {
-	DB *sql.DB
+type DB struct {
+	*sql.DB
 }
 
-func New(dsn string) (*Database, error) {
-	db, err := sql.Open("postgres", dsn)
+func New(databaseURL string) (*DB, error) {
+	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	return &Database{DB: db}, nil
+	return &DB{db}, nil
 }
 
-func (d *Database) Close() error {
-	return d.DB.Close()
-}
-
-func (d *Database) RunMigrations(migrationsPath string) error {
-	driver, err := postgres.WithInstance(d.DB, &postgres.Config{})
-	if err != nil {
-		return fmt.Errorf("failed to create migration driver: %w", err)
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", migrationsPath),
-		"postgres",
-		driver,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create migrate instance: %w", err)
-	}
-
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	return nil
+func (db *DB) RunMigrations(migrationsPath string) error {
+	return shareddb.RunMigrations(shareddb.MigrationConfig{
+		DB:             db.DB,
+		MigrationsPath: migrationsPath,
+		SchemaName:     "machine_service",
+	})
 }
