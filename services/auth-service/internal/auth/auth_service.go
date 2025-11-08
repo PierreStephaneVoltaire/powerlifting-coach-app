@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Nerzal/gocloak/v13"
@@ -113,33 +112,6 @@ func (s *Service) setUserPassword(ctx context.Context, accessToken, realm, userI
 	return nil
 }
 
-func (s *Service) checkOnboardingStatus(ctx context.Context, userID string) bool {
-	client := resty.New()
-	url := fmt.Sprintf("%s/api/v1/settings/user/%s", s.config.SettingsServiceURL, userID)
-
-	resp, err := client.R().
-		SetContext(ctx).
-		Get(url)
-
-	// If settings don't exist (404) or any error, user needs onboarding
-	if err != nil || resp.StatusCode() == http.StatusNotFound {
-		return true
-	}
-
-	// If settings exist but are empty/incomplete, user needs onboarding
-	if resp.StatusCode() == http.StatusOK {
-		var settings map[string]interface{}
-		if err := json.Unmarshal(resp.Body(), &settings); err == nil {
-			// Check if essential onboarding fields are present
-			// User needs onboarding if age, weight, or training_days_per_week is missing
-			if settings["age"] == nil || settings["weight_value"] == nil || settings["training_days_per_week"] == nil {
-				return true
-			}
-		}
-	}
-
-	return false
-}
 
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error) {
 	adminToken, err := s.getAdminToken(ctx)
@@ -215,9 +187,6 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, e
 		return nil, fmt.Errorf("failed to get user info: %w", err)
 	}
 
-	// Check if user needs onboarding
-	needsOnboarding := s.checkOnboardingStatus(ctx, claims.UserID)
-
 	return &AuthResponse{
 		Tokens: TokenResponse{
 			AccessToken:  token.AccessToken,
@@ -230,7 +199,7 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, e
 			Email:           claims.Email,
 			Name:            claims.Name,
 			UserType:        claims.UserType,
-			NeedsOnboarding: needsOnboarding,
+			NeedsOnboarding: false, // Frontend will check settings-service separately
 		},
 	}, nil
 }
