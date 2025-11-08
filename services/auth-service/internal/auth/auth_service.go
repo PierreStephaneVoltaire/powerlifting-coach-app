@@ -48,11 +48,10 @@ type TokenResponse struct {
 }
 
 type UserInfo struct {
-	ID              string `json:"id"`
-	Email           string `json:"email"`
-	Name            string `json:"name"`
-	UserType        string `json:"user_type"`
-	NeedsOnboarding bool   `json:"needs_onboarding"`
+	ID       string `json:"id"`
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	UserType string `json:"user_type"`
 }
 
 type AuthResponse struct {
@@ -169,8 +168,6 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*AuthRespo
 
 	// Use the user ID from registration, not from the token
 	authResp.User.ID = userID
-	// New users always need onboarding
-	authResp.User.NeedsOnboarding = true
 
 	return authResp, nil
 }
@@ -195,11 +192,10 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, e
 			TokenType:    "Bearer",
 		},
 		User: UserInfo{
-			ID:              claims.UserID,
-			Email:           claims.Email,
-			Name:            claims.Name,
-			UserType:        claims.UserType,
-			NeedsOnboarding: false, // Frontend will check settings-service separately
+			ID:       claims.UserID,
+			Email:    claims.Email,
+			Name:     claims.Name,
+			UserType: claims.UserType,
 		},
 	}, nil
 }
