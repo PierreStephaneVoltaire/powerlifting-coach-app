@@ -86,7 +86,7 @@ func (s *Service) getAdminToken(ctx context.Context) (*gocloak.JWT, error) {
 }
 
 func (s *Service) setUserPassword(ctx context.Context, accessToken, realm, userID, password string, temporary bool) error {
-	client := resty.New().SetTimeout(10 * time.Second)
+	client := resty.New()
 	url := fmt.Sprintf("%s/admin/realms/%s/users/%s/reset-password", s.config.KeycloakURL, realm, userID)
 
 	payload := map[string]interface{}{
@@ -114,8 +114,7 @@ func (s *Service) setUserPassword(ctx context.Context, accessToken, realm, userI
 }
 
 func (s *Service) checkOnboardingStatus(ctx context.Context, userID string) bool {
-	// Create client with 5-second timeout
-	client := resty.New().SetTimeout(5 * time.Second)
+	client := resty.New()
 	url := fmt.Sprintf("%s/api/v1/settings/user/%s", s.config.SettingsServiceURL, userID)
 
 	resp, err := client.R().
