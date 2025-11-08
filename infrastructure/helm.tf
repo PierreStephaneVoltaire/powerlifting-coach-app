@@ -27,6 +27,11 @@ resource "helm_release" "nginx_ingress" {
     name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/do-loadbalancer-enable-proxy-protocol"
     value = "true"
   }
+
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/do-loadbalancer-timeout-seconds"
+    value = "300"
+  }
   timeout = 25 * 60
   depends_on = [
     digitalocean_kubernetes_cluster.k8s
