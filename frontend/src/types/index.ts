@@ -3,7 +3,6 @@ export interface User {
   email: string;
   name: string;
   user_type: 'athlete' | 'coach';
-  needs_onboarding?: boolean;
   created_at: string;
   updated_at: string;
 }
