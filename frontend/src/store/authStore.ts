@@ -7,8 +7,7 @@ interface AuthState {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  
-  // Actions
+
   login: (tokens: AuthTokens, userResponse: UserResponse) => void;
   logout: () => void;
   updateUser: (user: User) => void;

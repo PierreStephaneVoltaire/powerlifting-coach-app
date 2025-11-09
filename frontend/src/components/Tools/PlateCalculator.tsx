@@ -50,7 +50,6 @@ const DEFAULT_INVENTORY_LB: PlateInventoryLb = {
   '2.5': 4,
 };
 
-// Competition plate colors (IPF standard)
 const KG_PLATE_COLORS: Record<string, string> = {
   '25': '#E74C3C',    // Red
   '20': '#3498DB',    // Blue
@@ -62,8 +61,7 @@ const KG_PLATE_COLORS: Record<string, string> = {
   '0.5': '#F1C40F',   // Yellow
 };
 
-// Standard gym plates (black/gray)
-const LB_PLATE_COLOR = '#2C3E50'; // Dark gray/black
+const LB_PLATE_COLOR = '#2C3E50';
 
 export const PlateCalculator: React.FC = () => {
   const { user } = useAuthStore();
@@ -166,7 +164,6 @@ export const PlateCalculator: React.FC = () => {
     setUnit(newUnit);
     setResult([]);
     setError(null);
-    // Update bar weight to equivalent
     if (newUnit === 'kg') {
       if (barWeight === 45) setBarWeight(20);
       else if (barWeight === 35) setBarWeight(15);
@@ -184,10 +181,8 @@ export const PlateCalculator: React.FC = () => {
           Bar Visualization
         </h3>
         <div className="flex items-center justify-center gap-2 overflow-x-auto pb-4">
-          {/* Left sleeve */}
           <div className="w-8 h-12 bg-gray-400 rounded-l-md flex-shrink-0" />
 
-          {/* Plates on left side */}
           <div className="flex gap-1">
             {plates.map((plate, idx) => (
               Array.from({ length: plate.count }).map((_, i) => {
@@ -218,12 +213,10 @@ export const PlateCalculator: React.FC = () => {
             )).flat()}
           </div>
 
-          {/* Bar */}
           <div className="h-4 bg-gray-500 rounded flex-shrink-0 flex items-center justify-center px-4 min-w-[80px]">
             <span className="text-xs font-semibold text-white">{barWeight}{unit}</span>
           </div>
 
-          {/* Plates on right side */}
           <div className="flex gap-1 flex-row-reverse">
             {plates.map((plate, idx) => (
               Array.from({ length: plate.count }).map((_, i) => {
@@ -254,7 +247,6 @@ export const PlateCalculator: React.FC = () => {
             )).flat()}
           </div>
 
-          {/* Right sleeve */}
           <div className="w-8 h-12 bg-gray-400 rounded-r-md flex-shrink-0" />
         </div>
       </div>
@@ -267,7 +259,6 @@ export const PlateCalculator: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Plate Calculator</h2>
 
-          {/* Unit Toggle */}
           <div className="flex bg-gray-200 rounded-lg p-1">
             <button
               onClick={() => switchUnit('lb')}

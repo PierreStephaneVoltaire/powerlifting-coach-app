@@ -4,7 +4,6 @@ import { AuthTokens } from '@/types';
 import { offlineQueue } from './offlineQueue';
 
 import { generateUUID } from '@/utils/uuid';
-// Use empty string so requests go to same origin, nginx proxies to backend services
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const DEFAULT_TIMEOUT = 30000;
 const WRITE_TIMEOUT = 60000;
@@ -25,7 +24,6 @@ class ApiClient {
   }
 
   private setupInterceptors() {
-    // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
         const { tokens } = useAuthStore.getState();
@@ -37,7 +35,6 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor to handle token refresh
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
@@ -48,17 +45,15 @@ class ApiClient {
 
           try {
             const { tokens, refreshTokens, logout } = useAuthStore.getState();
-            
+
             if (tokens?.refresh_token) {
               const newTokens = await this.refreshToken(tokens.refresh_token);
               refreshTokens(newTokens);
-              
-              // Retry original request with new token
+
               originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
               return this.client(originalRequest);
             }
           } catch (refreshError) {
-            // Refresh failed, logout user
             useAuthStore.getState().logout();
             window.location.href = '/login';
           }
@@ -76,7 +71,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Auth endpoints
   async login(email: string, password: string) {
     const response = await this.client.post('/api/v1/auth/login', {
       email,
@@ -106,7 +100,6 @@ class ApiClient {
     return response.data;
   }
 
-  // User endpoints
   async getProfile() {
     const response = await this.client.get('/api/v1/users/profile');
     return response.data;
@@ -141,7 +134,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Video endpoints
   async getUploadUrl(filename: string, fileSize: number) {
     const response = await this.client.post('/api/v1/videos/upload', {
       filename,
@@ -176,7 +168,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Settings endpoints
   async getUserSettings() {
     const response = await this.client.get('/api/v1/settings/user');
     return response.data;
@@ -192,7 +183,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Upload file to presigned URL
   async uploadFile(url: string, file: File, onProgress?: (progress: number) => void) {
     const response = await axios.put(url, file, {
       headers: {
@@ -208,7 +198,6 @@ class ApiClient {
     return response;
   }
 
-  // Feed endpoints
   async getFeed(limit = 20, cursor?: string, visibility = 'public') {
     const params: any = { limit, visibility };
     if (cursor) params.cursor = cursor;
@@ -222,7 +211,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Comments and Likes endpoints
   async getPostComments(postId: string) {
     const response = await this.client.get(`/api/v1/posts/${postId}/comments`);
     return response.data;
@@ -233,7 +221,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Event submission (notification service)
   async submitEvent(event: any, options: { useOfflineQueue?: boolean } = {}) {
     const { useOfflineQueue: shouldUseQueue = true } = options;
 

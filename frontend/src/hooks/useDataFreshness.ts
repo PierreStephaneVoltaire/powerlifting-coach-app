@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+const STALE_THRESHOLD_MS = 5 * 60 * 1000;
 
 export const useDataFreshness = (lastFetchTimestamp: number | null) => {
   const [isStale, setIsStale] = useState(false);
@@ -18,7 +18,7 @@ export const useDataFreshness = (lastFetchTimestamp: number | null) => {
 
     checkStaleness();
 
-    const interval = setInterval(checkStaleness, 30000); // Check every 30 seconds
+    const interval = setInterval(checkStaleness, 30000);
 
     return () => clearInterval(interval);
   }, [lastFetchTimestamp]);

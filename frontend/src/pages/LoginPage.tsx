@@ -20,7 +20,6 @@ export const LoginPage: React.FC = () => {
     try {
       const response = await apiClient.login(email, password);
 
-      // Validate response structure
       if (!response || !response.tokens || !response.user) {
         console.error('Invalid response structure:', response);
         setError('Login succeeded but received invalid response format. Please try again.');
@@ -45,24 +44,18 @@ export const LoginPage: React.FC = () => {
 
       await apiClient.submitEvent(event);
 
-      // Only athletes need onboarding, coaches go straight to feed
       if (response.user.user_type === 'athlete') {
-        // Check if athlete has completed onboarding
         try {
           await apiClient.getUserSettings();
-          // Settings exist, athlete has completed onboarding
           navigate('/feed');
         } catch (settingsError: any) {
-          // 404 means no settings exist, athlete needs onboarding
           if (settingsError.response?.status === 404) {
             navigate('/onboarding');
           } else {
-            // Other error, default to feed
             navigate('/feed');
           }
         }
       } else {
-        // Coaches don't need onboarding
         navigate('/feed');
       }
     } catch (err: any) {
@@ -70,9 +63,7 @@ export const LoginPage: React.FC = () => {
       console.error('Response data:', err.response?.data);
       console.error('Response status:', err.response?.status);
 
-      // Handle different error scenarios
       if (err.response) {
-        // Server responded with error status
         const errorMessage = err.response.data?.error || err.response.data?.message;
         if (errorMessage) {
           setError(errorMessage);
@@ -80,10 +71,8 @@ export const LoginPage: React.FC = () => {
           setError(`Login failed (${err.response.status}). Please try again.`);
         }
       } else if (err.request) {
-        // Request made but no response
         setError('Cannot connect to server. Please check your connection.');
       } else {
-        // Something else went wrong
         setError(err.message || 'Login failed. Please try again.');
       }
     } finally {

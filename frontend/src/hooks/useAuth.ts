@@ -11,8 +11,7 @@ export const useAuth = () => {
     mutationFn: async ({ email, password }: LoginRequest) => {
       setLoading(true);
       const tokens = await apiClient.login(email, password);
-      
-      // Create user in user service
+
       const userResponse = await apiClient.getProfile();
       
       return { tokens, userResponse };
@@ -30,8 +29,7 @@ export const useAuth = () => {
     mutationFn: async ({ email, password, name, user_type }: RegisterRequest) => {
       setLoading(true);
       const tokens = await apiClient.register(email, password, name, user_type);
-      
-      // Get user profile after registration
+
       const userResponse = await apiClient.getProfile();
       
       return { tokens, userResponse };

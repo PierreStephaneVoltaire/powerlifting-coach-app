@@ -22,7 +22,6 @@ export const RegisterPage: React.FC = () => {
     try {
       const response = await apiClient.register(email, password, name, userType);
 
-      // Validate response structure
       if (!response || !response.tokens || !response.user) {
         console.error('Invalid response structure:', response);
         setError('Registration succeeded but received invalid response format. Please try logging in.');
@@ -53,9 +52,7 @@ export const RegisterPage: React.FC = () => {
       console.error('Response data:', err.response?.data);
       console.error('Response status:', err.response?.status);
 
-      // Handle different error scenarios
       if (err.response) {
-        // Server responded with error status
         const errorMessage = err.response.data?.error || err.response.data?.message;
         if (errorMessage) {
           setError(errorMessage);
@@ -63,10 +60,8 @@ export const RegisterPage: React.FC = () => {
           setError(`Registration failed (${err.response.status}). Please try again.`);
         }
       } else if (err.request) {
-        // Request made but no response
         setError('Cannot connect to server. Please check your connection.');
       } else {
-        // Something else went wrong
         setError(err.message || 'Registration failed. Please try again.');
       }
     } finally {
