@@ -5,11 +5,38 @@ import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { OnboardingSettings } from '@/types';
 
+const MAX_WEIGHT_KG = 635;
+const MAX_SQUAT_KG = 700;
+const MAX_BENCH_KG = 700;
+const MAX_DEADLIFT_KG = 510;
+const MAX_TOTAL_KG = 1400;
+const MIN_LIFT_KG = 25;
+const MIN_COMPETITION_DAYS = 14;
+const MAX_HEIGHT_CM = 272;
+const MIN_HEIGHT_CM = 91;
+const SESSION_MIN_LENGTH = 30;
+
 const getMinCompetitionDate = () => {
   const date = new Date();
-  date.setDate(date.getDate() + 14);
+  date.setDate(date.getDate() + MIN_COMPETITION_DAYS);
   return date.toISOString().split('T')[0];
 };
+
+const getWeightClassKg = (weightClass: string | undefined): number => {
+  if (!weightClass) return 0;
+  if (weightClass.includes('+')) return 1000;
+  const match = weightClass.match(/(\d+)/);
+  return match ? parseInt(match[0]) : 0;
+};
+
+const CANADIAN_FEDS = [
+  { value: 'CPU', label: 'Canadian Powerlifting Union (CPU)' },
+  { value: 'OPA', label: 'Ontario Powerlifting Association (OPA)' },
+  { value: 'BCPA', label: 'BC Powerlifting Association (BCPA)' },
+  { value: 'FQForce', label: 'Fédération Québécoise de Force (FQForce)' },
+  { value: 'APU', label: 'Alberta Powerlifting Union (APU)' },
+  { value: 'Non-Sanctioned', label: 'Non-Sanctioned / Local Meet' },
+];
 
 interface FormData extends OnboardingSettings {
   has_competed: boolean;
@@ -25,15 +52,6 @@ interface FormData extends OnboardingSettings {
   injuries: string;
   knee_sleeve: string;
 }
-
-const CANADIAN_FEDS = [
-  { value: 'CPU', label: 'Canadian Powerlifting Union (CPU)' },
-  { value: 'OPA', label: 'Ontario Powerlifting Association (OPA)' },
-  { value: 'BCPA', label: 'BC Powerlifting Association (BCPA)' },
-  { value: 'FQForce', label: 'Fédération Québécoise de Force (FQForce)' },
-  { value: 'APU', label: 'Alberta Powerlifting Union (APU)' },
-  { value: 'Non-Sanctioned', label: 'Non-Sanctioned / Local Meet' },
-];
 
 export const OnboardingForm: React.FC = () => {
   const navigate = useNavigate();
@@ -56,7 +74,7 @@ export const OnboardingForm: React.FC = () => {
       squat_goal: { value: 0, unit: 'kg' },
       bench_goal: { value: 0, unit: 'kg' },
       dead_goal: { value: 0, unit: 'kg' },
-      session_length_minutes: 30,
+      session_length_minutes: SESSION_MIN_LENGTH,
       injuries: '',
       knee_sleeve: '',
       
@@ -73,7 +91,6 @@ export const OnboardingForm: React.FC = () => {
   });
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    console.log("submitting...")
     if (!user) {
       setError('User not authenticated');
       return;
@@ -110,7 +127,6 @@ export const OnboardingForm: React.FC = () => {
       await apiClient.submitOnboardingSettings(user.id, apiPayload);
       navigate('/feed');
     } catch (err: any) {
-      console.error('Failed to submit onboarding settings:', err);
       setError(err.response?.data?.error || 'Failed to save settings. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -119,6 +135,35 @@ export const OnboardingForm: React.FC = () => {
 
   const hasCompeted = watch('has_competed');
   const heightUnit = watch('height.unit');
+  const watchedFeet = watch('height.feet') as number | undefined;
+  const watchedInches = watch('height.inches') as number | undefined;
+  const watchedHeightValue = watch('height.value') as number | undefined;
+  const watchedSquatGoal = watch('squat_goal.value') as number;
+  const watchedBenchGoal = watch('bench_goal.value') as number;
+  const watchedDeadGoal = watch('dead_goal.value') as number;
+
+  const currentWeightKg = watch('weight.unit') === 'lb'
+    ? (watch('weight.value') || 0) / 2.20462
+    : (watch('weight.value') || 0);
+
+  const targetWeightClass = watch('target_weight_class');
+  const targetKg = getWeightClassKg(targetWeightClass);
+
+  const weightPlanValidation = (value: string | undefined) => {
+    if (!value || value === 'maintain') return true;
+
+    if (targetKg === 0) return true;
+
+    if (value === 'gain' && currentWeightKg > targetKg + 1.0) {
+      return `Cannot select 'Gain'. Current weight (${currentWeightKg.toFixed(1)} kg) is more than 1 kg above the target weight class (${targetKg} kg). Select 'Maintain' or 'Lose'.`;
+    }
+
+    if (value === 'lose' && currentWeightKg < targetKg - 1.0) {
+      return `Cannot select 'Lose'. Current weight (${currentWeightKg.toFixed(1)} kg) is more than 1 kg below the target weight class (${targetKg} kg). Select 'Maintain' or 'Gain'.`;
+    }
+
+    return true;
+  };
 
   const getStepFields = (step: number): FieldPath<FormData>[] => {
     let step1Fields: FieldPath<FormData>[] = [
@@ -174,17 +219,6 @@ export const OnboardingForm: React.FC = () => {
 
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const watchedFeet = watch('height.feet') as number | undefined;
-  const watchedInches = watch('height.inches') as number | undefined;
-  const watchedHeightValue = watch('height.value') as number | undefined;
-
-  const watchedSquatGoal = watch('squat_goal.value') as number | undefined;
-  const watchedBenchGoal = watch('bench_goal.value') as number | undefined;
-  const watchedDeadGoal = watch('dead_goal.value') as number | undefined;
-  
-  const goalMinWeight = 25;
-  const sessionMinLength = 30;
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white shadow rounded-lg p-8">
@@ -228,50 +262,6 @@ export const OnboardingForm: React.FC = () => {
             <div className="space-y-6">
               <h3 className="text-xl font-semibold mb-6">Basic Information & Current Lifts</h3>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Have you competed in powerlifting before? *
-                </label>
-                <Controller
-                  name="has_competed"
-                  control={control}
-                  rules={{ required: "This field is required" }}
-                  render={({ field: { onChange, onBlur, name, ref, value } }) => (
-                    <div className="flex gap-4">
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          onBlur={onBlur}
-                          name={name}
-                          ref={ref}
-                          value="true"
-                          checked={value === true}
-                          onChange={() => onChange(true)}
-                          className="form-radio text-blue-600"
-                        />
-                        <span className="ml-2">Yes</span>
-                      </label>
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          onBlur={onBlur}
-                          name={name}
-                          ref={ref}
-                          value="false"
-                          checked={value === false}
-                          onChange={() => onChange(false)}
-                          className="form-radio text-blue-600"
-                        />
-                        <span className="ml-2">No</span>
-                      </label>
-                    </div>
-                  )}
-                />
-                {errors.has_competed && (
-                  <span className="text-sm text-red-600">{errors.has_competed.message}</span>
-                )}
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -284,7 +274,7 @@ export const OnboardingForm: React.FC = () => {
                       required: "Age is required",
                       min: { value: 8, message: "Must be at least 8 years old" },
                       max: { value: 120, message: "Must be no more than 120 years old" },
-                      validate: (value) => value > 0 || "Age must be greater than 0"
+                      validate: (value) => (value as number) > 0 || "Age must be greater than 0"
                     }}
                     render={({ field }) => (
                       <input
@@ -306,7 +296,7 @@ export const OnboardingForm: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Weight *
+                    Current Weight *
                   </label>
                   <div className="flex gap-2">
                     <Controller
@@ -315,7 +305,15 @@ export const OnboardingForm: React.FC = () => {
                       rules={{
                         required: "Weight is required",
                         min: { value: 1, message: "Weight must be at least 1" },
-                        validate: (value) => value > 0 || "Weight must be greater than 0"
+                        max: { value: MAX_WEIGHT_KG * 2.20462 + 1, message: `Max weight is ${MAX_WEIGHT_KG} kg / ${(MAX_WEIGHT_KG * 2.20462).toFixed(0)} lb` },
+                        validate: (value) => {
+                          const val = value as number | undefined;
+                          if (val === undefined || val === null) return "Weight is required";
+                          if (watch('weight.unit') === 'kg' && val > MAX_WEIGHT_KG) {
+                            return `Max weight is ${MAX_WEIGHT_KG} kg`;
+                          }
+                          return val > 0 || "Weight must be greater than 0"
+                        }
                       }}
                       render={({ field }) => (
                         <input
@@ -337,7 +335,7 @@ export const OnboardingForm: React.FC = () => {
                       render={({ field }) => (
                         <select
                           {...field}
-                          className="px-3 py-2 border border-gray-300 rounded-md"
+                          className="px-3 py-2 border border-gray-300 rounded-md appearance-none cursor-pointer"
                         >
                           <option value="kg">kg</option>
                           <option value="lb">lb</option>
@@ -363,7 +361,7 @@ export const OnboardingForm: React.FC = () => {
                     render={({ field }) => (
                       <select
                         {...field}
-                        className="px-3 py-2 border border-gray-300 rounded-md mb-2"
+                        className="px-3 py-2 border border-gray-300 rounded-md mb-2 appearance-none cursor-pointer"
                       >
                         <option value="cm">cm</option>
                         <option value="in">ft/in</option>
@@ -377,18 +375,18 @@ export const OnboardingForm: React.FC = () => {
                         control={control}
                         rules={{
                           required: "Feet is required",
-                          min: { value: 0, message: "Feet cannot be negative" },
-                          max: { value: 10, message: "Feet must be reasonable (max 10')" },
-                          validate: (value) => value !== undefined || "Feet is required"
+                          min: { value: 3, message: "Min height is 3'0\"" },
+                          max: { value: 8, message: "Max height is 8'11\"" },
+                          validate: (value) => (value !== undefined && value !== null && (value as number) >= 3) || "Feet is required"
                         }}
                         render={({ field }) => (
                           <input
                             {...field}
                             type="number"
-                            min="0"
-                            max="10"
-                            placeholder="Feet"
-                            className={`w-20 px-3 py-2 border rounded-md ${
+                            min="3"
+                            max="8"
+                            placeholder="Feet (3-8)"
+                            className={`w-24 px-3 py-2 border rounded-md ${
                               errors.height?.feet ? 'border-red-300' : 'border-gray-300'
                             }`}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
@@ -403,7 +401,19 @@ export const OnboardingForm: React.FC = () => {
                           required: "Inches is required",
                           min: { value: 0, message: "Inches cannot be negative" },
                           max: { value: 11, message: "Inches must be less than 12" },
-                          validate: (value) => value !== undefined || "Inches is required"
+                          validate: (value: number | undefined) => {
+                            if (value === undefined || value === null) {
+                              return "Inches is required";
+                            }
+                            const feet = getValues('height.feet') || 0;
+                            if (feet === 8 && value > 11) {
+                              return "Max height is 8'11\"";
+                            }
+                            if (feet === 3 && value < 0) {
+                              return "Min height is 3'0\"";
+                            }
+                            return true; 
+                          }
                         }}
                         render={({ field }) => (
                           <input
@@ -411,8 +421,8 @@ export const OnboardingForm: React.FC = () => {
                             type="number"
                             min="0"
                             max="11"
-                            placeholder="Inches"
-                            className={`w-20 px-3 py-2 border rounded-md ${
+                            placeholder="Inches (0-11)"
+                            className={`w-24 px-3 py-2 border rounded-md ${
                               errors.height?.inches ? 'border-red-300' : 'border-gray-300'
                             }`}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
@@ -427,20 +437,22 @@ export const OnboardingForm: React.FC = () => {
                       control={control}
                       rules={{
                         required: "Height is required",
-                        min: { value: 0, message: "Height cannot be negative" },
-                        validate: (value) => !value || value >= 0 || "Height cannot be negative"
+                        min: { value: MIN_HEIGHT_CM, message: `Min height is ${MIN_HEIGHT_CM} cm (3'0")` },
+                        max: { value: MAX_HEIGHT_CM, message: `Max height is ${MAX_HEIGHT_CM} cm (8'11")` },
+                        validate: (value: number | undefined) => (value !== undefined && value > 0) || "Height must be greater than 0"
                       }}
                       render={({ field }) => (
                         <input
                           {...field}
                           type="number"
                           step="0.1"
-                          min="0"
+                          min={MIN_HEIGHT_CM}
+                          max={MAX_HEIGHT_CM}
                           className={`w-full px-3 py-2 border rounded-md ${
                             errors.height?.value ? 'border-red-300' : 'border-gray-300'
                           }`}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          placeholder="e.g., 175"
+                          placeholder={`e.g., 175 (${MIN_HEIGHT_CM}-${MAX_HEIGHT_CM})`}
                         />
                       )}
                     />
@@ -451,33 +463,74 @@ export const OnboardingForm: React.FC = () => {
                     </span>
                   )}
                   {(() => {
-                    if (heightUnit === 'in') {
-                      const feet = watchedFeet || 0;
-                      const inches = watchedInches || 0;
-                      const totalInches = feet * 12 + inches;
-                      return totalInches > 0 ? (
+                    const feet = watchedFeet || 0;
+                    const inches = watchedInches || 0;
+                    const totalInches = feet * 12 + inches;
+                    const heightValue = watchedHeightValue || 0;
+                    
+                    if (heightUnit === 'in' && totalInches > 0) {
+                      return (
                         <p className="text-xs text-gray-500 mt-1">
                           {feet}'{inches}" = {Math.round(totalInches * 2.54)} cm
                         </p>
-                      ) : null;
-                    } else {
-                      const heightValue = watchedHeightValue || 0;
-                      const totalInches = heightValue / 2.54;
-                      const feet = Math.floor(totalInches / 12);
-                      const inches = Math.round(totalInches % 12);
-                      return heightValue > 0 ? (
+                      );
+                    } else if (heightUnit === 'cm' && heightValue > 0) {
+                      const totalInchesCalc = heightValue / 2.54;
+                      const feetCalc = Math.floor(totalInchesCalc / 12);
+                      const inchesCalc = Math.round(totalInchesCalc % 12);
+                      return (
                         <p className="text-xs text-gray-500 mt-1">
-                          {heightValue} cm = {feet}'{inches}"
+                          {heightValue} cm ≈ {feetCalc}'{inchesCalc}"
                         </p>
-                      ) : null;
+                      );
                     }
+                    return null;
                   })()}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Have you competed in powerlifting before? *
+                </label>
+                <Controller
+                  name="has_competed"
+                  control={control}
+                  rules={{ required: "This field is required" }}
+                  render={({ field: { onChange, onBlur, name, ref, value } }) => (
+                    <div className="flex gap-4">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          onBlur={onBlur}
+                          name={name}
+                          ref={ref}
+                          checked={value === true}
+                          onChange={() => onChange(true)}
+                          className="form-radio text-blue-600"
+                        />
+                        <span className="ml-2">Yes</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          onBlur={onBlur}
+                          name={name}
+                          ref={ref}
+                          checked={value === false}
+                          onChange={() => onChange(false)}
+                          className="form-radio text-blue-600"
+                        />
+                        <span className="ml-2">No</span>
+                      </label>
+                    </div>
+                  )}
+                />
               </div>
               
               <h4 className="text-lg font-medium pt-4">Current Best Lifts (in kg)</h4>
               <p className="text-sm text-gray-500 mb-4">
-                Enter your best gym or competition lifts. Must be at least {goalMinWeight} kg (bar + collars).
+                Enter your best gym or competition 1RM. Must be at least {MIN_LIFT_KG} kg. Max limits: S/{MAX_SQUAT_KG}kg, B/{MAX_BENCH_KG}kg, D/{MAX_DEADLIFT_KG}kg.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -490,14 +543,16 @@ export const OnboardingForm: React.FC = () => {
                     control={control}
                     rules={{
                       required: "Squat is required",
-                      min: { value: goalMinWeight, message: `Squat must be at least ${goalMinWeight} kg` },
+                      min: { value: MIN_LIFT_KG, message: `Squat must be at least ${MIN_LIFT_KG} kg` },
+                      max: { value: MAX_SQUAT_KG, message: `Max squat is ${MAX_SQUAT_KG} kg` },
                     }}
                     render={({ field }) => (
                       <input
                         {...field}
                         type="number"
                         step="0.5"
-                        min={goalMinWeight}
+                        min={MIN_LIFT_KG}
+                        max={MAX_SQUAT_KG}
                         className={`w-full px-3 py-2 border rounded-md ${
                           errors.best_squat_kg ? 'border-red-300' : 'border-gray-300'
                         }`}
@@ -519,14 +574,16 @@ export const OnboardingForm: React.FC = () => {
                     control={control}
                     rules={{
                       required: "Bench is required",
-                      min: { value: goalMinWeight, message: `Bench must be at least ${goalMinWeight} kg` },
+                      min: { value: MIN_LIFT_KG, message: `Bench must be at least ${MIN_LIFT_KG} kg` },
+                      max: { value: MAX_BENCH_KG, message: `Max bench is ${MAX_BENCH_KG} kg` },
                     }}
                     render={({ field }) => (
                       <input
                         {...field}
                         type="number"
                         step="0.5"
-                        min={goalMinWeight}
+                        min={MIN_LIFT_KG}
+                        max={MAX_BENCH_KG}
                         className={`w-full px-3 py-2 border rounded-md ${
                           errors.best_bench_kg ? 'border-red-300' : 'border-gray-300'
                         }`}
@@ -548,14 +605,16 @@ export const OnboardingForm: React.FC = () => {
                     control={control}
                     rules={{
                       required: "Deadlift is required",
-                      min: { value: goalMinWeight, message: `Deadlift must be at least ${goalMinWeight} kg` },
+                      min: { value: MIN_LIFT_KG, message: `Deadlift must be at least ${MIN_LIFT_KG} kg` },
+                      max: { value: MAX_DEADLIFT_KG, message: `Max deadlift is ${MAX_DEADLIFT_KG} kg` },
                     }}
                     render={({ field }) => (
                       <input
                         {...field}
                         type="number"
                         step="0.5"
-                        min={goalMinWeight}
+                        min={MIN_LIFT_KG}
+                        max={MAX_DEADLIFT_KG}
                         className={`w-full px-3 py-2 border rounded-md ${
                           errors.best_dead_kg ? 'border-red-300' : 'border-gray-300'
                         }`}
@@ -571,7 +630,7 @@ export const OnboardingForm: React.FC = () => {
 
               {hasCompeted && (
                 <div className="space-y-6 pt-6 border-t border-gray-200">
-                  <h4 className="text-lg font-medium">Competition Best Lifts</h4>
+                  <h4 className="text-lg font-medium">Last Competition PRs</h4>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Best Total (kg) *
@@ -581,12 +640,14 @@ export const OnboardingForm: React.FC = () => {
                       control={control}
                       rules={{
                         required: "Total is required",
-                        min: { value: goalMinWeight * 3, message: `Total must be at least ${goalMinWeight * 3} kg` },
+                        min: { value: MIN_LIFT_KG * 3, message: `Total must be at least ${MIN_LIFT_KG * 3} kg` },
+                        max: { value: MAX_TOTAL_KG, message: `Max total is ${MAX_TOTAL_KG} kg` },
                         validate: (value) => {
                           const s = getValues('best_squat_kg') || 0;
                           const b = getValues('best_bench_kg') || 0;
                           const d = getValues('best_dead_kg') || 0;
-                          if (value > 0 && value < s + b + d) {
+                          const val = value as number || 0;
+                          if (val > 0 && val < s + b + d) {
                               return "Total should typically be equal to or greater than the sum of the best lifts.";
                           }
                           return true;
@@ -597,7 +658,8 @@ export const OnboardingForm: React.FC = () => {
                           {...field}
                           type="number"
                           step="0.5"
-                          min={goalMinWeight * 3}
+                          min={MIN_LIFT_KG * 3}
+                          max={MAX_TOTAL_KG}
                           className={`w-full px-3 py-2 border rounded-md ${
                             errors.best_total_kg ? 'border-red-300' : 'border-gray-300'
                           }`}
@@ -622,7 +684,7 @@ export const OnboardingForm: React.FC = () => {
                         render={({ field }) => (
                           <select
                             {...field}
-                            className={`w-full px-3 py-2 border rounded-md ${
+                            className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                               errors.comp_federation ? 'border-red-300' : 'border-gray-300'
                             }`}
                           >
@@ -686,7 +748,7 @@ export const OnboardingForm: React.FC = () => {
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-3 py-2 border rounded-md ${
+                        className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                           errors.target_weight_class ? 'border-red-300' : 'border-gray-300'
                         }`}
                       >
@@ -748,7 +810,7 @@ export const OnboardingForm: React.FC = () => {
               
               <h4 className="text-lg font-medium pt-4">Goal Lifts (in kg)</h4>
               <p className="text-sm text-gray-500 mb-4">
-                Your goals must be at least {goalMinWeight} kg (bar + collars).
+                Your goals must be at least {MIN_LIFT_KG} kg. Max limits: S/{MAX_SQUAT_KG}kg, B/{MAX_BENCH_KG}kg, D/{MAX_DEADLIFT_KG}kg.
               </p>
 
               <div>
@@ -760,14 +822,16 @@ export const OnboardingForm: React.FC = () => {
                   control={control}
                   rules={{
                     required: "Squat goal is required",
-                    min: { value: goalMinWeight, message: `Squat goal must be at least ${goalMinWeight} kg` },
+                    min: { value: MIN_LIFT_KG, message: `Squat goal must be at least ${MIN_LIFT_KG} kg` },
+                    max: { value: MAX_SQUAT_KG, message: `Max squat goal is ${MAX_SQUAT_KG} kg` },
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
                       step="0.5"
-                      min={goalMinWeight}
+                      min={MIN_LIFT_KG}
+                      max={MAX_SQUAT_KG}
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.squat_goal?.value ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -778,14 +842,11 @@ export const OnboardingForm: React.FC = () => {
                 {errors.squat_goal?.value && (
                   <span className="text-sm text-red-600">{errors.squat_goal.value.message}</span>
                 )}
-                {(() => {
-                    const squatGoalValue = watchedSquatGoal || 0;
-                    return squatGoalValue > 0 ? (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {squatGoalValue} kg = {Math.round(squatGoalValue * 2.20462)} lbs (helper conversion)
-                      </p>
-                    ) : null;
-                  })()}
+                {watchedSquatGoal > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {watchedSquatGoal} kg = {Math.round(watchedSquatGoal * 2.20462)} lbs
+                  </p>
+                )}
               </div>
 
               <div>
@@ -797,14 +858,16 @@ export const OnboardingForm: React.FC = () => {
                   control={control}
                   rules={{
                     required: "Bench goal is required",
-                    min: { value: goalMinWeight, message: `Bench goal must be at least ${goalMinWeight} kg` },
+                    min: { value: MIN_LIFT_KG, message: `Bench goal must be at least ${MIN_LIFT_KG} kg` },
+                    max: { value: MAX_BENCH_KG, message: `Max bench goal is ${MAX_BENCH_KG} kg` },
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
                       step="0.5"
-                      min={goalMinWeight}
+                      min={MIN_LIFT_KG}
+                      max={MAX_BENCH_KG}
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.bench_goal?.value ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -815,14 +878,11 @@ export const OnboardingForm: React.FC = () => {
                 {errors.bench_goal?.value && (
                   <span className="text-sm text-red-600">{errors.bench_goal.value.message}</span>
                 )}
-                {(() => {
-                    const benchGoalValue = watchedBenchGoal || 0;
-                    return benchGoalValue > 0 ? (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {benchGoalValue} kg = {Math.round(benchGoalValue * 2.20462)} lbs (helper conversion)
-                      </p>
-                    ) : null;
-                  })()}
+                {watchedBenchGoal > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {watchedBenchGoal} kg = {Math.round(watchedBenchGoal * 2.20462)} lbs
+                  </p>
+                )}
               </div>
 
               <div>
@@ -834,14 +894,16 @@ export const OnboardingForm: React.FC = () => {
                   control={control}
                   rules={{
                     required: "Deadlift goal is required",
-                    min: { value: goalMinWeight, message: `Deadlift goal must be at least ${goalMinWeight} kg` },
+                    min: { value: MIN_LIFT_KG, message: `Deadlift goal must be at least ${MIN_LIFT_KG} kg` },
+                    max: { value: MAX_DEADLIFT_KG, message: `Max deadlift goal is ${MAX_DEADLIFT_KG} kg` },
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
                       step="0.5"
-                      min={goalMinWeight}
+                      min={MIN_LIFT_KG}
+                      max={MAX_DEADLIFT_KG}
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.dead_goal?.value ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -852,14 +914,11 @@ export const OnboardingForm: React.FC = () => {
                 {errors.dead_goal?.value && (
                   <span className="text-sm text-red-600">{errors.dead_goal.value.message}</span>
                 )}
-                {(() => {
-                    const deadGoalValue = watchedDeadGoal || 0;
-                    return deadGoalValue > 0 ? (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {deadGoalValue} kg = {Math.round(deadGoalValue * 2.20462)} lbs (helper conversion)
-                      </p>
-                    ) : null;
-                  })()}
+                {watchedDeadGoal > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {watchedDeadGoal} kg = {Math.round(watchedDeadGoal * 2.20462)} lbs
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -874,7 +933,7 @@ export const OnboardingForm: React.FC = () => {
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-3 py-2 border rounded-md ${
+                        className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                           errors.most_important_lift ? 'border-red-300' : 'border-gray-300'
                         }`}
                       >
@@ -906,7 +965,7 @@ export const OnboardingForm: React.FC = () => {
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-3 py-2 border rounded-md ${
+                        className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                           errors.least_important_lift
                             ? 'border-red-300'
                             : 'border-gray-300'
@@ -942,7 +1001,7 @@ export const OnboardingForm: React.FC = () => {
                     required: "Training days per week is required",
                     min: { value: 1, message: "Training days must be at least 1" },
                     max: { value: 7, message: "Training days must be no more than 7" },
-                    validate: (value) => value > 0 || "Training days must be greater than 0"
+                    validate: (value) => (value as number) > 0 || "Training days must be greater than 0"
                   }}
                   render={({ field }) => (
                     <input
@@ -975,14 +1034,14 @@ export const OnboardingForm: React.FC = () => {
                   control={control}
                   rules={{
                     required: "Session length is required",
-                    min: { value: sessionMinLength, message: `Session length must be at least ${sessionMinLength} minutes` },
+                    min: { value: SESSION_MIN_LENGTH, message: `Session length must be at least ${SESSION_MIN_LENGTH} minutes` },
                     max: { value: 360, message: "Session length must be no more than 360 minutes (6 hours)" },
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
-                      min={sessionMinLength}
+                      min={SESSION_MIN_LENGTH}
                       max="360"
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.session_length_minutes
@@ -990,7 +1049,7 @@ export const OnboardingForm: React.FC = () => {
                           : 'border-gray-300'
                       }`}
                       onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      placeholder="30-360 minutes"
+                      placeholder={`${SESSION_MIN_LENGTH}-360 minutes`}
                     />
                   )}
                 />
@@ -1020,7 +1079,7 @@ export const OnboardingForm: React.FC = () => {
                   render={({ field }) => (
                     <select
                       {...field}
-                      className={`w-full px-3 py-2 border rounded-md ${
+                      className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                         errors.volume_preference ? 'border-red-300' : 'border-gray-300'
                       }`}
                     >
@@ -1057,7 +1116,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(1)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_squat') === 1
                                 ? 'bg-red-100 border-2 border-red-500'
                                 : 'border-2 border-gray-200'
@@ -1069,7 +1128,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(2)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_squat') === 2
                                 ? 'bg-yellow-100 border-2 border-yellow-500'
                                 : 'border-2 border-gray-200'
@@ -1081,7 +1140,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(3)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_squat') === 3
                                 ? 'bg-green-100 border-2 border-green-500'
                                 : 'border-2 border-gray-200'
@@ -1116,7 +1175,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(1)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_bench') === 1
                                 ? 'bg-red-100 border-2 border-red-500'
                                 : 'border-2 border-gray-200'
@@ -1128,7 +1187,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(2)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_bench') === 2
                                 ? 'bg-yellow-100 border-2 border-yellow-500'
                                 : 'border-2 border-gray-200'
@@ -1140,7 +1199,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(3)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_bench') === 3
                                 ? 'bg-green-100 border-2 border-green-500'
                                 : 'border-2 border-gray-200'
@@ -1175,7 +1234,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(1)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_dead') === 1
                                 ? 'bg-red-100 border-2 border-red-500'
                                 : 'border-2 border-gray-200'
@@ -1187,7 +1246,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(2)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_dead') === 2
                                 ? 'bg-yellow-100 border-2 border-yellow-500'
                                 : 'border-2 border-gray-200'
@@ -1199,7 +1258,7 @@ export const OnboardingForm: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => field.onChange(3)}
-                            className={`text-2xl p-2 rounded-full ${
+                            className={`text-2xl p-2 rounded-full cursor-pointer ${
                               watch('recovery_rating_dead') === 3
                                 ? 'bg-green-100 border-2 border-green-500'
                                 : 'border-2 border-gray-200'
@@ -1235,7 +1294,7 @@ export const OnboardingForm: React.FC = () => {
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-3 py-2 border rounded-md ${
+                        className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                           errors.squat_stance ? 'border-red-300' : 'border-gray-300'
                         }`}
                       >
@@ -1261,14 +1320,14 @@ export const OnboardingForm: React.FC = () => {
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-3 py-2 border rounded-md ${
+                        className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                           errors.squat_bar_position ? 'border-red-300' : 'border-gray-300'
                         }`}
                       >
                         <option value="high">High Bar</option>
-                        <option value="medium">Medium Bar (Between High and Low)</option>
+                        <option value="medium">Medium Bar</option>
                         <option value="low">Low Bar</option>
-                        <option value="french">French Bar (Lower than Low Bar)</option>
+                        <option value="french">French</option>
                       </select>
                     )}
                   />
@@ -1288,7 +1347,7 @@ export const OnboardingForm: React.FC = () => {
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-3 py-2 border rounded-md ${
+                        className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                           errors.deadlift_style ? 'border-red-300' : 'border-gray-300'
                         }`}
                       >
@@ -1316,11 +1375,14 @@ export const OnboardingForm: React.FC = () => {
                 <Controller
                   name="weight_plan"
                   control={control}
-                  rules={{ required: "Weight plan is required" }}
+                  rules={{ 
+                    required: "Weight plan is required",
+                    validate: weightPlanValidation
+                  }}
                   render={({ field }) => (
                     <select
                       {...field}
-                      className={`w-full px-3 py-2 border rounded-md ${
+                      className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                         errors.weight_plan ? 'border-red-300' : 'border-gray-300'
                       }`}
                     >
@@ -1333,6 +1395,9 @@ export const OnboardingForm: React.FC = () => {
                 {errors.weight_plan && (
                   <span className="text-sm text-red-600">{errors.weight_plan.message}</span>
                 )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Current weight: {currentWeightKg.toFixed(1)} kg. Target class: {targetKg} kg.
+                </p>
               </div>
 
               <div>
@@ -1370,7 +1435,7 @@ export const OnboardingForm: React.FC = () => {
                   render={({ field }) => (
                     <select
                       {...field}
-                      className={`w-full px-3 py-2 border rounded-md ${
+                      className={`w-full px-3 py-2 border rounded-md appearance-none cursor-pointer ${
                         errors.feed_visibility ? 'border-red-300' : 'border-gray-300'
                       }`}
                     >
