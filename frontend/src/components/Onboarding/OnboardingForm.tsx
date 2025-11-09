@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler, FieldPath } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
@@ -48,7 +48,7 @@ export const OnboardingForm: React.FC = () => {
       const feet = apiPayload.height.feet || 0;
       const inches = apiPayload.height.inches || 0;
       apiPayload.height.value = Math.round((feet * 12 + inches) * 2.54);
-      apiPayload.height.unit = 'cm'; 
+      apiPayload.height.unit = 'cm';
     }
 
     if (apiPayload.height) {
@@ -71,7 +71,7 @@ export const OnboardingForm: React.FC = () => {
     }
   };
 
-  const getStepFields = (step: number): (keyof FormData)[] => {
+  const getStepFields = (step: number): FieldPath<FormData>[] => {
     switch (step) {
       case 1:
         return ['age', 'weight.value', 'weight.unit', 'height.feet', 'height.inches', 'height.value'];
@@ -80,7 +80,7 @@ export const OnboardingForm: React.FC = () => {
       case 3:
         return ['training_days_per_week', 'session_length_minutes', 'volume_preference', 'recovery_rating_squat', 'recovery_rating_bench', 'recovery_rating_dead', 'squat_stance', 'deadlift_style'];
       case 4:
-        const step4Fields: (keyof FormData)[] = ['weight_plan', 'feed_visibility'];
+        const step4Fields: FieldPath<FormData>[] = ['weight_plan', 'feed_visibility'];
         if (watch('feed_visibility') === 'passcode') {
             step4Fields.push('passcode');
         }
