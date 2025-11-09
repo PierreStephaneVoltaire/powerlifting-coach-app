@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '@/utils/api';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
+import { OnboardingCheck } from '@/components/Auth/OnboardingCheck';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
@@ -33,7 +34,9 @@ function App() {
           } />
           <Route element={
             <ProtectedRoute>
-              <MainLayout />
+              <OnboardingCheck>
+                <MainLayout />
+              </OnboardingCheck>
             </ProtectedRoute>
           }>
             <Route path="/feed" element={<FeedPage />} />
