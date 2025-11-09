@@ -30,6 +30,15 @@ interface PlateCount {
   count: number;
 }
 
+const BAR_OPTIONS = [
+  { lb: 45, kg: 20, label: "Men's Bar" },
+  { lb: 35, kg: 15, label: "Women's Bar" },
+  { lb: 55, kg: 25, label: 'Hex Bar' },
+  { lb: 33, kg: 15, label: '15kg Training Bar' },
+  { lb: 15, kg: 7, label: 'Technique Bar' },
+  { lb: 0, kg: 0, label: 'Machine - Leg Press/Hack Squat' },
+];
+
 const DEFAULT_INVENTORY_KG: PlateInventoryKg = {
   '25': 4,
   '20': 4,
@@ -51,14 +60,14 @@ const DEFAULT_INVENTORY_LB: PlateInventoryLb = {
 };
 
 const KG_PLATE_COLORS: Record<string, string> = {
-  '25': '#E74C3C',    // Red
-  '20': '#3498DB',    // Blue
-  '15': '#F1C40F',    // Yellow
-  '10': '#27AE60',    // Green
-  '5': '#ECF0F1',     // White
-  '2.5': '#E74C3C',   // Red
-  '1.25': '#3498DB',  // Blue
-  '0.5': '#F1C40F',   // Yellow
+  '25': '#E74C3C',
+  '20': '#3498DB',
+  '15': '#F1C40F',
+  '10': '#27AE60',
+  '5': '#ECF0F1',
+  '2.5': '#E74C3C',
+  '1.25': '#3498DB',
+  '0.5': '#F1C40F',
 };
 
 const LB_PLATE_COLOR = '#2C3E50';
@@ -67,7 +76,7 @@ export const PlateCalculator: React.FC = () => {
   const { user } = useAuthStore();
   const [unit, setUnit] = useState<Unit>('lb');
   const [targetWeight, setTargetWeight] = useState<number>(0);
-  const [barWeight, setBarWeight] = useState<number>(45); // Default to 45lb bar
+  const [barWeight, setBarWeight] = useState<number>(45);
   const [inventoryKg, setInventoryKg] = useState<PlateInventoryKg>(DEFAULT_INVENTORY_KG);
   const [inventoryLb, setInventoryLb] = useState<PlateInventoryLb>(DEFAULT_INVENTORY_LB);
   const [result, setResult] = useState<PlateCount[]>([]);
@@ -164,17 +173,22 @@ export const PlateCalculator: React.FC = () => {
     setUnit(newUnit);
     setResult([]);
     setError(null);
-    if (newUnit === 'kg') {
-      if (barWeight === 45) setBarWeight(20);
-      else if (barWeight === 35) setBarWeight(15);
-      else if (barWeight === 33) setBarWeight(15);
+
+    const currentBar = BAR_OPTIONS.find(
+      (bar) => bar[unit] === barWeight
+    );
+
+    if (currentBar) {
+      setBarWeight(currentBar[newUnit]);
     } else {
-      if (barWeight === 20) setBarWeight(45);
-      else if (barWeight === 15) setBarWeight(35);
+      const conversionFactor = newUnit === 'kg' ? 0.453592 : 2.20462;
+      setBarWeight(parseFloat((barWeight * conversionFactor).toFixed(2)));
     }
   };
 
   const PlateVisualization: React.FC<{ plates: PlateCount[] }> = ({ plates }) => {
+    const sortedPlates = [...plates].sort((a, b) => b.weight - a.weight);
+
     return (
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
@@ -184,7 +198,7 @@ export const PlateCalculator: React.FC = () => {
           <div className="w-8 h-12 bg-gray-400 rounded-l-md flex-shrink-0" />
 
           <div className="flex gap-1">
-            {plates.map((plate, idx) => (
+            {sortedPlates.map((plate, idx) => (
               Array.from({ length: plate.count }).map((_, i) => {
                 const color = unit === 'kg'
                   ? KG_PLATE_COLORS[plate.weight.toString()] || '#95A5A6'
@@ -218,7 +232,7 @@ export const PlateCalculator: React.FC = () => {
           </div>
 
           <div className="flex gap-1 flex-row-reverse">
-            {plates.map((plate, idx) => (
+            {sortedPlates.map((plate, idx) => (
               Array.from({ length: plate.count }).map((_, i) => {
                 const color = unit === 'kg'
                   ? KG_PLATE_COLORS[plate.weight.toString()] || '#95A5A6'
@@ -310,21 +324,12 @@ export const PlateCalculator: React.FC = () => {
                   onChange={(e) => setBarWeight(parseFloat(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
-                  {unit === 'kg' ? (
-                    <>
-                      <option value="20">20kg (Men's Bar)</option>
-                      <option value="15">15kg (Women's Bar)</option>
-                      <option value="10">10kg (Training Bar)</option>
-                      <option value="5">5kg (Technique Bar)</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="45">45lb (Men's Bar)</option>
-                      <option value="35">35lb (Women's Bar)</option>
-                      <option value="33">33lb (15kg Training Bar)</option>
-                      <option value="15">15lb (Technique Bar)</option>
-                    </>
-                  )}
+                  {BAR_OPTIONS.map((bar) => (
+                    <option key={bar.label} value={bar[unit]}>
+                      {bar[unit]}
+                      {unit} ({bar.label})
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -341,6 +346,11 @@ export const PlateCalculator: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Plate Inventory ({unit === 'kg' ? 'Competition Colors' : 'Standard Plates'})
             </h3>
+            {unit === 'kg' && (
+              <p className="text-sm text-gray-600 mb-4">
+                Note: Olympic clips are usually 2.5kg each.
+              </p>
+            )}
             <div className="space-y-2">
               {Object.entries(inventory).map(([weight, count]) => {
                 const color = unit === 'kg' ? KG_PLATE_COLORS[weight] : LB_PLATE_COLOR;
@@ -426,6 +436,11 @@ export const PlateCalculator: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6 mt-6">
+        <h2 className="text-2xl font-bold text-gray-900">Strength Check Me</h2>
+        <p className="text-gray-600 mt-2">Coming soon...</p>
       </div>
     </div>
   );
