@@ -5,7 +5,35 @@ import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { OnboardingSettings } from '@/types';
 
-interface FormData extends OnboardingSettings {}
+const getMinCompetitionDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 14);
+  return date.toISOString().split('T')[0];
+};
+
+interface FormData extends OnboardingSettings {
+  has_competed: boolean;
+  best_squat_kg: number;
+  best_bench_kg: number;
+  best_dead_kg: number;
+  best_total_kg: number;
+  comp_pr_date: string;
+  comp_federation: string;
+
+  squat_bar_position: 'high' | 'medium' | 'low' | 'french';
+
+  injuries: string;
+  knee_sleeve: string;
+}
+
+const CANADIAN_FEDS = [
+  { value: 'CPU', label: 'Canadian Powerlifting Union (CPU)' },
+  { value: 'OPA', label: 'Ontario Powerlifting Association (OPA)' },
+  { value: 'BCPA', label: 'BC Powerlifting Association (BCPA)' },
+  { value: 'FQForce', label: 'Fédération Québécoise de Force (FQForce)' },
+  { value: 'APU', label: 'Alberta Powerlifting Union (APU)' },
+  { value: 'Non-Sanctioned', label: 'Non-Sanctioned / Local Meet' },
+];
 
 export const OnboardingForm: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +42,7 @@ export const OnboardingForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, watch, trigger, formState: { errors } } = useForm<FormData>({
+  const { control, handleSubmit, watch, trigger, formState: { errors }, getValues } = useForm<FormData>({
     defaultValues: {
       weight: { value: 0, unit: 'kg' },
       age: 0,
@@ -28,7 +56,19 @@ export const OnboardingForm: React.FC = () => {
       squat_goal: { value: 0, unit: 'kg' },
       bench_goal: { value: 0, unit: 'kg' },
       dead_goal: { value: 0, unit: 'kg' },
-      session_length_minutes: 0,
+      session_length_minutes: 30,
+      injuries: '',
+      knee_sleeve: '',
+      
+      has_competed: false,
+      best_squat_kg: 0,
+      best_bench_kg: 0,
+      best_dead_kg: 0,
+      best_total_kg: 0,
+      comp_pr_date: '',
+      comp_federation: '',
+      
+      squat_bar_position: 'medium',
     },
   });
 
@@ -50,15 +90,21 @@ export const OnboardingForm: React.FC = () => {
       apiPayload.height.value = Math.round((feet * 12 + inches) * 2.54);
       apiPayload.height.unit = 'cm';
     }
-
+    
     if (apiPayload.height) {
-      delete apiPayload.height.feet;
-      delete apiPayload.height.inches;
+        delete apiPayload.height.feet;
+        delete apiPayload.height.inches;
     }
 
     if (apiPayload.squat_goal) apiPayload.squat_goal.unit = 'kg';
     if (apiPayload.bench_goal) apiPayload.bench_goal.unit = 'kg';
     if (apiPayload.dead_goal) apiPayload.dead_goal.unit = 'kg';
+    
+    if (!apiPayload.has_competed) {
+        apiPayload.best_total_kg = 0;
+        apiPayload.comp_pr_date = null;
+        apiPayload.comp_federation = null;
+    }
 
     try {
       await apiClient.submitOnboardingSettings(user.id, apiPayload);
@@ -71,16 +117,35 @@ export const OnboardingForm: React.FC = () => {
     }
   };
 
+  const hasCompeted = watch('has_competed');
+  const heightUnit = watch('height.unit');
+
   const getStepFields = (step: number): FieldPath<FormData>[] => {
+    let step1Fields: FieldPath<FormData>[] = [
+      'has_competed', 'age', 'weight.value', 'weight.unit',
+      'height.unit', 'height.value', 'best_squat_kg', 'best_bench_kg', 'best_dead_kg'
+    ];
+
+    if (heightUnit === 'in') {
+      step1Fields.push('height.feet', 'height.inches');
+      step1Fields = step1Fields.filter(f => f !== 'height.value');
+    } else {
+      step1Fields = step1Fields.filter(f => f !== 'height.feet' && f !== 'height.inches');
+    }
+
+    if (hasCompeted) {
+      step1Fields.push('best_total_kg', 'comp_pr_date', 'comp_federation');
+    }
+
     switch (step) {
       case 1:
-        return ['age', 'weight.value', 'weight.unit', 'height.feet', 'height.inches', 'height.value'];
+        return step1Fields;
       case 2:
         return ['target_weight_class', 'competition_date', 'squat_goal.value', 'bench_goal.value', 'dead_goal.value', 'most_important_lift', 'least_important_lift'];
       case 3:
-        return ['training_days_per_week', 'session_length_minutes', 'volume_preference', 'recovery_rating_squat', 'recovery_rating_bench', 'recovery_rating_dead', 'squat_stance', 'deadlift_style'];
+        return ['training_days_per_week', 'session_length_minutes', 'volume_preference', 'recovery_rating_squat', 'recovery_rating_bench', 'recovery_rating_dead', 'squat_stance', 'deadlift_style', 'squat_bar_position'];
       case 4:
-        const step4Fields: FieldPath<FormData>[] = ['weight_plan', 'feed_visibility'];
+        const step4Fields: FieldPath<FormData>[] = ['weight_plan', 'feed_visibility', 'injuries', 'knee_sleeve'];
         if (watch('feed_visibility') === 'passcode') {
             step4Fields.push('passcode');
         }
@@ -92,23 +157,23 @@ export const OnboardingForm: React.FC = () => {
 
   const nextStep = async () => {
     const currentStepFields = getStepFields(step);
-    let isValid = true;
-
-    for (const field of currentStepFields) {
-      const fieldValid = await trigger(field);
-      if (!fieldValid) {
-        isValid = false;
-        break;
+    
+    const fieldsToValidate: FieldPath<FormData>[] = currentStepFields.filter(field => {
+      if (!hasCompeted && (field === 'best_total_kg' || field === 'comp_pr_date' || field === 'comp_federation')) {
+        return false;
       }
-    }
+      return true;
+    });
+
+    const isValid = await trigger(fieldsToValidate);
 
     if (isValid) {
       setStep((prev) => Math.min(prev + 1, 4));
     }
   };
+
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const heightUnit = watch('height.unit');
   const watchedFeet = watch('height.feet') as number | undefined;
   const watchedInches = watch('height.inches') as number | undefined;
   const watchedHeightValue = watch('height.value') as number | undefined;
@@ -116,7 +181,9 @@ export const OnboardingForm: React.FC = () => {
   const watchedSquatGoal = watch('squat_goal.value') as number | undefined;
   const watchedBenchGoal = watch('bench_goal.value') as number | undefined;
   const watchedDeadGoal = watch('dead_goal.value') as number | undefined;
-
+  
+  const goalMinWeight = 25;
+  const sessionMinLength = 30;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -159,7 +226,51 @@ export const OnboardingForm: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)}>
           {step === 1 && (
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold mb-6">Basic Information</h3>
+              <h3 className="text-xl font-semibold mb-6">Basic Information & Current Lifts</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Have you competed in powerlifting before? *
+                </label>
+                <Controller
+                  name="has_competed"
+                  control={control}
+                  rules={{ required: "This field is required" }}
+                  render={({ field: { onChange, onBlur, name, ref, value } }) => (
+                    <div className="flex gap-4">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          onBlur={onBlur}
+                          name={name}
+                          ref={ref}
+                          value="true"
+                          checked={value === true}
+                          onChange={() => onChange(true)}
+                          className="form-radio text-blue-600"
+                        />
+                        <span className="ml-2">Yes</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          onBlur={onBlur}
+                          name={name}
+                          ref={ref}
+                          value="false"
+                          checked={value === false}
+                          onChange={() => onChange(false)}
+                          className="form-radio text-blue-600"
+                        />
+                        <span className="ml-2">No</span>
+                      </label>
+                    </div>
+                  )}
+                />
+                {errors.has_competed && (
+                  <span className="text-sm text-red-600">{errors.has_competed.message}</span>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -222,6 +333,7 @@ export const OnboardingForm: React.FC = () => {
                     <Controller
                       name="weight.unit"
                       control={control}
+                      rules={{ required: "Unit is required" }}
                       render={({ field }) => (
                         <select
                           {...field}
@@ -239,14 +351,15 @@ export const OnboardingForm: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Height
+                    Height *
                   </label>
                   <Controller
                     name="height.unit"
                     control={control}
+                    rules={{ required: "Height unit is required" }}
                     render={({ field }) => (
                       <select
                         {...field}
@@ -263,6 +376,7 @@ export const OnboardingForm: React.FC = () => {
                         name="height.feet"
                         control={control}
                         rules={{
+                          required: "Feet is required",
                           min: { value: 0, message: "Feet cannot be negative" },
                           max: { value: 10, message: "Feet must be reasonable (max 10')" },
                           validate: (value) => value !== undefined || "Feet is required"
@@ -286,6 +400,7 @@ export const OnboardingForm: React.FC = () => {
                         name="height.inches"
                         control={control}
                         rules={{
+                          required: "Inches is required",
                           min: { value: 0, message: "Inches cannot be negative" },
                           max: { value: 11, message: "Inches must be less than 12" },
                           validate: (value) => value !== undefined || "Inches is required"
@@ -311,6 +426,7 @@ export const OnboardingForm: React.FC = () => {
                       name="height.value"
                       control={control}
                       rules={{
+                        required: "Height is required",
                         min: { value: 0, message: "Height cannot be negative" },
                         validate: (value) => !value || value >= 0 || "Height cannot be negative"
                       }}
@@ -329,14 +445,10 @@ export const OnboardingForm: React.FC = () => {
                       )}
                     />
                   )}
-                  {errors.height?.feet && (
-                    <span className="text-sm text-red-600">{errors.height.feet.message}</span>
-                  )}
-                  {errors.height?.inches && (
-                    <span className="text-sm text-red-600">{errors.height.inches.message}</span>
-                  )}
-                  {errors.height?.value && (
-                    <span className="text-sm text-red-600">{errors.height.value.message}</span>
+                  {(errors.height?.feet || errors.height?.inches || errors.height?.value) && (
+                    <span className="text-sm text-red-600">
+                      {errors.height?.feet?.message || errors.height?.inches?.message || errors.height?.value?.message}
+                    </span>
                   )}
                   {(() => {
                     if (heightUnit === 'in') {
@@ -361,25 +473,200 @@ export const OnboardingForm: React.FC = () => {
                     }
                   })()}
                 </div>
+              </div>
+              
+              <h4 className="text-lg font-medium pt-4">Current Best Lifts (in kg)</h4>
+              <p className="text-sm text-gray-500 mb-4">
+                Enter your best gym or competition lifts. Must be at least {goalMinWeight} kg (bar + collars).
+              </p>
 
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Federation
+                    Best Squat (kg) *
                   </label>
                   <Controller
-                    name="federation"
+                    name="best_squat_kg"
                     control={control}
+                    rules={{
+                      required: "Squat is required",
+                      min: { value: goalMinWeight, message: `Squat must be at least ${goalMinWeight} kg` },
+                    }}
                     render={({ field }) => (
                       <input
                         {...field}
-                        type="text"
-                        placeholder="e.g., IPF, USPA"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        type="number"
+                        step="0.5"
+                        min={goalMinWeight}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          errors.best_squat_kg ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
                     )}
                   />
+                  {errors.best_squat_kg && (
+                    <span className="text-sm text-red-600">{errors.best_squat_kg.message}</span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Best Bench (kg) *
+                  </label>
+                  <Controller
+                    name="best_bench_kg"
+                    control={control}
+                    rules={{
+                      required: "Bench is required",
+                      min: { value: goalMinWeight, message: `Bench must be at least ${goalMinWeight} kg` },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        {...field}
+                        type="number"
+                        step="0.5"
+                        min={goalMinWeight}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          errors.best_bench_kg ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    )}
+                  />
+                  {errors.best_bench_kg && (
+                    <span className="text-sm text-red-600">{errors.best_bench_kg.message}</span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Best Deadlift (kg) *
+                  </label>
+                  <Controller
+                    name="best_dead_kg"
+                    control={control}
+                    rules={{
+                      required: "Deadlift is required",
+                      min: { value: goalMinWeight, message: `Deadlift must be at least ${goalMinWeight} kg` },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        {...field}
+                        type="number"
+                        step="0.5"
+                        min={goalMinWeight}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          errors.best_dead_kg ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    )}
+                  />
+                  {errors.best_dead_kg && (
+                    <span className="text-sm text-red-600">{errors.best_dead_kg.message}</span>
+                  )}
                 </div>
               </div>
+
+              {hasCompeted && (
+                <div className="space-y-6 pt-6 border-t border-gray-200">
+                  <h4 className="text-lg font-medium">Competition Best Lifts</h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Best Total (kg) *
+                    </label>
+                    <Controller
+                      name="best_total_kg"
+                      control={control}
+                      rules={{
+                        required: "Total is required",
+                        min: { value: goalMinWeight * 3, message: `Total must be at least ${goalMinWeight * 3} kg` },
+                        validate: (value) => {
+                          const s = getValues('best_squat_kg') || 0;
+                          const b = getValues('best_bench_kg') || 0;
+                          const d = getValues('best_dead_kg') || 0;
+                          if (value > 0 && value < s + b + d) {
+                              return "Total should typically be equal to or greater than the sum of the best lifts.";
+                          }
+                          return true;
+                        }
+                      }}
+                      render={({ field }) => (
+                        <input
+                          {...field}
+                          type="number"
+                          step="0.5"
+                          min={goalMinWeight * 3}
+                          className={`w-full px-3 py-2 border rounded-md ${
+                            errors.best_total_kg ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      )}
+                    />
+                    {errors.best_total_kg && (
+                      <span className="text-sm text-red-600">{errors.best_total_kg.message}</span>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Competition Federation *
+                      </label>
+                      <Controller
+                        name="comp_federation"
+                        control={control}
+                        rules={{ required: "Federation is required" }}
+                        render={({ field }) => (
+                          <select
+                            {...field}
+                            className={`w-full px-3 py-2 border rounded-md ${
+                              errors.comp_federation ? 'border-red-300' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="">Select Federation</option>
+                            {CANADIAN_FEDS.map(fed => (
+                                <option key={fed.value} value={fed.value}>{fed.label}</option>
+                            ))}
+                          </select>
+                        )}
+                      />
+                      {errors.comp_federation && (
+                        <span className="text-sm text-red-600">{errors.comp_federation.message}</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Date PRs were set *
+                      </label>
+                      <Controller
+                        name="comp_pr_date"
+                        control={control}
+                        rules={{ 
+                          required: "Date is required",
+                          validate: (value) => (value && value <= new Date().toISOString().split('T')[0]) || "Date cannot be in the future"
+                        }}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            className={`w-full px-3 py-2 border rounded-md ${
+                              errors.comp_pr_date ? 'border-red-300' : 'border-gray-300'
+                            }`}
+                          />
+                        )}
+                      />
+                      {errors.comp_pr_date && (
+                        <span className="text-sm text-red-600">{errors.comp_pr_date.message}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -438,11 +725,15 @@ export const OnboardingForm: React.FC = () => {
                   <Controller
                     name="competition_date"
                     control={control}
-                    rules={{ required: "Competition date is required" }}
+                    rules={{ 
+                      required: "Competition date is required",
+                      validate: (value) => (value && value >= getMinCompetitionDate()) || `Date must be at least two weeks from today (${getMinCompetitionDate()})`
+                    }}
                     render={({ field }) => (
                       <input
                         {...field}
                         type="date"
+                        min={getMinCompetitionDate()}
                         className={`w-full px-3 py-2 border rounded-md ${
                           errors.competition_date ? 'border-red-300' : 'border-gray-300'
                         }`}
@@ -454,24 +745,29 @@ export const OnboardingForm: React.FC = () => {
                   )}
                 </div>
               </div>
+              
+              <h4 className="text-lg font-medium pt-4">Goal Lifts (in kg)</h4>
+              <p className="text-sm text-gray-500 mb-4">
+                Your goals must be at least {goalMinWeight} kg (bar + collars).
+              </p>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Squat Goal (kg)
+                  Squat Goal (kg) *
                 </label>
                 <Controller
                   name="squat_goal.value"
                   control={control}
                   rules={{
-                    min: { value: 0, message: "Squat goal cannot be negative" },
-                    validate: (value) => !value || value >= 0 || "Squat goal cannot be negative"
+                    required: "Squat goal is required",
+                    min: { value: goalMinWeight, message: `Squat goal must be at least ${goalMinWeight} kg` },
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
                       step="0.5"
-                      min="0"
+                      min={goalMinWeight}
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.squat_goal?.value ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -494,21 +790,21 @@ export const OnboardingForm: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bench Goal (kg)
+                  Bench Goal (kg) *
                 </label>
                 <Controller
                   name="bench_goal.value"
                   control={control}
                   rules={{
-                    min: { value: 0, message: "Bench goal cannot be negative" },
-                    validate: (value) => !value || value >= 0 || "Bench goal cannot be negative"
+                    required: "Bench goal is required",
+                    min: { value: goalMinWeight, message: `Bench goal must be at least ${goalMinWeight} kg` },
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
                       step="0.5"
-                      min="0"
+                      min={goalMinWeight}
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.bench_goal?.value ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -531,21 +827,21 @@ export const OnboardingForm: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Deadlift Goal (kg)
+                  Deadlift Goal (kg) *
                 </label>
                 <Controller
                   name="dead_goal.value"
                   control={control}
                   rules={{
-                    min: { value: 0, message: "Deadlift goal cannot be negative" },
-                    validate: (value) => !value || value >= 0 || "Deadlift goal cannot be negative"
+                    required: "Deadlift goal is required",
+                    min: { value: goalMinWeight, message: `Deadlift goal must be at least ${goalMinWeight} kg` },
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
                       step="0.5"
-                      min="0"
+                      min={goalMinWeight}
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.dead_goal?.value ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -672,23 +968,21 @@ export const OnboardingForm: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Session Length (minutes)
+                  Session Length (minutes) *
                 </label>
                 <Controller
                   name="session_length_minutes"
                   control={control}
                   rules={{
-                    min: { value: 15, message: "Session length must be at least 15 minutes" },
+                    required: "Session length is required",
+                    min: { value: sessionMinLength, message: `Session length must be at least ${sessionMinLength} minutes` },
                     max: { value: 360, message: "Session length must be no more than 360 minutes (6 hours)" },
-                    validate: (value) =>
-                      !value || (value >= 15 && value <= 360) ||
-                      "Session length must be between 15 and 360 minutes (6 hours)"
                   }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="number"
-                      min="15"
+                      min={sessionMinLength}
                       max="360"
                       className={`w-full px-3 py-2 border rounded-md ${
                         errors.session_length_minutes
@@ -696,7 +990,7 @@ export const OnboardingForm: React.FC = () => {
                           : 'border-gray-300'
                       }`}
                       onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      placeholder="15-360 minutes"
+                      placeholder="30-360 minutes"
                     />
                   )}
                 />
@@ -717,15 +1011,18 @@ export const OnboardingForm: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Volume Preference
+                  Volume Preference *
                 </label>
                 <Controller
                   name="volume_preference"
                   control={control}
+                  rules={{ required: "Volume preference is required" }}
                   render={({ field }) => (
                     <select
                       {...field}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className={`w-full px-3 py-2 border rounded-md ${
+                        errors.volume_preference ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -733,11 +1030,14 @@ export const OnboardingForm: React.FC = () => {
                     </select>
                   )}
                 />
+                {errors.volume_preference && (
+                  <span className="text-sm text-red-600">{errors.volume_preference.message}</span>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Recovery Ratings
+                  Recovery Ratings *
                 </label>
                 <p className="text-xs text-gray-500 mb-4">
                   How well do you recover from heavy lifting sessions?
@@ -751,6 +1051,7 @@ export const OnboardingForm: React.FC = () => {
                     <Controller
                       name="recovery_rating_squat"
                       control={control}
+                      rules={{ required: "Squat recovery rating is required" }}
                       render={({ field }) => (
                         <div className="flex justify-center space-x-4">
                           <button
@@ -792,6 +1093,9 @@ export const OnboardingForm: React.FC = () => {
                         </div>
                       )}
                     />
+                    {errors.recovery_rating_squat && (
+                        <span className="text-sm text-red-600">{errors.recovery_rating_squat.message}</span>
+                    )}
                     <p className="text-xs text-gray-500 mt-2">
                       {watch('recovery_rating_squat') === 1 && "😞 Need more than a week to recover"}
                       {watch('recovery_rating_squat') === 2 && "😐 Can handle 1-2 heavy sessions per week"}
@@ -806,6 +1110,7 @@ export const OnboardingForm: React.FC = () => {
                     <Controller
                       name="recovery_rating_bench"
                       control={control}
+                      rules={{ required: "Bench recovery rating is required" }}
                       render={({ field }) => (
                         <div className="flex justify-center space-x-4">
                           <button
@@ -847,6 +1152,9 @@ export const OnboardingForm: React.FC = () => {
                         </div>
                       )}
                     />
+                    {errors.recovery_rating_bench && (
+                        <span className="text-sm text-red-600">{errors.recovery_rating_bench.message}</span>
+                    )}
                     <p className="text-xs text-gray-500 mt-2">
                       {watch('recovery_rating_bench') === 1 && "😞 Need more than a week to recover"}
                       {watch('recovery_rating_bench') === 2 && "😐 Can handle 1-2 heavy sessions per week"}
@@ -861,6 +1169,7 @@ export const OnboardingForm: React.FC = () => {
                     <Controller
                       name="recovery_rating_dead"
                       control={control}
+                      rules={{ required: "Deadlift recovery rating is required" }}
                       render={({ field }) => (
                         <div className="flex justify-center space-x-4">
                           <button
@@ -902,6 +1211,9 @@ export const OnboardingForm: React.FC = () => {
                         </div>
                       )}
                     />
+                    {errors.recovery_rating_dead && (
+                        <span className="text-sm text-red-600">{errors.recovery_rating_dead.message}</span>
+                    )}
                     <p className="text-xs text-gray-500 mt-2">
                       {watch('recovery_rating_dead') === 1 && "😞 Need more than a week to recover"}
                       {watch('recovery_rating_dead') === 2 && "😐 Can handle 1-2 heavy sessions per week"}
@@ -911,18 +1223,21 @@ export const OnboardingForm: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Squat Stance
+                    Squat Foot Stance *
                   </label>
                   <Controller
                     name="squat_stance"
                     control={control}
+                    rules={{ required: "Squat foot stance is required" }}
                     render={({ field }) => (
                       <select
                         {...field}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          errors.squat_stance ? 'border-red-300' : 'border-gray-300'
+                        }`}
                       >
                         <option value="narrow">Narrow</option>
                         <option value="medium">Medium</option>
@@ -930,25 +1245,61 @@ export const OnboardingForm: React.FC = () => {
                       </select>
                     )}
                   />
+                  {errors.squat_stance && (
+                    <span className="text-sm text-red-600">{errors.squat_stance.message}</span>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Deadlift Style
+                    Squat Bar Position *
+                  </label>
+                  <Controller
+                    name="squat_bar_position"
+                    control={control}
+                    rules={{ required: "Squat bar position is required" }}
+                    render={({ field }) => (
+                      <select
+                        {...field}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          errors.squat_bar_position ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      >
+                        <option value="high">High Bar</option>
+                        <option value="medium">Medium Bar (Between High and Low)</option>
+                        <option value="low">Low Bar</option>
+                        <option value="french">French Bar (Lower than Low Bar)</option>
+                      </select>
+                    )}
+                  />
+                  {errors.squat_bar_position && (
+                    <span className="text-sm text-red-600">{errors.squat_bar_position.message}</span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Deadlift Style *
                   </label>
                   <Controller
                     name="deadlift_style"
                     control={control}
+                    rules={{ required: "Deadlift style is required" }}
                     render={({ field }) => (
                       <select
                         {...field}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          errors.deadlift_style ? 'border-red-300' : 'border-gray-300'
+                        }`}
                       >
                         <option value="conventional">Conventional</option>
                         <option value="sumo">Sumo</option>
                       </select>
                     )}
                   />
+                  {errors.deadlift_style && (
+                    <span className="text-sm text-red-600">{errors.deadlift_style.message}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -986,20 +1337,26 @@ export const OnboardingForm: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Injuries or Limitations
+                  Injuries or Limitations *
                 </label>
                 <Controller
                   name="injuries"
                   control={control}
+                  rules={{ required: "This field is required" }}
                   render={({ field }) => (
                     <textarea
                       {...field}
                       rows={3}
                       placeholder="Describe any injuries, pain, or limitations..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className={`w-full px-3 py-2 border rounded-md ${
+                        errors.injuries ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     />
                   )}
                 />
+                {errors.injuries && (
+                  <span className="text-sm text-red-600">{errors.injuries.message}</span>
+                )}
               </div>
 
               <div>
@@ -1061,20 +1418,26 @@ export const OnboardingForm: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Knee Sleeves Brand
+                  Knee Sleeves Brand *
                 </label>
                 <Controller
                   name="knee_sleeve"
                   control={control}
+                  rules={{ required: "Knee sleeve brand is required" }}
                   render={({ field }) => (
                     <input
                       {...field}
                       type="text"
                       placeholder="e.g., SBD, Inzer"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className={`w-full px-3 py-2 border rounded-md ${
+                        errors.knee_sleeve ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     />
                   )}
                 />
+                {errors.knee_sleeve && (
+                  <span className="text-sm text-red-600">{errors.knee_sleeve.message}</span>
+                )}
               </div>
             </div>
           )}
