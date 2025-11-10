@@ -27,7 +27,7 @@ spec:
         - name: REACT_APP_AUTH_URL
           value: "http://api.DOMAIN_PLACEHOLDER/auth"
         - name: REACT_APP_CDN_URL
-          value: "https://powerliftingcoachdevvideos.blob.core.windows.net/powerlifting-coach-videos"
+          value: "https://lazyliftsdevvideos.blob.core.windows.net/lazylifts-videos"
         resources:
           requests:
             memory: "32Mi"
