@@ -12,6 +12,7 @@ import { FeedPage } from '@/pages/FeedPage';
 import { ProgramPage } from '@/pages/ProgramPage';
 import { DMPage } from '@/pages/DMPage';
 import { ToolsPage } from '@/pages/ToolsPage';
+import { ChatPage } from '@/pages/ChatPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -30,6 +31,11 @@ function App() {
           <Route path="/onboarding" element={
             <ProtectedRoute>
               <OnboardingPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat" element={
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           } />
           <Route element={

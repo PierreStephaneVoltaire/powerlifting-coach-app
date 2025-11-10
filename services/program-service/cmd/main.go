@@ -106,8 +106,13 @@ func main() {
 			{
 				programs.POST("/", programHandlers.CreateProgram)
 				programs.POST("/generate", programHandlers.GenerateProgram)
+				programs.POST("/from-chat", programHandlers.CreateProgramFromChat)
 				programs.GET("/", programHandlers.GetMyPrograms)
+				programs.GET("/active", programHandlers.GetActiveProgram)
+				programs.GET("/pending", programHandlers.GetPendingProgram)
 				programs.GET("/:id", programHandlers.GetProgram)
+				programs.POST("/:id/approve", programHandlers.ApproveProgram)
+				programs.POST("/:id/reject", programHandlers.RejectProgram)
 				programs.POST("/export", programHandlers.ExportProgram)
 				programs.POST("/chat", programHandlers.ChatWithAI)
 				programs.POST("/log-workout", programHandlers.LogWorkout)

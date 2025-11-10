@@ -21,17 +21,22 @@ func NewProgramRepository(db *sql.DB) *ProgramRepository {
 func (r *ProgramRepository) CreateProgram(program *models.Program) error {
 	programDataJSON, _ := json.Marshal(program.ProgramData)
 
+	// Set default status if not specified
+	if program.ProgramStatus == "" {
+		program.ProgramStatus = models.ProgramStatusDraft
+	}
+
 	query := `
-		INSERT INTO programs (athlete_id, coach_id, name, description, phase, start_date, 
-		                     end_date, weeks_total, days_per_week, program_data, ai_generated, 
-		                     ai_model, ai_prompt)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO programs (athlete_id, coach_id, name, description, phase, start_date,
+		                     end_date, weeks_total, days_per_week, program_data, program_status,
+		                     ai_generated, ai_model, ai_prompt)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id, created_at, updated_at`
 
 	err := r.db.QueryRow(query,
 		program.AthleteID, program.CoachID, program.Name, program.Description,
 		program.Phase, program.StartDate, program.EndDate, program.WeeksTotal,
-		program.DaysPerWeek, programDataJSON, program.AIGenerated,
+		program.DaysPerWeek, programDataJSON, program.ProgramStatus, program.AIGenerated,
 		program.AIModel, program.AIPrompt,
 	).Scan(&program.ID, &program.CreatedAt, &program.UpdatedAt)
 
@@ -472,4 +477,160 @@ func (r *ProgramRepository) GetProgramTemplates(category string, experienceLevel
 	}
 
 	return templates, nil
+}
+
+// GetActiveApprovedProgramByAthleteID returns the active approved program for an athlete
+func (r *ProgramRepository) GetActiveApprovedProgramByAthleteID(athleteID uuid.UUID) (*models.Program, error) {
+	query := `
+		SELECT id, athlete_id, coach_id, name, description, phase, start_date, end_date,
+		       weeks_total, days_per_week, program_data, pending_program_data, program_status,
+		       ai_generated, ai_model, ai_prompt, is_active, created_at, updated_at
+		FROM programs
+		WHERE athlete_id = $1 AND is_active = true AND program_status = $2
+		ORDER BY created_at DESC
+		LIMIT 1`
+
+	program := &models.Program{}
+	var programDataJSON, pendingProgramDataJSON []byte
+
+	err := r.db.QueryRow(query, athleteID, models.ProgramStatusApproved).Scan(
+		&program.ID, &program.AthleteID, &program.CoachID, &program.Name,
+		&program.Description, &program.Phase, &program.StartDate, &program.EndDate,
+		&program.WeeksTotal, &program.DaysPerWeek, &programDataJSON, &pendingProgramDataJSON,
+		&program.ProgramStatus, &program.AIGenerated, &program.AIModel, &program.AIPrompt,
+		&program.IsActive, &program.CreatedAt, &program.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No active approved program found
+		}
+		return nil, fmt.Errorf("failed to get active approved program: %w", err)
+	}
+
+	if len(programDataJSON) > 0 {
+		json.Unmarshal(programDataJSON, &program.ProgramData)
+	}
+
+	if len(pendingProgramDataJSON) > 0 {
+		var pendingData map[string]interface{}
+		json.Unmarshal(pendingProgramDataJSON, &pendingData)
+		program.PendingProgramData = &pendingData
+	}
+
+	return program, nil
+}
+
+// GetPendingProgramByAthleteID returns any pending approval program for an athlete
+func (r *ProgramRepository) GetPendingProgramByAthleteID(athleteID uuid.UUID) (*models.Program, error) {
+	query := `
+		SELECT id, athlete_id, coach_id, name, description, phase, start_date, end_date,
+		       weeks_total, days_per_week, program_data, pending_program_data, program_status,
+		       ai_generated, ai_model, ai_prompt, is_active, created_at, updated_at
+		FROM programs
+		WHERE athlete_id = $1 AND program_status = $2
+		ORDER BY created_at DESC
+		LIMIT 1`
+
+	program := &models.Program{}
+	var programDataJSON, pendingProgramDataJSON []byte
+
+	err := r.db.QueryRow(query, athleteID, models.ProgramStatusPendingApproval).Scan(
+		&program.ID, &program.AthleteID, &program.CoachID, &program.Name,
+		&program.Description, &program.Phase, &program.StartDate, &program.EndDate,
+		&program.WeeksTotal, &program.DaysPerWeek, &programDataJSON, &pendingProgramDataJSON,
+		&program.ProgramStatus, &program.AIGenerated, &program.AIModel, &program.AIPrompt,
+		&program.IsActive, &program.CreatedAt, &program.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No pending program found
+		}
+		return nil, fmt.Errorf("failed to get pending program: %w", err)
+	}
+
+	if len(programDataJSON) > 0 {
+		json.Unmarshal(programDataJSON, &program.ProgramData)
+	}
+
+	if len(pendingProgramDataJSON) > 0 {
+		var pendingData map[string]interface{}
+		json.Unmarshal(pendingProgramDataJSON, &pendingData)
+		program.PendingProgramData = &pendingData
+	}
+
+	return program, nil
+}
+
+// SetPendingProgramData sets or updates pending program data for approval
+func (r *ProgramRepository) SetPendingProgramData(programID uuid.UUID, pendingData map[string]interface{}) error {
+	pendingDataJSON, err := json.Marshal(pendingData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal pending program data: %w", err)
+	}
+
+	query := `
+		UPDATE programs SET
+			pending_program_data = $2,
+			program_status = $3
+		WHERE id = $1`
+
+	_, err = r.db.Exec(query, programID, pendingDataJSON, models.ProgramStatusPendingApproval)
+	if err != nil {
+		return fmt.Errorf("failed to set pending program data: %w", err)
+	}
+
+	return nil
+}
+
+// ApproveProgramChanges moves pending data to active and marks program as approved
+func (r *ProgramRepository) ApproveProgramChanges(programID uuid.UUID) error {
+	query := `
+		UPDATE programs SET
+			program_data = COALESCE(pending_program_data, program_data),
+			pending_program_data = NULL,
+			program_status = $2
+		WHERE id = $1 AND program_status = $3`
+
+	result, err := r.db.Exec(query, programID, models.ProgramStatusApproved, models.ProgramStatusPendingApproval)
+	if err != nil {
+		return fmt.Errorf("failed to approve program changes: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no pending program found to approve")
+	}
+
+	return nil
+}
+
+// RejectProgramChanges clears pending data and marks program as rejected
+func (r *ProgramRepository) RejectProgramChanges(programID uuid.UUID) error {
+	query := `
+		UPDATE programs SET
+			pending_program_data = NULL,
+			program_status = $2
+		WHERE id = $1 AND program_status = $3`
+
+	result, err := r.db.Exec(query, programID, models.ProgramStatusRejected, models.ProgramStatusPendingApproval)
+	if err != nil {
+		return fmt.Errorf("failed to reject program changes: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no pending program found to reject")
+	}
+
+	return nil
 }

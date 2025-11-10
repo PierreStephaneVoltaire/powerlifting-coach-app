@@ -125,7 +125,8 @@ export const OnboardingForm: React.FC = () => {
 
     try {
       await apiClient.submitOnboardingSettings(user.id, apiPayload);
-      navigate('/feed');
+      // Redirect to chat to create initial program with AI coach
+      navigate('/chat');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to save settings. Please try again.');
     } finally {
