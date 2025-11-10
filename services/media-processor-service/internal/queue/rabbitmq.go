@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/streadway/amqp"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/utils"
 )
 
 const (
@@ -45,6 +46,11 @@ func NewRabbitMQClient(url string) (*RabbitMQClient, error) {
 }
 
 func (c *RabbitMQClient) setupQueues() error {
+	// Setup Dead Letter Queue
+	if err := utils.SetupDLQ(c.channel); err != nil {
+		return fmt.Errorf("failed to setup DLQ: %w", err)
+	}
+
 	// Declare exchange
 	err := c.channel.ExchangeDeclare(
 		VideoProcessingExchange,
@@ -59,15 +65,8 @@ func (c *RabbitMQClient) setupQueues() error {
 		return fmt.Errorf("failed to declare exchange: %w", err)
 	}
 
-	// Declare processing queue
-	_, err = c.channel.QueueDeclare(
-		VideoProcessingQueue,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
+	// Declare processing queue with single active consumer
+	_, err = utils.DeclareQueueWithSingleActiveConsumer(c.channel, VideoProcessingQueue)
 	if err != nil {
 		return fmt.Errorf("failed to declare processing queue: %w", err)
 	}
@@ -83,15 +82,8 @@ func (c *RabbitMQClient) setupQueues() error {
 		return fmt.Errorf("failed to bind processing queue: %w", err)
 	}
 
-	// Declare metadata queue
-	_, err = c.channel.QueueDeclare(
-		VideoMetadataQueue,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
+	// Declare metadata queue with single active consumer
+	_, err = utils.DeclareQueueWithSingleActiveConsumer(c.channel, VideoMetadataQueue)
 	if err != nil {
 		return fmt.Errorf("failed to declare metadata queue: %w", err)
 	}
@@ -154,6 +146,10 @@ func (c *RabbitMQClient) PublishVideoMetadata(metadata interface{}) error {
 	}
 
 	return nil
+}
+
+func (c *RabbitMQClient) GetChannel() *amqp.Channel {
+	return c.channel
 }
 
 func (c *RabbitMQClient) Close() {

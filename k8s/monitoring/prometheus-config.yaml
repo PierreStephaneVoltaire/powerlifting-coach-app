@@ -105,7 +105,7 @@ data:
 
       - job_name: 'rabbitmq'
         static_configs:
-          - targets: ['rabbitmq-metrics:15692']
+          - targets: ['rabbitmq-metrics.app.svc.cluster.local:15692']
         scrape_interval: 30s
         metrics_path: /metrics
 
