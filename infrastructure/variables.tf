@@ -76,3 +76,43 @@ variable "domain_name" {
   type        = string
   default     = "localhost"
 }
+
+variable "ses_smtp_host" {
+  description = "AWS SES SMTP host (e.g., email-smtp.us-east-1.amazonaws.com)"
+  type        = string
+  default     = "email-smtp.us-east-1.amazonaws.com"
+}
+
+variable "ses_smtp_username" {
+  description = "AWS SES SMTP username (IAM SMTP credentials access key)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "ses_smtp_password" {
+  description = "AWS SES SMTP password (IAM SMTP credentials secret key)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "ses_from_email" {
+  description = "Verified email address in AWS SES to send from (e.g., noreply@powerliftingcoach.app)"
+  type        = string
+  default     = "noreply@powerliftingcoach.app"
+}
+
+variable "google_oauth_client_id" {
+  description = "Google OAuth 2.0 Client ID for social login"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "Google OAuth 2.0 Client Secret for social login"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

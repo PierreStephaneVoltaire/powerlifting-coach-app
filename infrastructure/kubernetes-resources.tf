@@ -102,3 +102,37 @@ resource "kubernetes_secret" "app_secrets" {
 
   type = "Opaque"
 }
+
+resource "kubernetes_secret" "ses_secret" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  metadata {
+    name      = "ses-secret"
+    namespace = kubernetes_namespace.app[0].metadata[0].name
+  }
+
+  data = {
+    smtp-host     = var.ses_smtp_host
+    smtp-username = var.ses_smtp_username
+    smtp-password = var.ses_smtp_password
+    from-email    = var.ses_from_email
+  }
+
+  type = "Opaque"
+}
+
+resource "kubernetes_secret" "google_oauth_secret" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  metadata {
+    name      = "google-oauth-secret"
+    namespace = kubernetes_namespace.app[0].metadata[0].name
+  }
+
+  data = {
+    client-id     = var.google_oauth_client_id
+    client-secret = var.google_oauth_client_secret
+  }
+
+  type = "Opaque"
+}
