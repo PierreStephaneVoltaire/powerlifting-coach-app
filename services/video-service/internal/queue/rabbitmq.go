@@ -3,9 +3,11 @@ package queue
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/streadway/amqp"
 	"github.com/rs/zerolog/log"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/metrics"
 	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/utils"
 )
 
@@ -154,21 +156,29 @@ func (r *RabbitMQClient) ConsumeVideoProcessing(handler func([]byte) error) erro
 	}
 
 	go func() {
+		metrics.SetActiveConsumers("video-service", VideoProcessingQueue, 1)
 		for msg := range msgs {
+			start := time.Now()
+			metrics.RecordMessageConsumed("video-service", VideoProcessingQueue, "process")
+
 			log.Info().Str("body", string(msg.Body)).Msg("Received video processing message")
 
 			err := handler(msg.Body)
+			duration := time.Since(start)
+
 			if err != nil {
 				retryCount := utils.GetRetryCount(msg)
+				metrics.RecordMessageFailed("video-service", VideoProcessingQueue, "process", retryCount, duration)
 				log.Error().Err(err).Int("retry_count", retryCount).Msg("Failed to process message")
 
 				// Handle failure with retry logic
-				if handleErr := utils.HandleMessageFailure(r.channel, msg, VideoProcessingExchange, "process"); handleErr != nil {
+				if handleErr := utils.HandleMessageFailureWithMetrics(r.channel, msg, VideoProcessingExchange, "process", "video-service", VideoProcessingQueue); handleErr != nil {
 					log.Error().Err(handleErr).Msg("Failed to handle message failure")
 					// Fallback to simple nack without requeue to avoid infinite loops
 					msg.Nack(false, false)
 				}
 			} else {
+				metrics.RecordMessageProcessed("video-service", VideoProcessingQueue, "process", duration)
 				msg.Ack(false) // Acknowledge message
 			}
 		}
@@ -203,21 +213,29 @@ func (r *RabbitMQClient) ConsumeVideoMetadata(handler func([]byte) error) error 
 	}
 
 	go func() {
+		metrics.SetActiveConsumers("video-service", VideoMetadataQueue, 1)
 		for msg := range msgs {
+			start := time.Now()
+			metrics.RecordMessageConsumed("video-service", VideoMetadataQueue, "metadata")
+
 			log.Info().Str("body", string(msg.Body)).Msg("Received video metadata message")
 
 			err := handler(msg.Body)
+			duration := time.Since(start)
+
 			if err != nil {
 				retryCount := utils.GetRetryCount(msg)
+				metrics.RecordMessageFailed("video-service", VideoMetadataQueue, "metadata", retryCount, duration)
 				log.Error().Err(err).Int("retry_count", retryCount).Msg("Failed to process metadata")
 
 				// Handle failure with retry logic
-				if handleErr := utils.HandleMessageFailure(r.channel, msg, VideoProcessingExchange, "metadata"); handleErr != nil {
+				if handleErr := utils.HandleMessageFailureWithMetrics(r.channel, msg, VideoProcessingExchange, "metadata", "video-service", VideoMetadataQueue); handleErr != nil {
 					log.Error().Err(handleErr).Msg("Failed to handle message failure")
 					// Fallback to simple nack without requeue to avoid infinite loops
 					msg.Nack(false, false)
 				}
 			} else {
+				metrics.RecordMessageProcessed("video-service", VideoMetadataQueue, "metadata", duration)
 				msg.Ack(false) // Acknowledge message
 			}
 		}

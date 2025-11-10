@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/streadway/amqp"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/metrics"
 )
 
 const (
@@ -80,6 +81,12 @@ func IncrementRetryCount(msg amqp.Delivery) amqp.Publishing {
 // HandleMessageFailure handles message failure with retry logic
 // Returns true if message was handled (requeued or sent to DLQ), false if caller should nack
 func HandleMessageFailure(channel *amqp.Channel, msg amqp.Delivery, originalExchange, originalRoutingKey string) error {
+	return HandleMessageFailureWithMetrics(channel, msg, originalExchange, originalRoutingKey, "", "")
+}
+
+// HandleMessageFailureWithMetrics handles message failure with retry logic and records metrics
+// serviceName and queueName are used for metrics labeling (can be empty for backward compatibility)
+func HandleMessageFailureWithMetrics(channel *amqp.Channel, msg amqp.Delivery, originalExchange, originalRoutingKey, serviceName, queueName string) error {
 	retryCount := GetRetryCount(msg)
 
 	if retryCount >= MaxRetries {
@@ -115,6 +122,11 @@ func HandleMessageFailure(channel *amqp.Channel, msg amqp.Delivery, originalExch
 			return fmt.Errorf("failed to publish to DLQ: %w", err)
 		}
 
+		// Record DLQ metric if service name provided
+		if serviceName != "" && queueName != "" {
+			metrics.RecordMessageToDLQ(serviceName, queueName, originalRoutingKey)
+		}
+
 		// Ack the original message since we've moved it to DLQ
 		return msg.Ack(false)
 	}
@@ -132,6 +144,11 @@ func HandleMessageFailure(channel *amqp.Channel, msg amqp.Delivery, originalExch
 
 	if err != nil {
 		return fmt.Errorf("failed to republish message: %w", err)
+	}
+
+	// Record retry metric if service name provided
+	if serviceName != "" && queueName != "" {
+		metrics.RecordMessageRetry(serviceName, queueName, originalRoutingKey, retryCount+1)
 	}
 
 	// Ack the original message since we've republished it

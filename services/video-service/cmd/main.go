@@ -17,6 +17,7 @@ import (
 	"github.com/powerlifting-coach-app/video-service/internal/queue"
 	"github.com/powerlifting-coach-app/video-service/internal/repository"
 	"github.com/powerlifting-coach-app/video-service/internal/storage"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -163,6 +164,7 @@ func main() {
 	}
 
 	router.GET("/health", videoHandlers.HealthCheck)
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,
