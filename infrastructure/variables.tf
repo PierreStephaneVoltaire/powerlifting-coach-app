@@ -7,7 +7,7 @@ variable "azure_subscription_id" {
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "lazylifts"
+  default     = "coachpotato"
 }
 
 variable "environment" {
@@ -43,7 +43,7 @@ variable "kubernetes_version" {
 variable "storage_container_name" {
   description = "Azure Storage container name for videos"
   type        = string
-  default     = "lazylifts-videos"
+  default     = "coachpotato-videos"
 }
 
 variable "kubernetes_resources_enabled" {
@@ -72,7 +72,7 @@ variable "litellm_endpoint" {
 }
 
 variable "domain_name" {
-  description = "Domain name for the application (e.g., lazylifts.app)"
+  description = "Domain name for the application (e.g., coachpotato.app)"
   type        = string
   default     = "localhost"
 }

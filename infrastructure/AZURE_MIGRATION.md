@@ -16,8 +16,8 @@ The infrastructure has been migrated from Digital Ocean to Microsoft Azure with 
 2. **Storage**:
    - **Before**: Digital Ocean Spaces (S3-compatible object storage)
    - **After**: Azure Blob Storage with lifecycle management
-   - Storage account name format: `lazyliftsdevvideos` (no hyphens allowed)
-   - Container name: `lazylifts-videos`
+   - Storage account name format: `coachpotatodevvideos` (no hyphens allowed)
+   - Container name: `coachpotato-videos`
    - Lifecycle policy: Automatic deletion after 120 days
 
 3. **Networking**:
@@ -41,12 +41,12 @@ Update `infrastructure/variables.tf` or create a `terraform.tfvars` file:
 
 ```hcl
 azure_subscription_id = "your-azure-subscription-id"
-project_name          = "lazylifts"
+project_name          = "coachpotato"
 environment           = "dev"
 region                = "eastus"  # or your preferred Azure region
 node_size             = "Standard_B2s"  # Spot instance VM size
 kubernetes_version    = "1.28"
-storage_container_name = "lazylifts-videos"
+storage_container_name = "coachpotato-videos"
 ```
 
 ### Storage Configuration
@@ -69,8 +69,8 @@ The application services have been **fully migrated** to use the Azure Blob Stor
 - All storage operations now use native Azure APIs (upload, download, SAS URLs, etc.)
 
 **Environment variables** (set in Kubernetes manifests):
-- `SPACES_ENDPOINT`: `https://lazyliftsdevvideos.blob.core.windows.net`
-- `SPACES_BUCKET`: `lazylifts-videos` (container name)
+- `SPACES_ENDPOINT`: `https://coachpotatodevvideos.blob.core.windows.net`
+- `SPACES_BUCKET`: `coachpotato-videos` (container name)
 - `SPACES_REGION`: `eastus`
 - `SPACES_KEY`: Storage account name (injected via Kubernetes secret)
 - `SPACES_SECRET`: Storage account key (injected via Kubernetes secret)
@@ -111,8 +111,8 @@ terraform apply -var="azure_subscription_id=YOUR_SUBSCRIPTION_ID" \
 ```bash
 # Get AKS credentials
 az aks get-credentials \
-  --resource-group lazylifts-dev-rg \
-  --name lazylifts-dev
+  --resource-group coachpotato-dev-rg \
+  --name coachpotato-dev
 
 # Or use the generated kubeconfig
 export KUBECONFIG=$(terraform output -raw kubeconfig_path)
@@ -126,12 +126,12 @@ kubectl get nodes
 
 # Check storage configuration
 az storage account show \
-  --name lazyliftsdevvideos \
-  --resource-group lazylifts-dev-rg
+  --name coachpotatodevvideos \
+  --resource-group coachpotato-dev-rg
 
 # List storage containers
 az storage container list \
-  --account-name lazyliftsdevvideos
+  --account-name coachpotatodevvideos
 ```
 
 ## Cost Optimization with Spot Instances
@@ -204,12 +204,12 @@ kubectl get events --all-namespaces | grep -i evict
 ```bash
 # Verify storage account key
 az storage account keys list \
-  --account-name lazyliftsdevvideos \
-  --resource-group lazylifts-dev-rg
+  --account-name coachpotatodevvideos \
+  --resource-group coachpotato-dev-rg
 
 # Check CORS configuration
 az storage cors list \
-  --account-name lazyliftsdevvideos \
+  --account-name coachpotatodevvideos \
   --services b
 ```
 
@@ -218,8 +218,8 @@ az storage cors list \
 ```bash
 # Check AKS network profile
 az aks show \
-  --resource-group lazylifts-dev-rg \
-  --name lazylifts-dev \
+  --resource-group coachpotato-dev-rg \
+  --name coachpotato-dev \
   --query networkProfile
 ```
 
@@ -255,7 +255,7 @@ az consumption usage list
 
 # Set up budget alerts (recommended)
 az consumption budget create \
-  --budget-name lazylifts-budget \
+  --budget-name coachpotato-budget \
   --amount 100 \
   --time-grain Monthly \
   --start-date 2025-11-01 \

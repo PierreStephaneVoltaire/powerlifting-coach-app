@@ -41,9 +41,9 @@ spec:
               name: app-secrets
               key: spaces-secret
         - name: SPACES_ENDPOINT
-          value: "https://lazyliftsdevvideos.blob.core.windows.net"
+          value: "https://coachpotatodevvideos.blob.core.windows.net"
         - name: SPACES_BUCKET
-          value: "lazylifts-videos"
+          value: "coachpotato-videos"
         - name: SPACES_REGION
           value: "eastus"
         - name: RABBITMQ_URL

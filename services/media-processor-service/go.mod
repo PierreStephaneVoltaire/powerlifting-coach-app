@@ -1,4 +1,4 @@
-module github.com/lazylifts/media-processor-service
+module github.com/powerlifting-coach-app/media-processor-service
 
 go 1.22
 

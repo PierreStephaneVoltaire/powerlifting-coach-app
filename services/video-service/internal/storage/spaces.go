@@ -12,7 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
-	"github.com/lazylifts/video-service/internal/config"
+	"github.com/powerlifting-coach-app/video-service/internal/config"
 )
 
 type SpacesClient struct {

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: media-processor
-        image: ghcr.io/pierrestephanevoltaire/lazylifts/media-processor-service:latest
+        image: ghcr.io/pierrestephanevoltaire/powerlifting-coach-app/media-processor-service:latest
         imagePullPolicy: Always
         env:
         - name: RABBITMQ_URL
@@ -35,9 +35,9 @@ spec:
               name: app-secrets
               key: spaces-secret
         - name: SPACES_ENDPOINT
-          value: "https://lazyliftsdevvideos.blob.core.windows.net"
+          value: "https://coachpotatodevvideos.blob.core.windows.net"
         - name: SPACES_BUCKET
-          value: "lazylifts-videos"
+          value: "coachpotato-videos"
         - name: SPACES_REGION
           value: "eastus"
         - name: FFMPEG_PATH
