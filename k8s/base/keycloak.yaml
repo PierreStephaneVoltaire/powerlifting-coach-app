@@ -52,20 +52,25 @@ spec:
           value: "true"
         - name: PROXY_ADDRESS_FORWARDING
           value: "true"
-        - name: MAILGUN_SMTP_USERNAME
+        - name: SES_SMTP_HOST
           valueFrom:
             secretKeyRef:
-              name: mailgun-secret
+              name: ses-secret
+              key: smtp-host
+        - name: SES_SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: ses-secret
               key: smtp-username
-        - name: MAILGUN_SMTP_PASSWORD
+        - name: SES_SMTP_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mailgun-secret
+              name: ses-secret
               key: smtp-password
-        - name: MAILGUN_FROM_EMAIL
+        - name: SES_FROM_EMAIL
           valueFrom:
             secretKeyRef:
-              name: mailgun-secret
+              name: ses-secret
               key: from-email
         - name: GOOGLE_CLIENT_ID
           valueFrom:

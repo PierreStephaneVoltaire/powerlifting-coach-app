@@ -77,22 +77,28 @@ variable "domain_name" {
   default     = "localhost"
 }
 
-variable "mailgun_smtp_username" {
-  description = "Mailgun SMTP username (typically postmaster@your-domain.mailgun.org)"
+variable "ses_smtp_host" {
+  description = "AWS SES SMTP host (e.g., email-smtp.us-east-1.amazonaws.com)"
+  type        = string
+  default     = "email-smtp.us-east-1.amazonaws.com"
+}
+
+variable "ses_smtp_username" {
+  description = "AWS SES SMTP username (IAM SMTP credentials access key)"
   type        = string
   sensitive   = true
   default     = ""
 }
 
-variable "mailgun_smtp_password" {
-  description = "Mailgun SMTP password"
+variable "ses_smtp_password" {
+  description = "AWS SES SMTP password (IAM SMTP credentials secret key)"
   type        = string
   sensitive   = true
   default     = ""
 }
 
-variable "mailgun_from_email" {
-  description = "Email address to send from (e.g., noreply@powerliftingcoach.app)"
+variable "ses_from_email" {
+  description = "Verified email address in AWS SES to send from (e.g., noreply@powerliftingcoach.app)"
   type        = string
   default     = "noreply@powerliftingcoach.app"
 }

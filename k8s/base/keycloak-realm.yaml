@@ -17,14 +17,14 @@ data:
       "bruteForceProtected": true,
       "verifyEmail": true,
       "smtpServer": {
-        "password": "${env.MAILGUN_SMTP_PASSWORD}",
+        "password": "${env.SES_SMTP_PASSWORD}",
         "starttls": "true",
         "auth": "true",
         "port": "587",
-        "host": "smtp.mailgun.org",
-        "from": "${env.MAILGUN_FROM_EMAIL}",
+        "host": "${env.SES_SMTP_HOST}",
+        "from": "${env.SES_FROM_EMAIL}",
         "fromDisplayName": "Powerlifting Coach",
-        "user": "${env.MAILGUN_SMTP_USERNAME}"
+        "user": "${env.SES_SMTP_USERNAME}"
       },
       "roles": {
         "realm": [
