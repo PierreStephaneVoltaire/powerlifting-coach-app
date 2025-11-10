@@ -5,8 +5,9 @@ go 1.23.0
 toolchain go1.24.9
 
 require (
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1
 	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.2
-	github.com/aws/aws-sdk-go v1.49.6
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0

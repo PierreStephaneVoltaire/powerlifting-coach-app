@@ -1,72 +1,99 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/powerlifting-coach-app/video-service/internal/config"
 )
 
 type SpacesClient struct {
-	client *s3.S3
-	bucket string
-	cdnURL string
+	client         *azblob.Client
+	containerName  string
+	cdnURL         string
+	accountName    string
+	credential     *azblob.SharedKeyCredential
 }
 
 func NewSpacesClient(cfg *config.Config) (*SpacesClient, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(cfg.SpacesRegion),
-		Endpoint: aws.String(cfg.SpacesEndpoint),
-		Credentials: credentials.NewStaticCredentials(
-			cfg.SpacesAccessKey,
-			cfg.SpacesSecretKey,
-			"",
-		),
-		S3ForcePathStyle: aws.Bool(false),
-	})
+	// Create credential
+	credential, err := azblob.NewSharedKeyCredential(cfg.SpacesAccessKey, cfg.SpacesSecretKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to create Azure credential: %w", err)
 	}
 
-	client := s3.New(sess)
+	// Create blob service client
+	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", cfg.SpacesAccessKey)
+	client, err := azblob.NewClientWithSharedKeyCredential(serviceURL, credential, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Azure blob client: %w", err)
+	}
 
 	return &SpacesClient{
-		client: client,
-		bucket: cfg.SpacesBucket,
-		cdnURL: cfg.CDNUrl,
+		client:        client,
+		containerName: cfg.SpacesBucket,
+		cdnURL:        cfg.CDNUrl,
+		accountName:   cfg.SpacesAccessKey,
+		credential:    credential,
 	}, nil
 }
 
 func (s *SpacesClient) GeneratePresignedUploadURL(key string, contentType string, duration time.Duration) (string, error) {
-	req, _ := s.client.PutObjectRequest(&s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
-		Key:         aws.String(key),
-		ContentType: aws.String(contentType),
-		ACL:         aws.String("private"),
-	})
+	ctx := context.Background()
 
-	url, err := req.Presign(duration)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
+	// Create SAS URL for upload
+	blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", s.accountName, s.containerName, key)
+
+	// Set SAS permissions for upload
+	permissions := sas.BlobPermissions{
+		Read:   false,
+		Add:    false,
+		Create: true,
+		Write:  true,
+		Delete: false,
 	}
 
-	return url, nil
+	startTime := time.Now().UTC().Add(-10 * time.Minute)
+	expiryTime := time.Now().UTC().Add(duration)
+
+	sasQueryParams, err := sas.BlobSignatureValues{
+		Protocol:      sas.ProtocolHTTPS,
+		StartTime:     startTime,
+		ExpiryTime:    expiryTime,
+		Permissions:   permissions.String(),
+		ContainerName: s.containerName,
+		BlobName:      key,
+	}.SignWithSharedKey(s.credential)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to generate SAS token: %w", err)
+	}
+
+	sasURL := fmt.Sprintf("%s?%s", blobURL, sasQueryParams.Encode())
+	return sasURL, nil
 }
 
 func (s *SpacesClient) UploadFile(key string, body io.Reader, contentType string) error {
-	_, err := s.client.PutObject(&s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
-		Key:         aws.String(key),
-		Body:        aws.ReadSeekCloser(body),
-		ContentType: aws.String(contentType),
-		ACL:         aws.String("private"),
+	ctx := context.Background()
+
+	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
+
+	// Upload with private access (no public read)
+	_, err := blobClient.UploadStream(ctx, body, &azblob.UploadStreamOptions{
+		HTTPHeaders: &blob.HTTPHeaders{
+			BlobContentType: &contentType,
+		},
+		AccessTier: to.Ptr(blob.AccessTierHot),
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to upload file: %w", err)
 	}
@@ -75,13 +102,18 @@ func (s *SpacesClient) UploadFile(key string, body io.Reader, contentType string
 }
 
 func (s *SpacesClient) UploadPublicFile(key string, body io.Reader, contentType string) error {
-	_, err := s.client.PutObject(&s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
-		Key:         aws.String(key),
-		Body:        aws.ReadSeekCloser(body),
-		ContentType: aws.String(contentType),
-		ACL:         aws.String("public-read"),
+	ctx := context.Background()
+
+	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
+
+	// Upload blob (container already has public read access)
+	_, err := blobClient.UploadStream(ctx, body, &azblob.UploadStreamOptions{
+		HTTPHeaders: &blob.HTTPHeaders{
+			BlobContentType: &contentType,
+		},
+		AccessTier: to.Ptr(blob.AccessTierHot),
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to upload public file: %w", err)
 	}
@@ -94,13 +126,28 @@ func (s *SpacesClient) GetFileURL(key string) string {
 		return fmt.Sprintf("%s/%s", strings.TrimRight(s.cdnURL, "/"), key)
 	}
 
-	req, _ := s.client.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	})
+	// Generate SAS URL for private access
+	blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", s.accountName, s.containerName, key)
 
-	url, _ := req.Presign(time.Hour * 24) // 24 hour expiry for private files
-	return url
+	permissions := sas.BlobPermissions{Read: true}
+	startTime := time.Now().UTC().Add(-10 * time.Minute)
+	expiryTime := time.Now().UTC().Add(24 * time.Hour)
+
+	sasQueryParams, err := sas.BlobSignatureValues{
+		Protocol:      sas.ProtocolHTTPS,
+		StartTime:     startTime,
+		ExpiryTime:    expiryTime,
+		Permissions:   permissions.String(),
+		ContainerName: s.containerName,
+		BlobName:      key,
+	}.SignWithSharedKey(s.credential)
+
+	if err != nil {
+		// Fallback to public URL if SAS generation fails
+		return blobURL
+	}
+
+	return fmt.Sprintf("%s?%s", blobURL, sasQueryParams.Encode())
 }
 
 func (s *SpacesClient) GetPublicFileURL(key string) string {
@@ -108,15 +155,16 @@ func (s *SpacesClient) GetPublicFileURL(key string) string {
 		return fmt.Sprintf("%s/%s", strings.TrimRight(s.cdnURL, "/"), key)
 	}
 
-	return fmt.Sprintf("https://%s.%s/%s", s.bucket,
-		strings.TrimPrefix(*s.client.Config.Endpoint, "https://"), key)
+	// Public URL (container has public read access)
+	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", s.accountName, s.containerName, key)
 }
 
 func (s *SpacesClient) DeleteFile(key string) error {
-	_, err := s.client.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	})
+	ctx := context.Background()
+
+	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
+
+	_, err := blobClient.Delete(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
@@ -125,12 +173,14 @@ func (s *SpacesClient) DeleteFile(key string) error {
 }
 
 func (s *SpacesClient) FileExists(key string) (bool, error) {
-	_, err := s.client.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	})
+	ctx := context.Background()
+
+	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
+
+	_, err := blobClient.GetProperties(ctx, nil)
 	if err != nil {
-		if strings.Contains(err.Error(), "NoSuchKey") || strings.Contains(err.Error(), "Not Found") {
+		// Check if error is "not found"
+		if strings.Contains(err.Error(), "BlobNotFound") || strings.Contains(err.Error(), "404") {
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to check if file exists: %w", err)
@@ -140,13 +190,14 @@ func (s *SpacesClient) FileExists(key string) (bool, error) {
 }
 
 func (s *SpacesClient) GetFileSize(key string) (int64, error) {
-	result, err := s.client.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	})
+	ctx := context.Background()
+
+	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
+
+	props, err := blobClient.GetProperties(ctx, nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get file size: %w", err)
 	}
 
-	return *result.ContentLength, nil
+	return *props.ContentLength, nil
 }

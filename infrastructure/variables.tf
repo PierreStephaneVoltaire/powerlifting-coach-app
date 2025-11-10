@@ -1,5 +1,5 @@
-variable "do_token" {
-  description = "DigitalOcean API token"
+variable "azure_subscription_id" {
+  description = "Azure subscription ID"
   type        = string
   sensitive   = true
 }
@@ -7,7 +7,7 @@ variable "do_token" {
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "powerlifting-coach"
+  default     = "coachpotato"
 }
 
 variable "environment" {
@@ -17,15 +17,15 @@ variable "environment" {
 }
 
 variable "region" {
-  description = "DigitalOcean region"
+  description = "Azure region"
   type        = string
-  default     = "tor1"
+  default     = "eastus"
 }
 
 variable "node_size" {
-  description = "Size of Kubernetes nodes"
+  description = "Azure VM size for Kubernetes nodes"
   type        = string
-  default     = "s-2vcpu-2gb"
+  default     = "Standard_B2s"
 }
 
 variable "node_count" {
@@ -37,13 +37,13 @@ variable "node_count" {
 variable "kubernetes_version" {
   description = "Kubernetes cluster version"
   type        = string
-  default     = "1.33.1-do.5"
+  default     = "1.28"
 }
 
-variable "spaces_bucket_name" {
-  description = "DigitalOcean Spaces bucket name"
+variable "storage_container_name" {
+  description = "Azure Storage container name for videos"
   type        = string
-  default     = "powerlifting-coach-videos"
+  default     = "coachpotato-videos"
 }
 
 variable "kubernetes_resources_enabled" {
@@ -72,7 +72,7 @@ variable "litellm_endpoint" {
 }
 
 variable "domain_name" {
-  description = "Domain name for the application (e.g., powerliftingcoach.app)"
+  description = "Domain name for the application (e.g., coachpotato.app)"
   type        = string
   default     = "localhost"
 }
