@@ -104,3 +104,44 @@ output "auth_url" {
   description = "Keycloak authentication URL"
   value       = var.kubernetes_resources_enabled ? "http://auth.${local.lb_ip}.nip.io" : "not-yet-available"
 }
+
+output "keycloak_url" {
+  description = "Keycloak admin console URL"
+  value       = var.kubernetes_resources_enabled ? "http://auth.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "grafana_url" {
+  description = "Grafana dashboard URL"
+  value       = var.kubernetes_resources_enabled ? "http://grafana.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "grafana_admin_password" {
+  description = "Grafana admin password"
+  value       = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : "not-yet-generated"
+  sensitive   = true
+}
+
+output "prometheus_url" {
+  description = "Prometheus metrics URL"
+  value       = var.kubernetes_resources_enabled ? "http://prometheus.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "loki_url" {
+  description = "Loki logs URL"
+  value       = var.kubernetes_resources_enabled ? "http://loki.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "rabbitmq_management_url" {
+  description = "RabbitMQ management console URL"
+  value       = var.kubernetes_resources_enabled ? "http://rabbitmq.${local.lb_ip}.nip.io" : "not-yet-available"
+}
+
+output "rabbitmq_management_username" {
+  description = "RabbitMQ management console username"
+  value       = "admin"
+}
+
+output "openwebui_url" {
+  description = "OpenWebUI chat interface URL"
+  value       = var.kubernetes_resources_enabled ? "http://openwebui.${local.lb_ip}.nip.io" : "not-yet-available"
+}

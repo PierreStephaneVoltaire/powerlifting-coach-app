@@ -345,15 +345,14 @@ resource "kubernetes_ingress_v1" "openwebui" {
     namespace = kubernetes_namespace.openwebui[0].metadata[0].name
     annotations = {
       "kubernetes.io/ingress.class"                 = "nginx"
-      "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/ssl-redirect"    = "true"
+      "nginx.ingress.kubernetes.io/ssl-redirect"    = "false"
       "nginx.ingress.kubernetes.io/proxy-body-size" = "50m"
     }
   }
 
   spec {
     rule {
-      host = "chat.${var.domain_name}"  # Will need to add domain_name variable
+      host = "openwebui.${local.lb_ip}.nip.io"
 
       http {
         path {
@@ -371,19 +370,10 @@ resource "kubernetes_ingress_v1" "openwebui" {
         }
       }
     }
-
-    tls {
-      hosts       = ["chat.${var.domain_name}"]
-      secret_name = "openwebui-tls"
-    }
   }
 
   depends_on = [
-    kubernetes_service.openwebui
+    kubernetes_service.openwebui,
+    data.kubernetes_service.nginx_ingress
   ]
-}
-
-output "openwebui_url" {
-  value       = var.kubernetes_resources_enabled ? "https://chat.${var.domain_name}" : "not-yet-available"
-  description = "OpenWebUI URL for AI coach chat"
 }
