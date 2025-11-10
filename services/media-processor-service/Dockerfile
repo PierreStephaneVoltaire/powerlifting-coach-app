@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine AS builder
+FROM public.ecr.aws/docker/library/golang:1.22-alpine AS builder
 
 # Install FFmpeg and build dependencies
 RUN apk add --no-cache git ffmpeg ca-certificates
@@ -15,7 +15,7 @@ COPY . .
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o media-processor ./cmd/main.go
 
-FROM alpine:latest
+FROM public.ecr.aws/docker/library/alpine:latest
 
 # Install FFmpeg and ca-certificates
 RUN apk --no-cache add ffmpeg ca-certificates
