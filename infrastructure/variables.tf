@@ -77,30 +77,30 @@ variable "domain_name" {
   default     = "localhost"
 }
 
-variable "ses_smtp_host" {
-  description = "AWS SES SMTP host (e.g., email-smtp.us-east-1.amazonaws.com)"
+variable "azure_email_smtp_host" {
+  description = "Azure Communication Services Email SMTP host (smtp.azurecomm.net)"
   type        = string
-  default     = "email-smtp.us-east-1.amazonaws.com"
+  default     = "smtp.azurecomm.net"
 }
 
-variable "ses_smtp_username" {
-  description = "AWS SES SMTP username (IAM SMTP credentials access key)"
+variable "azure_email_smtp_username" {
+  description = "Azure Communication Services Email SMTP username (your verified email address)"
   type        = string
   sensitive   = true
   default     = ""
 }
 
-variable "ses_smtp_password" {
-  description = "AWS SES SMTP password (IAM SMTP credentials secret key)"
+variable "azure_email_smtp_password" {
+  description = "Azure Communication Services Email SMTP password (connection string or access key)"
   type        = string
   sensitive   = true
   default     = ""
 }
 
-variable "ses_from_email" {
-  description = "Verified email address in AWS SES to send from (e.g., noreply@powerliftingcoach.app)"
+variable "azure_email_from_email" {
+  description = "Verified email address in Azure Communication Services to send from (e.g., noreply@coachpotato.app)"
   type        = string
-  default     = "noreply@powerliftingcoach.app"
+  default     = "noreply@coachpotato.app"
 }
 
 variable "google_oauth_client_id" {

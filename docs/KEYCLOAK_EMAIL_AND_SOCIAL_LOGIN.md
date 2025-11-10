@@ -1,44 +1,53 @@
 # Keycloak Email and Social Login Configuration
 
-This document describes the configuration for AWS SES (Simple Email Service) email integration and Google social login in Keycloak.
+This document describes the configuration for Azure Communication Services Email integration and Google social login in Keycloak.
 
 ## Overview
 
 The Keycloak instance has been configured to support:
-1. **AWS SES SMTP** - For sending password reset emails and email verification
+1. **Azure Communication Services Email SMTP** - For sending password reset emails and email verification
 2. **Google OAuth 2.0** - For social login (Sign in with Google)
 
 ## Prerequisites
 
-### 1. AWS SES Account Setup
+### 1. Azure Communication Services Email Setup
 
-1. Create an AWS account at https://aws.amazon.com/
-2. Navigate to AWS SES (Simple Email Service)
-3. **Verify your email address or domain**:
-   - Go to "Verified identities"
-   - Click "Create identity"
-   - Choose either email address or domain
-   - For domain: Follow DNS verification steps (add TXT and CNAME records)
-   - For email: Click the verification link sent to your email
+1. Create an Azure account at https://portal.azure.com/
+2. Create an Azure Communication Services resource:
+   - Search for "Communication Services" in the Azure Portal
+   - Click "Create"
+   - Select your subscription and resource group
+   - Choose a region (e.g., East US)
+   - Provide a name for your resource
 
-4. **Move out of SES Sandbox** (for production):
-   - By default, SES is in sandbox mode (can only send to verified addresses)
-   - Request production access: SES → Account dashboard → "Request production access"
-   - Provide use case details and expected sending volume
+3. **Set up Email Communication Service**:
+   - In your Communication Services resource, go to "Email" → "Domains"
+   - You can use Azure Managed Domain (free) or connect your own custom domain
+   - For custom domain:
+     - Add your domain
+     - Verify ownership by adding DNS records (TXT, SPF, DKIM)
+     - Wait for verification (can take up to 24 hours)
 
-5. **Create SMTP Credentials**:
-   - Go to SES → SMTP settings
-   - Click "Create SMTP credentials"
-   - AWS will generate:
-     - **SMTP Username** (IAM access key)
-     - **SMTP Password** (IAM secret key)
-   - **Important**: Save these credentials immediately - the password is only shown once!
-   - Note your **SMTP endpoint** (e.g., `email-smtp.us-east-1.amazonaws.com`)
+4. **Configure Sender Authentication**:
+   - Go to "Email" → "MailFrom addresses"
+   - Add your sender email address (e.g., noreply@coachpotato.app)
+   - The address must be from a verified domain
 
-6. **Configure sending limits and reputation** (optional but recommended):
-   - Set up a configuration set for tracking bounces and complaints
-   - Configure email feedback forwarding
-   - Monitor your sending reputation in the SES dashboard
+5. **Get SMTP Credentials**:
+   - Azure Communication Services Email supports SMTP
+   - SMTP Host: `smtp.azurecomm.net`
+   - SMTP Port: `587` (with STARTTLS)
+   - **Username**: Your verified sender email address
+   - **Password**: Connection string from your Azure Communication Services resource
+     - Go to your Communication Services resource
+     - Navigate to "Keys" or "Connection strings"
+     - Copy the connection string
+
+6. **Pricing** (as of 2025):
+   - Free tier: 500 emails per month
+   - After free tier: $0.25 per 1,000 emails for Azure-managed domains
+   - Custom domains: $0.25 per 1,000 emails
+   - No data transfer costs for email
 
 ### 2. Google OAuth 2.0 Setup
 
@@ -64,10 +73,10 @@ The Keycloak instance has been configured to support:
 Set the following environment variables when applying Terraform:
 
 ```bash
-export TF_VAR_ses_smtp_host="email-smtp.us-east-1.amazonaws.com"
-export TF_VAR_ses_smtp_username="your-ses-smtp-username"
-export TF_VAR_ses_smtp_password="your-ses-smtp-password"
-export TF_VAR_ses_from_email="noreply@powerliftingcoach.app"
+export TF_VAR_azure_email_smtp_host="smtp.azurecomm.net"
+export TF_VAR_azure_email_smtp_username="noreply@coachpotato.app"
+export TF_VAR_azure_email_smtp_password="your-azure-connection-string"
+export TF_VAR_azure_email_from_email="noreply@coachpotato.app"
 export TF_VAR_google_oauth_client_id="your-google-client-id.apps.googleusercontent.com"
 export TF_VAR_google_oauth_client_secret="your-google-client-secret"
 ```
@@ -75,25 +84,23 @@ export TF_VAR_google_oauth_client_secret="your-google-client-secret"
 Or create a `terraform.tfvars` file in the `infrastructure/` directory:
 
 ```hcl
-ses_smtp_host              = "email-smtp.us-east-1.amazonaws.com"
-ses_smtp_username          = "your-ses-smtp-username"
-ses_smtp_password          = "your-ses-smtp-password"
-ses_from_email             = "noreply@powerliftingcoach.app"
+azure_email_smtp_host      = "smtp.azurecomm.net"
+azure_email_smtp_username  = "noreply@coachpotato.app"
+azure_email_smtp_password  = "your-azure-connection-string"
+azure_email_from_email     = "noreply@coachpotato.app"
 google_oauth_client_id     = "your-google-client-id.apps.googleusercontent.com"
 google_oauth_client_secret = "your-google-client-secret"
 ```
 
 **Important**: Never commit `terraform.tfvars` to version control if it contains sensitive values!
 
-### AWS SES Regions
+### Azure Communication Services Regions
 
-Common AWS SES SMTP endpoints by region:
-- **US East (N. Virginia)**: `email-smtp.us-east-1.amazonaws.com`
-- **US West (Oregon)**: `email-smtp.us-west-2.amazonaws.com`
-- **EU (Ireland)**: `email-smtp.eu-west-1.amazonaws.com`
-- **EU (Frankfurt)**: `email-smtp.eu-central-1.amazonaws.com`
-- **Asia Pacific (Tokyo)**: `email-smtp.ap-northeast-1.amazonaws.com`
-- **Asia Pacific (Sydney)**: `email-smtp.ap-southeast-2.amazonaws.com`
+Azure Communication Services is available in multiple regions. Common regions include:
+- **United States**: East US, West US 2, Central US
+- **Europe**: North Europe, West Europe
+- **Asia Pacific**: Southeast Asia, Australia East
+- **Others**: Canada Central, UK South, etc.
 
 Choose the region closest to your infrastructure for best performance.
 
@@ -115,14 +122,14 @@ Choose the region closest to your infrastructure for best performance.
    ```
 
 4. The configuration will create Kubernetes secrets:
-   - `ses-secret` - Contains AWS SES SMTP credentials
+   - `azure-email-secret` - Contains Azure Communication Services Email SMTP credentials
    - `google-oauth-secret` - Contains Google OAuth credentials
 
 ## Features Enabled
 
 ### Email Features
 
-With AWS SES configured, the following features are now available:
+With Azure Communication Services Email configured, the following features are now available:
 
 1. **Password Reset**: Users can request password reset emails
 2. **Email Verification**: New user registrations will send verification emails
@@ -139,7 +146,7 @@ With Google OAuth configured:
 
 ## Testing
 
-### Testing AWS SES Integration
+### Testing Azure Email Integration
 
 1. Access Keycloak admin console at `https://auth.your-domain.com/admin`
 2. Login with admin credentials
@@ -150,7 +157,6 @@ With Google OAuth configured:
    - Click "Forgot Password?"
    - Enter your email
    - Check for reset email
-6. If in SES sandbox mode, ensure the recipient email is verified in AWS SES
 
 ### Testing Google Login
 
@@ -164,36 +170,35 @@ With Google OAuth configured:
 
 ### Email Not Sending
 
-1. **Check SES Sandbox Status**:
-   - If in sandbox mode, you can only send to verified email addresses
-   - Request production access in AWS SES console
+1. **Verify Domain Verification**:
+   - Check Azure Portal → Communication Services → Email → Domains
+   - Ensure your domain status is "Verified"
+   - For custom domains, verify DNS records are correctly configured
 
-2. **Verify SMTP Credentials**:
-   - Ensure the SMTP username and password are correct
-   - If you lost the password, create new SMTP credentials in AWS IAM
+2. **Check SMTP Credentials**:
+   - Ensure the connection string is correct
+   - Verify the sender email address is from a verified domain
+   - Check that the username matches your verified sender address
 
-3. **Check Email Verification**:
-   - Ensure your from email address or domain is verified in AWS SES
-   - Check SES → Verified identities
-
-4. **View Keycloak logs**:
+3. **View Keycloak logs**:
    ```bash
    kubectl logs -n app deployment/keycloak
    ```
 
-5. **Ensure the SES secret is properly created**:
+4. **Ensure the Azure email secret is properly created**:
    ```bash
-   kubectl get secret -n app ses-secret
-   kubectl describe secret -n app ses-secret
+   kubectl get secret -n app azure-email-secret
+   kubectl describe secret -n app azure-email-secret
    ```
 
-6. **Check AWS SES Sending Statistics**:
-   - Go to SES dashboard → Account dashboard
-   - Check for bounces, complaints, or sending quota issues
+5. **Check Azure Email Metrics**:
+   - Go to Azure Portal → Communication Services → Email → Metrics
+   - Check for delivery failures or authentication errors
 
-7. **Verify SMTP Endpoint**:
-   - Ensure you're using the correct regional endpoint
-   - The endpoint must match the region where your identities are verified
+6. **Verify SMTP Connection**:
+   - SMTP host must be `smtp.azurecomm.net`
+   - Port must be `587` with STARTTLS enabled
+   - Ensure firewall rules allow outbound connections on port 587
 
 ### Google Login Not Working
 
@@ -208,8 +213,8 @@ With Google OAuth configured:
 ### Environment Variables Not Loading
 
 The realm configuration uses environment variable substitution syntax:
-- `${env.SES_SMTP_HOST}`
-- `${env.SES_SMTP_PASSWORD}`
+- `${env.AZURE_EMAIL_SMTP_HOST}`
+- `${env.AZURE_EMAIL_SMTP_PASSWORD}`
 - `${env.GOOGLE_CLIENT_ID}`
 
 These are resolved by Keycloak at startup. If they're not working:
@@ -223,34 +228,34 @@ These are resolved by Keycloak at startup. If they're not working:
    kubectl rollout restart deployment/keycloak -n app
    ```
 
-### AWS SES Rate Limiting
+### Azure Email Rate Limiting
 
-If emails are failing due to rate limits:
-1. Check your SES sending limits: SES → Account dashboard
-2. Request a sending rate increase if needed
-3. Implement exponential backoff in your application
-4. Monitor CloudWatch metrics for throttling
+Azure Communication Services has rate limits:
+1. Check your quota in Azure Portal → Communication Services → Quotas
+2. Free tier: 500 emails/month
+3. Request a quota increase if needed in Azure Portal
+4. Monitor Azure metrics for throttling events
 
 ## Security Considerations
 
 1. **SMTP Credentials**: Stored as Kubernetes secrets, never in plain text
-2. **IAM Permissions**: SES SMTP credentials should have minimal permissions (ses:SendEmail, ses:SendRawEmail)
+2. **Connection String**: Azure connection strings should be rotated regularly
 3. **OAuth Secrets**: Stored as Kubernetes secrets, never committed to git
-4. **STARTTLS**: Enabled for AWS SES SMTP connection (port 587)
+4. **STARTTLS**: Enabled for Azure Email SMTP connection (port 587)
 5. **HTTPS Only**: In production, ensure `sslRequired: "external"` in realm config
 6. **Email Verification**: Enabled to prevent fake account creation
 7. **Trusted Email**: Google emails are marked as trusted since Google verifies them
-8. **SES Reputation**: Monitor bounce and complaint rates to maintain good sending reputation
+8. **Domain Verification**: Keep DNS records secure and monitor for changes
 
 ## Cost Considerations
 
-AWS SES Pricing (as of 2024):
-- First 62,000 emails per month: **Free** (when sent from EC2)
-- After free tier: $0.10 per 1,000 emails
-- Data transfer costs may apply
-- Dedicated IP addresses: Additional cost if needed
+Azure Communication Services Email Pricing (as of 2025):
+- First 500 emails per month: **Free**
+- After free tier: $0.25 per 1,000 emails
+- No data transfer costs
+- No minimum commitment
 
-This is significantly more cost-effective than many email service providers for high-volume sending.
+This is cost-effective for small to medium applications and integrates well with other Azure services.
 
 ## File References
 
@@ -263,7 +268,7 @@ This is significantly more cost-effective than many email service providers for 
 
 - [Keycloak Email Configuration](https://www.keycloak.org/docs/latest/server_admin/#_email)
 - [Keycloak Identity Providers](https://www.keycloak.org/docs/latest/server_admin/#_identity_broker)
-- [AWS SES SMTP Documentation](https://docs.aws.amazon.com/ses/latest/dg/send-email-smtp.html)
-- [AWS SES Getting Started](https://docs.aws.amazon.com/ses/latest/dg/getting-started.html)
-- [Moving out of SES Sandbox](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html)
+- [Azure Communication Services Email Overview](https://learn.microsoft.com/en-us/azure/communication-services/concepts/email/email-overview)
+- [Azure Communication Services Email Quickstart](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email)
+- [Azure Email SMTP Documentation](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email-smtp)
 - [Google OAuth 2.0 Setup](https://developers.google.com/identity/protocols/oauth2)
