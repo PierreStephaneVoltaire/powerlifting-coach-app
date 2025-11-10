@@ -15,6 +15,7 @@ import (
 
 type EventPublisher interface {
 	PublishEvent(routingKey string, event interface{}) error
+	PublishVideoProcessing(message interface{}) error
 }
 
 type CommentHandlers struct {
