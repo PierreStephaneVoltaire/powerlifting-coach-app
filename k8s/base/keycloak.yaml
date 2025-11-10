@@ -52,6 +52,31 @@ spec:
           value: "true"
         - name: PROXY_ADDRESS_FORWARDING
           value: "true"
+        - name: MAILGUN_SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mailgun-secret
+              key: smtp-username
+        - name: MAILGUN_SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mailgun-secret
+              key: smtp-password
+        - name: MAILGUN_FROM_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: mailgun-secret
+              key: from-email
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: client-id
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: client-secret
         volumeMounts:
         - name: realm-config
           mountPath: /opt/keycloak/data/import

@@ -76,3 +76,37 @@ variable "domain_name" {
   type        = string
   default     = "localhost"
 }
+
+variable "mailgun_smtp_username" {
+  description = "Mailgun SMTP username (typically postmaster@your-domain.mailgun.org)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "mailgun_smtp_password" {
+  description = "Mailgun SMTP password"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "mailgun_from_email" {
+  description = "Email address to send from (e.g., noreply@powerliftingcoach.app)"
+  type        = string
+  default     = "noreply@powerliftingcoach.app"
+}
+
+variable "google_oauth_client_id" {
+  description = "Google OAuth 2.0 Client ID for social login"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "Google OAuth 2.0 Client Secret for social login"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

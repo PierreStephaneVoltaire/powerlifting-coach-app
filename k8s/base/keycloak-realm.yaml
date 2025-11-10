@@ -15,6 +15,17 @@ data:
       "resetPasswordAllowed": true,
       "editUsernameAllowed": false,
       "bruteForceProtected": true,
+      "verifyEmail": true,
+      "smtpServer": {
+        "password": "${env.MAILGUN_SMTP_PASSWORD}",
+        "starttls": "true",
+        "auth": "true",
+        "port": "587",
+        "host": "smtp.mailgun.org",
+        "from": "${env.MAILGUN_FROM_EMAIL}",
+        "fromDisplayName": "Powerlifting Coach",
+        "user": "${env.MAILGUN_SMTP_USERNAME}"
+      },
       "roles": {
         "realm": [
           {
@@ -31,6 +42,38 @@ data:
           }
         ]
       },
+      "identityProviders": [
+        {
+          "alias": "google",
+          "providerId": "google",
+          "enabled": true,
+          "updateProfileFirstLoginMode": "on",
+          "trustEmail": true,
+          "storeToken": false,
+          "addReadTokenRoleOnCreate": false,
+          "authenticateByDefault": false,
+          "linkOnly": false,
+          "firstBrokerLoginFlowAlias": "first broker login",
+          "config": {
+            "clientId": "${env.GOOGLE_CLIENT_ID}",
+            "clientSecret": "${env.GOOGLE_CLIENT_SECRET}",
+            "hostedDomain": "",
+            "useJwksUrl": "true"
+          }
+        }
+      ],
+      "identityProviderMappers": [
+        {
+          "name": "google-user-attribute-mapper",
+          "identityProviderAlias": "google",
+          "identityProviderMapper": "google-user-attribute-mapper",
+          "config": {
+            "syncMode": "INHERIT",
+            "jsonField": "email",
+            "userAttribute": "email"
+          }
+        }
+      ],
       "clients": [
         {
           "clientId": "powerlifting-coach-app",
