@@ -8,70 +8,15 @@ on:
   workflow_dispatch:
     inputs:
       build-all:
-        description: 'Build all services'
+        description: 'Build all services and frontend'
         required: false
         type: boolean
         default: false
-      build-auth:
-        description: 'Build auth service'
+      services:
+        description: 'Comma-separated list of services to build (e.g., auth,user,video). Options: auth, user, video, media-processor, settings, program, coach, notification, dm, machine, reminder, frontend'
         required: false
-        type: boolean
-        default: false
-      build-user:
-        description: 'Build user service'
-        required: false
-        type: boolean
-        default: false
-      build-video:
-        description: 'Build video service'
-        required: false
-        type: boolean
-        default: false
-      build-media-processor:
-        description: 'Build media-processor service'
-        required: false
-        type: boolean
-        default: false
-      build-settings:
-        description: 'Build settings service'
-        required: false
-        type: boolean
-        default: false
-      build-program:
-        description: 'Build program service'
-        required: false
-        type: boolean
-        default: false
-      build-coach:
-        description: 'Build coach service'
-        required: false
-        type: boolean
-        default: false
-      build-notification:
-        description: 'Build notification service'
-        required: false
-        type: boolean
-        default: false
-      build-dm:
-        description: 'Build dm service'
-        required: false
-        type: boolean
-        default: false
-      build-machine:
-        description: 'Build machine service'
-        required: false
-        type: boolean
-        default: false
-      build-reminder:
-        description: 'Build reminder service'
-        required: false
-        type: boolean
-        default: false
-      build-frontend:
-        description: 'Build frontend'
-        required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
 
 env:
   REGISTRY: ghcr.io
@@ -188,7 +133,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.auth == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-auth))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'auth')))
     environment:
       name: prod
     permissions:
@@ -230,7 +175,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.user == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-user))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'user')))
     environment:
       name: prod
     permissions:
@@ -272,7 +217,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.video == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-video))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'video')))
     environment:
       name: prod
     permissions:
@@ -314,7 +259,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.media-processor == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-media-processor))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'media-processor')))
     environment:
       name: prod
     permissions:
@@ -356,7 +301,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.settings == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-settings))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'settings')))
     environment:
       name: prod
     permissions:
@@ -398,7 +343,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.program == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-program))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'program')))
     environment:
       name: prod
     permissions:
@@ -440,7 +385,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.coach == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-coach))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'coach')))
     environment:
       name: prod
     permissions:
@@ -482,7 +427,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.notification == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-notification))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'notification')))
     environment:
       name: prod
     permissions:
@@ -524,7 +469,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.dm == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-dm))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'dm')))
     environment:
       name: prod
     permissions:
@@ -566,7 +511,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.machine == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-machine))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'machine')))
     environment:
       name: prod
     permissions:
@@ -608,7 +553,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.reminder == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-reminder))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'reminder')))
     environment:
       name: prod
     permissions:
@@ -650,7 +595,7 @@ jobs:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.frontend == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.build-all || inputs.build-frontend))
+      (github.event_name == 'workflow_dispatch' && (inputs.build-all || contains(inputs.services, 'frontend')))
     environment:
       name: prod
     permissions:
@@ -708,19 +653,7 @@ jobs:
            needs.detect-changes.outputs.frontend == 'true')
         ) ||
         (github.event_name == 'workflow_dispatch' &&
-          (inputs.build-all ||
-           inputs.build-auth ||
-           inputs.build-user ||
-           inputs.build-video ||
-           inputs.build-media-processor ||
-           inputs.build-settings ||
-           inputs.build-program ||
-           inputs.build-coach ||
-           inputs.build-notification ||
-           inputs.build-dm ||
-           inputs.build-machine ||
-           inputs.build-reminder ||
-           inputs.build-frontend)
+          (inputs.build-all || inputs.services != '')
         )
       )
     permissions:
