@@ -100,10 +100,8 @@ func main() {
 	{
 		programs := v1.Group("/programs")
 		{
-			// Public endpoints
 			programs.GET("/templates", programHandlers.GetProgramTemplates)
-			
-			// Protected endpoints
+
 			programs.Use(middleware.AuthMiddleware(authConfig))
 			{
 				programs.POST("/", programHandlers.CreateProgram)

@@ -317,7 +317,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Program management methods
   async getActiveProgram() {
     const response = await this.client.get('/api/v1/programs/active');
     return response.data;
