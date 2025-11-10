@@ -52,25 +52,25 @@ spec:
           value: "true"
         - name: PROXY_ADDRESS_FORWARDING
           value: "true"
-        - name: SES_SMTP_HOST
+        - name: AZURE_EMAIL_SMTP_HOST
           valueFrom:
             secretKeyRef:
-              name: ses-secret
+              name: azure-email-secret
               key: smtp-host
-        - name: SES_SMTP_USERNAME
+        - name: AZURE_EMAIL_SMTP_USERNAME
           valueFrom:
             secretKeyRef:
-              name: ses-secret
+              name: azure-email-secret
               key: smtp-username
-        - name: SES_SMTP_PASSWORD
+        - name: AZURE_EMAIL_SMTP_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: ses-secret
+              name: azure-email-secret
               key: smtp-password
-        - name: SES_FROM_EMAIL
+        - name: AZURE_EMAIL_FROM_EMAIL
           valueFrom:
             secretKeyRef:
-              name: ses-secret
+              name: azure-email-secret
               key: from-email
         - name: GOOGLE_CLIENT_ID
           valueFrom:

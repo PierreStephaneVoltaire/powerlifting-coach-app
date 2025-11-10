@@ -5,30 +5,36 @@ import (
 )
 
 type Config struct {
-	Port             string
-	Environment      string
-	RabbitMQURL      string
-	SendGridAPIKey   string
-	SendGridFromEmail string
-	UserService      string
-	CoachService     string
-	ProgramService   string
-	VideoService     string
-	AppURL           string
+	Port              string
+	Environment       string
+	RabbitMQURL       string
+	SMTPHost          string
+	SMTPPort          string
+	SMTPUsername      string
+	SMTPPassword      string
+	EmailFromAddress  string
+	UserService       string
+	CoachService      string
+	ProgramService    string
+	VideoService      string
+	AppURL            string
 }
 
 func Load() *Config {
 	return &Config{
-		Port:              getEnv("PORT", "8086"),
-		Environment:       getEnv("ENVIRONMENT", "development"),
-		RabbitMQURL:       getEnv("RABBITMQ_URL", "amqp://admin:changeme123@rabbitmq:5672/"),
-		SendGridAPIKey:    getEnv("SENDGRID_API_KEY", ""),
-		SendGridFromEmail: getEnv("SENDGRID_FROM_EMAIL", "noreply@powerliftingcoach.app"),
-		UserService:       getEnv("USER_SERVICE", "http://user-service:8081"),
-		CoachService:      getEnv("COACH_SERVICE", "http://coach-service:8085"),
-		ProgramService:    getEnv("PROGRAM_SERVICE", "http://program-service:8084"),
-		VideoService:      getEnv("VIDEO_SERVICE", "http://video-service:8082"),
-		AppURL:            getEnv("APP_URL", "https://app.powerliftingcoach.app"),
+		Port:             getEnv("PORT", "8086"),
+		Environment:      getEnv("ENVIRONMENT", "development"),
+		RabbitMQURL:      getEnv("RABBITMQ_URL", "amqp://admin:changeme123@rabbitmq:5672/"),
+		SMTPHost:         getEnv("SMTP_HOST", "smtp.azurecomm.net"),
+		SMTPPort:         getEnv("SMTP_PORT", "587"),
+		SMTPUsername:     getEnv("SMTP_USERNAME", ""),
+		SMTPPassword:     getEnv("SMTP_PASSWORD", ""),
+		EmailFromAddress: getEnv("EMAIL_FROM_ADDRESS", "noreply@coachpotato.app"),
+		UserService:      getEnv("USER_SERVICE", "http://user-service:8081"),
+		CoachService:     getEnv("COACH_SERVICE", "http://coach-service:8085"),
+		ProgramService:   getEnv("PROGRAM_SERVICE", "http://program-service:8084"),
+		VideoService:     getEnv("VIDEO_SERVICE", "http://video-service:8082"),
+		AppURL:           getEnv("APP_URL", "https://app.coachpotato.app"),
 	}
 }
 

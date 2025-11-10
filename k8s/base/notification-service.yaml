@@ -39,7 +39,29 @@ spec:
         - name: VIDEO_SERVICE
           value: "http://video-service:8082"
         - name: APP_URL
-          value: "https://app.powerliftingcoach.app"
+          value: "https://app.coachpotato.app"
+        - name: SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: azure-email-secret
+              key: smtp-host
+        - name: SMTP_PORT
+          value: "587"
+        - name: SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: azure-email-secret
+              key: smtp-username
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: azure-email-secret
+              key: smtp-password
+        - name: EMAIL_FROM_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              name: azure-email-secret
+              key: from-email
         resources:
           requests:
             memory: "64Mi"

@@ -17,14 +17,14 @@ data:
       "bruteForceProtected": true,
       "verifyEmail": true,
       "smtpServer": {
-        "password": "${env.SES_SMTP_PASSWORD}",
+        "password": "${env.AZURE_EMAIL_SMTP_PASSWORD}",
         "starttls": "true",
         "auth": "true",
         "port": "587",
-        "host": "${env.SES_SMTP_HOST}",
-        "from": "${env.SES_FROM_EMAIL}",
-        "fromDisplayName": "Powerlifting Coach",
-        "user": "${env.SES_SMTP_USERNAME}"
+        "host": "${env.AZURE_EMAIL_SMTP_HOST}",
+        "from": "${env.AZURE_EMAIL_FROM_EMAIL}",
+        "fromDisplayName": "Coach Potato",
+        "user": "${env.AZURE_EMAIL_SMTP_USERNAME}"
       },
       "roles": {
         "realm": [
