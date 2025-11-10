@@ -59,11 +59,18 @@ Azure Blob Storage endpoints differ from Digital Ocean Spaces:
 
 ### Application Configuration
 
-The application services use AWS SDK with S3-compatible API. While Azure Blob Storage doesn't natively support S3 API, the configuration has been updated:
+The application services have been **fully migrated** to use the Azure Blob Storage SDK natively instead of the AWS S3 SDK.
+
+**Code changes**:
+- Replaced AWS SDK (`github.com/aws/aws-sdk-go`) with Azure SDK (`github.com/Azure/azure-sdk-for-go/sdk/storage/azblob`)
+- Updated `services/video-service/internal/storage/spaces.go` to use Azure Blob API
+- Updated `services/media-processor-service/internal/storage/spaces.go` to use Azure Blob API
+- Updated both services' `go.mod` files with Azure SDK dependencies
+- All storage operations now use native Azure APIs (upload, download, SAS URLs, etc.)
 
 **Environment variables** (set in Kubernetes manifests):
 - `SPACES_ENDPOINT`: `https://powerliftingcoachdevvideos.blob.core.windows.net`
-- `SPACES_BUCKET`: `powerlifting-coach-videos`
+- `SPACES_BUCKET`: `powerlifting-coach-videos` (container name)
 - `SPACES_REGION`: `eastus`
 - `SPACES_KEY`: Storage account name (injected via Kubernetes secret)
 - `SPACES_SECRET`: Storage account key (injected via Kubernetes secret)
@@ -145,15 +152,16 @@ The AKS cluster uses **Spot Instances** for significant cost savings:
 
 ## Important Notes
 
-### S3 Compatibility
+### Azure SDK Integration
 
-**Note**: Azure Blob Storage does not natively support the S3 API. The application code currently uses AWS SDK with S3-compatible endpoints. You may need to:
+✅ **Fully Migrated**: The application code has been completely updated to use the Azure Blob Storage SDK natively. No S3 compatibility layer is needed.
 
-1. **Option 1**: Modify the application to use Azure Blob Storage SDK
-2. **Option 2**: Deploy MinIO as an S3-compatible gateway to Azure Blob Storage
-3. **Option 3**: Use Azure's experimental S3 compatibility features (when available)
-
-For now, the configuration assumes Option 1 or testing is needed to verify compatibility.
+**Key features implemented**:
+- Native Azure Blob uploads and downloads
+- SAS (Shared Access Signature) URL generation for secure file access
+- Public and private blob support
+- Azure Hot tier storage for frequently accessed content
+- Full compatibility with Azure Blob Storage lifecycle policies
 
 ### Storage Account Naming
 

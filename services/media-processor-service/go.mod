@@ -3,7 +3,8 @@ module github.com/powerlifting-coach-app/media-processor-service
 go 1.22
 
 require (
-	github.com/aws/aws-sdk-go v1.55.5
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/zerolog v1.33.0
