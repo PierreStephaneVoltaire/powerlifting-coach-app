@@ -1,54 +1,53 @@
 output "cluster_id" {
   description = "Kubernetes cluster ID"
-  value       = digitalocean_kubernetes_cluster.k8s.id
+  value       = azurerm_kubernetes_cluster.k8s.id
 }
 
 output "cluster_name" {
   description = "Kubernetes cluster name"
-  value       = digitalocean_kubernetes_cluster.k8s.name
+  value       = azurerm_kubernetes_cluster.k8s.name
 }
 
 output "cluster_endpoint" {
   description = "Kubernetes cluster endpoint"
-  value       = digitalocean_kubernetes_cluster.k8s.endpoint
+  value       = azurerm_kubernetes_cluster.k8s.kube_config[0].host
 }
 
 output "cluster_ca_certificate" {
   description = "Kubernetes cluster CA certificate"
-  value       = digitalocean_kubernetes_cluster.k8s.kube_config[0].cluster_ca_certificate
+  value       = azurerm_kubernetes_cluster.k8s.kube_config[0].cluster_ca_certificate
   sensitive   = true
 }
 
-output "cluster_token" {
-  description = "Kubernetes cluster token"
-  value       = digitalocean_kubernetes_cluster.k8s.kube_config[0].token
+output "resource_group_name" {
+  description = "Resource group name"
+  value       = azurerm_resource_group.this.name
+}
+
+output "storage_account_name" {
+  description = "Storage account name"
+  value       = azurerm_storage_account.videos.name
+}
+
+output "storage_container_name" {
+  description = "Storage container name"
+  value       = azurerm_storage_container.videos.name
+}
+
+output "storage_account_endpoint" {
+  description = "Storage account blob endpoint"
+  value       = azurerm_storage_account.videos.primary_blob_endpoint
+}
+
+output "storage_access_key" {
+  description = "Storage account access key"
+  value       = azurerm_storage_account.videos.primary_access_key
   sensitive   = true
 }
 
-output "vpc_id" {
-  description = "VPC ID"
-  value       = digitalocean_vpc.this.id
-}
-
-output "spaces_bucket_name" {
-  description = "Spaces bucket name"
-  value       = digitalocean_spaces_bucket.videos.name
-}
-
-output "spaces_bucket_endpoint" {
-  description = "Spaces bucket endpoint"
-  value       = "https://${var.region}.digitaloceanspaces.com"
-}
-
-output "spaces_access_key_id" {
-  description = "Spaces access key ID"
-  value       = digitalocean_spaces_key.default.access_key
-  sensitive   = true
-}
-
-output "spaces_secret_access_key" {
-  description = "Spaces secret access key"
-  value       = digitalocean_spaces_key.default.secret_key
+output "storage_connection_string" {
+  description = "Storage account connection string"
+  value       = azurerm_storage_account.videos.primary_connection_string
   sensitive   = true
 }
 

@@ -35,11 +35,11 @@ spec:
               name: app-secrets
               key: spaces-secret
         - name: SPACES_ENDPOINT
-          value: "https://tor1.digitaloceanspaces.com"
+          value: "https://powerliftingcoachdevvideos.blob.core.windows.net"
         - name: SPACES_BUCKET
           value: "powerlifting-coach-videos"
         - name: SPACES_REGION
-          value: "tor1"
+          value: "eastus"
         - name: FFMPEG_PATH
           value: "ffmpeg"
         - name: THUMBNAIL_SIZE

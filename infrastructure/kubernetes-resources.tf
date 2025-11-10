@@ -96,8 +96,8 @@ resource "kubernetes_secret" "app_secrets" {
     rabbitmq-url            = "amqp://admin:${urlencode(random_password.rabbitmq_password[0].result)}@rabbitmq:5672/"
     keycloak-client-secret  = random_password.keycloak_client_secret[0].result
     keycloak-admin-password = random_password.keycloak_admin_password[0].result
-    spaces-key              = digitalocean_spaces_key.default.access_key
-    spaces-secret           = digitalocean_spaces_key.default.secret_key
+    spaces-key              = azurerm_storage_account.videos.name
+    spaces-secret           = azurerm_storage_account.videos.primary_access_key
   }
 
   type = "Opaque"

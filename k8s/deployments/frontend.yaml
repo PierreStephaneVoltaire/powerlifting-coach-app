@@ -26,7 +26,7 @@ spec:
         - name: REACT_APP_AUTH_URL
           value: "http://api.DOMAIN_PLACEHOLDER/auth"
         - name: REACT_APP_CDN_URL
-          value: "https://powerlifting-coach-videos.tor1.cdn.digitaloceanspaces.com"
+          value: "https://powerliftingcoachdevvideos.blob.core.windows.net/powerlifting-coach-videos"
         resources:
           requests:
             memory: "32Mi"
