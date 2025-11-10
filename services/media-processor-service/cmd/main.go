@@ -16,6 +16,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/streadway/amqp"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/utils"
 )
 
 type ProcessVideoMessage struct {
@@ -73,8 +74,15 @@ func main() {
 	go func() {
 		for msg := range msgs {
 			if err := processMessage(ctx, msg, processor, spacesClient, queueClient); err != nil {
-				log.Error().Err(err).Msg("Failed to process message")
-				msg.Nack(false, true) // Requeue on failure
+				retryCount := utils.GetRetryCount(msg)
+				log.Error().Err(err).Int("retry_count", retryCount).Msg("Failed to process message")
+
+				// Handle failure with retry logic
+				if handleErr := utils.HandleMessageFailure(queueClient.GetChannel(), msg, queue.VideoProcessingExchange, "process"); handleErr != nil {
+					log.Error().Err(handleErr).Msg("Failed to handle message failure")
+					// Fallback to simple nack without requeue to avoid infinite loops
+					msg.Nack(false, false)
+				}
 			} else {
 				msg.Ack(false)
 			}

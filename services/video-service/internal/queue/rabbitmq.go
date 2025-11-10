@@ -6,6 +6,7 @@ import (
 
 	"github.com/streadway/amqp"
 	"github.com/rs/zerolog/log"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/utils"
 )
 
 type RabbitMQClient struct {
@@ -45,6 +46,11 @@ func NewRabbitMQClient(url string) (*RabbitMQClient, error) {
 }
 
 func (r *RabbitMQClient) setupQueues() error {
+	// Setup Dead Letter Queue
+	if err := utils.SetupDLQ(r.channel); err != nil {
+		return fmt.Errorf("failed to setup DLQ: %w", err)
+	}
+
 	// Declare exchange
 	err := r.channel.ExchangeDeclare(
 		VideoProcessingExchange,
@@ -59,15 +65,8 @@ func (r *RabbitMQClient) setupQueues() error {
 		return fmt.Errorf("failed to declare exchange: %w", err)
 	}
 
-	// Declare processing queue
-	_, err = r.channel.QueueDeclare(
-		VideoProcessingQueue,
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
+	// Declare processing queue with single active consumer
+	_, err = utils.DeclareQueueWithSingleActiveConsumer(r.channel, VideoProcessingQueue)
 	if err != nil {
 		return fmt.Errorf("failed to declare processing queue: %w", err)
 	}
@@ -84,15 +83,8 @@ func (r *RabbitMQClient) setupQueues() error {
 		return fmt.Errorf("failed to bind processing queue: %w", err)
 	}
 
-	// Declare metadata queue
-	_, err = r.channel.QueueDeclare(
-		VideoMetadataQueue,
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
+	// Declare metadata queue with single active consumer
+	_, err = utils.DeclareQueueWithSingleActiveConsumer(r.channel, VideoMetadataQueue)
 	if err != nil {
 		return fmt.Errorf("failed to declare metadata queue: %w", err)
 	}
@@ -167,8 +159,15 @@ func (r *RabbitMQClient) ConsumeVideoProcessing(handler func([]byte) error) erro
 
 			err := handler(msg.Body)
 			if err != nil {
-				log.Error().Err(err).Msg("Failed to process message")
-				msg.Nack(false, true) // Requeue message
+				retryCount := utils.GetRetryCount(msg)
+				log.Error().Err(err).Int("retry_count", retryCount).Msg("Failed to process message")
+
+				// Handle failure with retry logic
+				if handleErr := utils.HandleMessageFailure(r.channel, msg, VideoProcessingExchange, "process"); handleErr != nil {
+					log.Error().Err(handleErr).Msg("Failed to handle message failure")
+					// Fallback to simple nack without requeue to avoid infinite loops
+					msg.Nack(false, false)
+				}
 			} else {
 				msg.Ack(false) // Acknowledge message
 			}
@@ -209,8 +208,15 @@ func (r *RabbitMQClient) ConsumeVideoMetadata(handler func([]byte) error) error 
 
 			err := handler(msg.Body)
 			if err != nil {
-				log.Error().Err(err).Msg("Failed to process metadata")
-				msg.Nack(false, true) // Requeue message
+				retryCount := utils.GetRetryCount(msg)
+				log.Error().Err(err).Int("retry_count", retryCount).Msg("Failed to process metadata")
+
+				// Handle failure with retry logic
+				if handleErr := utils.HandleMessageFailure(r.channel, msg, VideoProcessingExchange, "metadata"); handleErr != nil {
+					log.Error().Err(handleErr).Msg("Failed to handle message failure")
+					// Fallback to simple nack without requeue to avoid infinite loops
+					msg.Nack(false, false)
+				}
 			} else {
 				msg.Ack(false) // Acknowledge message
 			}

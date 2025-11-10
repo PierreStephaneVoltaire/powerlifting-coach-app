@@ -8,6 +8,7 @@ import (
 	"github.com/powerlifting-coach-app/notification-service/internal/notification"
 	"github.com/rs/zerolog/log"
 	"github.com/streadway/amqp"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/utils"
 )
 
 type Consumer struct {
@@ -45,6 +46,11 @@ func NewConsumer(rabbitmqURL string, notificationSender *notification.Sender) (*
 }
 
 func (c *Consumer) setupExchangesAndQueues() error {
+	// Setup Dead Letter Queue
+	if err := utils.SetupDLQ(c.channel); err != nil {
+		return fmt.Errorf("failed to setup DLQ: %w", err)
+	}
+
 	// Declare the main events exchange
 	err := c.channel.ExchangeDeclare(
 		c.exchangeName,
@@ -74,15 +80,8 @@ func (c *Consumer) setupExchangesAndQueues() error {
 	}
 
 	for _, q := range queues {
-		// Declare queue
-		_, err := c.channel.QueueDeclare(
-			q.name,
-			true,  // durable
-			false, // delete when unused
-			false, // exclusive
-			false, // no-wait
-			nil,   // arguments
-		)
+		// Declare queue with single active consumer
+		_, err := utils.DeclareQueueWithSingleActiveConsumer(c.channel, q.name)
 		if err != nil {
 			return fmt.Errorf("failed to declare queue %s: %w", q.name, err)
 		}
@@ -153,7 +152,7 @@ func (c *Consumer) consumeVideoEvents() {
 
 			if err := c.handleVideoUploaded(event); err != nil {
 				log.Error().Err(err).Msg("Failed to handle video uploaded event")
-				msg.Nack(false, true) // Requeue
+				c.handleMessageFailureWithRetry(msg, "video.uploaded")
 				continue
 			}
 
@@ -188,7 +187,7 @@ func (c *Consumer) consumeFeedbackEvents() {
 
 			if err := c.handleFeedbackCreated(event); err != nil {
 				log.Error().Err(err).Msg("Failed to handle feedback created event")
-				msg.Nack(false, true) // Requeue
+				c.handleMessageFailureWithRetry(msg, "feedback.created")
 				continue
 			}
 
@@ -223,7 +222,7 @@ func (c *Consumer) consumeProgramEvents() {
 
 			if err := c.handleProgramCreated(event); err != nil {
 				log.Error().Err(err).Msg("Failed to handle program created event")
-				msg.Nack(false, true) // Requeue
+				c.handleMessageFailureWithRetry(msg, "program.created")
 				continue
 			}
 
@@ -258,7 +257,7 @@ func (c *Consumer) consumeSessionEvents() {
 
 			if err := c.handleSessionMissed(event); err != nil {
 				log.Error().Err(err).Msg("Failed to handle session missed event")
-				msg.Nack(false, true) // Requeue
+				c.handleMessageFailureWithRetry(msg, "session.missed")
 				continue
 			}
 
@@ -293,7 +292,7 @@ func (c *Consumer) consumeUserEvents() {
 
 			if err := c.handleUserRegistered(event); err != nil {
 				log.Error().Err(err).Msg("Failed to handle user registered event")
-				msg.Nack(false, true) // Requeue
+				c.handleMessageFailureWithRetry(msg, "user.registered")
 				continue
 			}
 
@@ -328,7 +327,7 @@ func (c *Consumer) consumeAccessEvents() {
 
 			if err := c.handleAccessGranted(event); err != nil {
 				log.Error().Err(err).Msg("Failed to handle access granted event")
-				msg.Nack(false, true) // Requeue
+				c.handleMessageFailureWithRetry(msg, "access.granted")
 				continue
 			}
 
@@ -363,7 +362,7 @@ func (c *Consumer) consumeFormAnalysisEvents() {
 
 			if err := c.handleFormAnalyzed(event); err != nil {
 				log.Error().Err(err).Msg("Failed to handle form analyzed event")
-				msg.Nack(false, true) // Requeue
+				c.handleMessageFailureWithRetry(msg, "form.analyzed")
 				continue
 			}
 
@@ -523,6 +522,19 @@ func (c *Consumer) handleFormAnalyzed(event models.FormAnalyzedEvent) error {
 	}
 
 	return c.notificationSender.SendNotification(notification)
+}
+
+// handleMessageFailureWithRetry handles message failure with retry logic
+func (c *Consumer) handleMessageFailureWithRetry(msg amqp.Delivery, routingKey string) {
+	retryCount := utils.GetRetryCount(msg)
+	log.Error().Int("retry_count", retryCount).Msg("Handling message failure")
+
+	// Handle failure with retry logic
+	if handleErr := utils.HandleMessageFailure(c.channel, msg, c.exchangeName, routingKey); handleErr != nil {
+		log.Error().Err(handleErr).Msg("Failed to handle message failure")
+		// Fallback to simple nack without requeue to avoid infinite loops
+		msg.Nack(false, false)
+	}
 }
 
 func (c *Consumer) Close() {
