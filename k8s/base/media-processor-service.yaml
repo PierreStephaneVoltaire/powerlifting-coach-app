@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-processor-service
+  labels:
+    app: media-processor-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-processor-service
+  template:
+    metadata:
+      labels:
+        app: media-processor-service
+    spec:
+      containers:
+      - name: media-processor
+        image: ghcr.io/pierrestephanevoltaire/powerlifting-coach-app/media-processor-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: rabbitmq-url
+        - name: SPACES_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: spaces-key
+        - name: SPACES_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: spaces-secret
+        - name: SPACES_ENDPOINT
+          value: "https://tor1.digitaloceanspaces.com"
+        - name: SPACES_BUCKET
+          value: "powerlifting-coach-videos"
+        - name: SPACES_REGION
+          value: "tor1"
+        - name: FFMPEG_PATH
+          value: "ffmpeg"
+        - name: THUMBNAIL_SIZE
+          value: "640"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: temp-videos
+          mountPath: /tmp/videos
+      volumes:
+      - name: temp-videos
+        emptyDir:
+          sizeLimit: 5Gi
