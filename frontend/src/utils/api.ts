@@ -317,6 +317,42 @@ class ApiClient {
     return response.data;
   }
 
+  // Program management methods
+  async getActiveProgram() {
+    const response = await this.client.get('/api/v1/programs/active');
+    return response.data;
+  }
+
+  async getPendingProgram() {
+    const response = await this.client.get('/api/v1/programs/pending');
+    return response.data;
+  }
+
+  async createProgramFromChat(programData: any) {
+    const response = await this.client.post('/api/v1/programs/from-chat', programData);
+    return response.data;
+  }
+
+  async approveProgram(programId: string) {
+    const response = await this.client.post(`/api/v1/programs/${programId}/approve`);
+    return response.data;
+  }
+
+  async rejectProgram(programId: string) {
+    const response = await this.client.post(`/api/v1/programs/${programId}/reject`);
+    return response.data;
+  }
+
+  async getProgram(programId: string) {
+    const response = await this.client.get(`/api/v1/programs/${programId}`);
+    return response.data;
+  }
+
+  async getMyPrograms() {
+    const response = await this.client.get('/api/v1/programs');
+    return response.data;
+  }
+
   async getPendingEventsCount(): Promise<number> {
     return offlineQueue.getPendingCount();
   }

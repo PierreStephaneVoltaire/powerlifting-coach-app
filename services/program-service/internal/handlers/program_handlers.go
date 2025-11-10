@@ -13,25 +13,29 @@ import (
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/models"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
+	"github.com/powerlifting-coach-app/program-service/internal/services"
 	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog/log"
 )
 
 type ProgramHandlers struct {
-	programRepo   *repository.ProgramRepository
-	aiClient      *ai.LiteLLMClient
-	excelExporter *excel.ExcelExporter
+	programRepo       *repository.ProgramRepository
+	aiClient          *ai.LiteLLMClient
+	excelExporter     *excel.ExcelExporter
+	workoutGenerator  *services.WorkoutGenerator
 }
 
 func NewProgramHandlers(
 	programRepo *repository.ProgramRepository,
 	aiClient *ai.LiteLLMClient,
 	excelExporter *excel.ExcelExporter,
+	workoutGenerator *services.WorkoutGenerator,
 ) *ProgramHandlers {
 	return &ProgramHandlers{
-		programRepo:   programRepo,
-		aiClient:      aiClient,
-		excelExporter: excelExporter,
+		programRepo:      programRepo,
+		aiClient:         aiClient,
+		excelExporter:    excelExporter,
+		workoutGenerator: workoutGenerator,
 	}
 }
 
@@ -520,11 +524,19 @@ func (h *ProgramHandlers) ApproveProgram(c *gin.Context) {
 		return
 	}
 
-	// TODO: Generate training sessions from approved program data
-	// This will be implemented in the workout generation service
+	// Generate training sessions from approved program data
+	if err := h.workoutGenerator.GenerateWorkoutsFromProgram(updatedProgram); err != nil {
+		log.Error().Err(err).Msg("Failed to generate workouts from program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate workouts"})
+		return
+	}
+
+	log.Info().
+		Str("program_id", updatedProgram.ID.String()).
+		Msg("Program approved and workouts generated successfully")
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Program approved successfully",
+		"message": "Program approved and workouts generated successfully",
 		"program": updatedProgram,
 	})
 }

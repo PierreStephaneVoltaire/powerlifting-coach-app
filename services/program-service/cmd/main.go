@@ -16,6 +16,7 @@ import (
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/handlers"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
+	"github.com/powerlifting-coach-app/program-service/internal/services"
 	"github.com/powerlifting-coach-app/program-service/internal/queue"
 	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
@@ -70,8 +71,9 @@ func main() {
 	programRepo := repository.NewProgramRepository(db.DB)
 	aiClient := ai.NewLiteLLMClient(cfg)
 	excelExporter := excel.NewExcelExporter()
+	workoutGenerator := services.NewWorkoutGenerator(programRepo)
 
-	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter)
+	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator)
 
 	router := gin.Default()
 
