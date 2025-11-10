@@ -17,7 +17,6 @@ const (
 	VideoProcessingQueue    = "video.processing"
 	VideoMetadataQueue      = "video.metadata"
 	VideoProcessingExchange = "video.exchange"
-	AppEventsExchange       = "app.events"
 )
 
 func NewRabbitMQClient(url string) (*RabbitMQClient, error) {

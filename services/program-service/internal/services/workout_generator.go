@@ -121,8 +121,8 @@ func (wg *WorkoutGenerator) createTrainingSession(
 		AthleteID:     program.AthleteID,
 		WeekNumber:    weekNumber,
 		DayNumber:     int(dayNumber),
-		SessionName:   workoutName,
-		ScheduledDate: scheduledDate,
+		SessionName:   &workoutName,
+		ScheduledDate: &scheduledDate,
 		Notes:         nil,
 	}
 
@@ -236,7 +236,7 @@ func (wg *WorkoutGenerator) createExercise(
 	exercise := &models.Exercise{
 		SessionID:        sessionID,
 		ExerciseOrder:    order,
-		LiftType:         liftType,
+		LiftType:         models.LiftType(liftType),
 		ExerciseName:     name,
 		TargetSets:       int(sets),
 		TargetReps:       reps,
