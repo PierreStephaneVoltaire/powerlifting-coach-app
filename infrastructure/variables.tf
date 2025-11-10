@@ -57,3 +57,22 @@ variable "argocd_resources_enabled" {
   type        = bool
   default     = false
 }
+
+variable "openai_api_key" {
+  description = "OpenAI API key for LLM access in OpenWebUI"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "litellm_endpoint" {
+  description = "LiteLLM endpoint URL for OpenWebUI to connect to various LLM providers"
+  type        = string
+  default     = "https://api.openai.com/v1"
+}
+
+variable "domain_name" {
+  description = "Domain name for the application (e.g., powerliftingcoach.app)"
+  type        = string
+  default     = "localhost"
+}

@@ -16,6 +16,7 @@ import (
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/handlers"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
+	"github.com/powerlifting-coach-app/program-service/internal/services"
 	"github.com/powerlifting-coach-app/program-service/internal/queue"
 	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
@@ -70,8 +71,9 @@ func main() {
 	programRepo := repository.NewProgramRepository(db.DB)
 	aiClient := ai.NewLiteLLMClient(cfg)
 	excelExporter := excel.NewExcelExporter()
+	workoutGenerator := services.NewWorkoutGenerator(programRepo)
 
-	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter)
+	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator)
 
 	router := gin.Default()
 
@@ -98,16 +100,19 @@ func main() {
 	{
 		programs := v1.Group("/programs")
 		{
-			// Public endpoints
 			programs.GET("/templates", programHandlers.GetProgramTemplates)
-			
-			// Protected endpoints
+
 			programs.Use(middleware.AuthMiddleware(authConfig))
 			{
 				programs.POST("/", programHandlers.CreateProgram)
 				programs.POST("/generate", programHandlers.GenerateProgram)
+				programs.POST("/from-chat", programHandlers.CreateProgramFromChat)
 				programs.GET("/", programHandlers.GetMyPrograms)
+				programs.GET("/active", programHandlers.GetActiveProgram)
+				programs.GET("/pending", programHandlers.GetPendingProgram)
 				programs.GET("/:id", programHandlers.GetProgram)
+				programs.POST("/:id/approve", programHandlers.ApproveProgram)
+				programs.POST("/:id/reject", programHandlers.RejectProgram)
 				programs.POST("/export", programHandlers.ExportProgram)
 				programs.POST("/chat", programHandlers.ChatWithAI)
 				programs.POST("/log-workout", programHandlers.LogWorkout)
