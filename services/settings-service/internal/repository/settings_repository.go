@@ -20,8 +20,17 @@ func NewSettingsRepository(db *sql.DB) *SettingsRepository {
 
 func (r *SettingsRepository) GetUserSettings(userID uuid.UUID) (*models.UserSettings, error) {
 	query := `
-		SELECT id, user_id, theme, language, timezone, units, notifications, 
-		       privacy, training_preferences, created_at, updated_at
+		SELECT id, user_id, theme, language, timezone, units, notifications,
+		       privacy, training_preferences, weight_value, weight_unit, age,
+		       target_weight_class, competition_date, squat_goal_value, squat_goal_unit,
+		       bench_goal_value, bench_goal_unit, dead_goal_value, dead_goal_unit,
+		       most_important_lift, least_important_lift, recovery_rating_squat,
+		       recovery_rating_bench, recovery_rating_dead, training_days_per_week,
+		       session_length_minutes, weight_plan, injuries, knee_sleeve,
+		       deadlift_style, squat_stance, squat_bar_position, volume_preference,
+		       height_value, height_unit, feed_visibility, has_competed,
+		       best_squat_kg, best_bench_kg, best_dead_kg, best_total_kg,
+		       comp_pr_date, comp_federation, created_at, updated_at
 		FROM user_settings WHERE user_id = $1`
 
 	settings := &models.UserSettings{}
@@ -30,7 +39,20 @@ func (r *SettingsRepository) GetUserSettings(userID uuid.UUID) (*models.UserSett
 	err := r.db.QueryRow(query, userID).Scan(
 		&settings.ID, &settings.UserID, &settings.Theme, &settings.Language,
 		&settings.Timezone, &settings.Units, &notificationsJSON,
-		&privacyJSON, &trainingPrefsJSON, &settings.CreatedAt, &settings.UpdatedAt,
+		&privacyJSON, &trainingPrefsJSON, &settings.WeightValue, &settings.WeightUnit,
+		&settings.Age, &settings.TargetWeightClass, &settings.CompetitionDate,
+		&settings.SquatGoalValue, &settings.SquatGoalUnit, &settings.BenchGoalValue,
+		&settings.BenchGoalUnit, &settings.DeadGoalValue, &settings.DeadGoalUnit,
+		&settings.MostImportantLift, &settings.LeastImportantLift,
+		&settings.RecoveryRatingSquat, &settings.RecoveryRatingBench,
+		&settings.RecoveryRatingDead, &settings.TrainingDaysPerWeek,
+		&settings.SessionLengthMinutes, &settings.WeightPlan, &settings.Injuries,
+		&settings.KneeSleeve, &settings.DeadliftStyle, &settings.SquatStance,
+		&settings.SquatBarPosition, &settings.VolumePreference, &settings.HeightValue,
+		&settings.HeightUnit, &settings.FeedVisibility, &settings.HasCompeted,
+		&settings.BestSquatKg, &settings.BestBenchKg, &settings.BestDeadKg,
+		&settings.BestTotalKg, &settings.CompPrDate, &settings.CompFederation,
+		&settings.CreatedAt, &settings.UpdatedAt,
 	)
 
 	if err != nil {
