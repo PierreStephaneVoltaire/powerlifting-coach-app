@@ -6,6 +6,7 @@ resources:
   - auth-service.yaml
   - user-service.yaml
   - video-service.yaml
+  - media-processor-service.yaml
   - settings-service.yaml
   - program-service.yaml
   - coach-service.yaml
@@ -31,6 +32,9 @@ images:
     newTag: latest
   - name: video-service
     newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/video-service
+    newTag: latest
+  - name: media-processor-service
+    newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/media-processor-service
     newTag: latest
   - name: settings-service
     newName: ghcr.io/pierrestephanevoltaire/powerlifting-coach/settings-service

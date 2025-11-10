@@ -95,7 +95,7 @@ func (h *VideoHandlers) GetUploadURL(c *gin.Context) {
 	}
 
 	// Generate presigned upload URL
-	key := fmt.Sprintf("uploads/%s/%s", userID, video.Filename)
+	key := fmt.Sprintf("originals/%s/%s", userID, video.Filename)
 	uploadURL, err := h.spacesClient.GeneratePresignedUploadURL(key, video.ContentType, time.Hour)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to generate upload URL")
@@ -135,7 +135,7 @@ func (h *VideoHandlers) CompleteUpload(c *gin.Context) {
 
 	// Update video status and queue for processing
 	video.Status = models.VideoStatusProcessing
-	originalURL := h.spacesClient.GetFileURL(fmt.Sprintf("uploads/%s/%s", userID, video.Filename))
+	originalURL := h.spacesClient.GetFileURL(fmt.Sprintf("originals/%s/%s", userID, video.Filename))
 	video.OriginalURL = &originalURL
 
 	if err := h.videoRepo.UpdateVideo(video); err != nil {
@@ -275,14 +275,14 @@ func (h *VideoHandlers) DeleteVideo(c *gin.Context) {
 
 	// Delete from storage
 	if video.OriginalURL != nil {
-		key := fmt.Sprintf("uploads/%s/%s", userID, video.Filename)
+		key := fmt.Sprintf("originals/%s/%s", userID, video.Filename)
 		if err := h.spacesClient.DeleteFile(key); err != nil {
 			log.Warn().Err(err).Msg("Failed to delete original file")
 		}
 	}
 
 	if video.ProcessedURL != nil {
-		key := fmt.Sprintf("processed/%s/%s", userID, video.Filename)
+		key := fmt.Sprintf("feed/%s/%s", userID, video.Filename)
 		if err := h.spacesClient.DeleteFile(key); err != nil {
 			log.Warn().Err(err).Msg("Failed to delete processed file")
 		}

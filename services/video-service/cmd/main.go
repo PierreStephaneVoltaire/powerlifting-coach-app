@@ -69,6 +69,7 @@ func main() {
 	commentHandlers := handlers.NewCommentHandlers(db.DB)
 	commentHandlers.SetPublisher(eventPublisher)
 	mediaHandlers := handlers.NewMediaEventHandlers(db.DB, eventPublisher)
+	metadataHandlers := handlers.NewMetadataHandlers(db.DB, eventPublisher)
 
 	eventConsumer.RegisterHandler("feed.post.created", feedHandlers.HandleFeedPostCreated)
 	eventConsumer.RegisterHandler("feed.post.updated", feedHandlers.HandleFeedPostUpdated)
@@ -90,6 +91,11 @@ func main() {
 
 	if err := eventConsumer.StartConsuming("video-service.events", routingKeys); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start event consumer")
+	}
+
+	// Start consuming video metadata from media processor
+	if err := queueClient.ConsumeVideoMetadata(metadataHandlers.HandleVideoMetadata); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start metadata consumer")
 	}
 
 	videoRepo := repository.NewVideoRepository(db.DB)
