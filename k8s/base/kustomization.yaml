@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - cert-manager-issuer.yaml
   - auth-service.yaml
   - user-service.yaml
   - video-service.yaml

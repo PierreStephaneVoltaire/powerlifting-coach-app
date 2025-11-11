@@ -38,31 +38,22 @@ resource "kubernetes_ingress_v1" "grafana" {
   metadata {
     name      = "grafana-ingress"
     namespace = kubernetes_namespace.monitoring[0].metadata[0].name
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class" = "nginx"
-      },
-      var.domain_name != "localhost" ? {
-        "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-        "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-        "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-      } : {
-        "nginx.ingress.kubernetes.io/ssl-redirect" = "false"
-      }
-    )
+    annotations = {
+      "kubernetes.io/ingress.class"                    = "nginx"
+      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
+      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+    }
   }
 
   spec {
-    dynamic "tls" {
-      for_each = var.domain_name != "localhost" ? [1] : []
-      content {
-        hosts       = ["grafana.${var.domain_name}"]
-        secret_name = "grafana-tls"
-      }
+    tls {
+      hosts       = ["grafana.nolift.training"]
+      secret_name = "grafana-tls"
     }
 
     rule {
-      host = var.domain_name != "localhost" ? "grafana.${var.domain_name}" : "grafana.${local.lb_ip}.nip.io"
+      host = "grafana.nolift.training"
       http {
         path {
           path      = "/"
@@ -92,31 +83,22 @@ resource "kubernetes_ingress_v1" "prometheus" {
   metadata {
     name      = "prometheus-ingress"
     namespace = kubernetes_namespace.monitoring[0].metadata[0].name
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class" = "nginx"
-      },
-      var.domain_name != "localhost" ? {
-        "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-        "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-        "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-      } : {
-        "nginx.ingress.kubernetes.io/ssl-redirect" = "false"
-      }
-    )
+    annotations = {
+      "kubernetes.io/ingress.class"                    = "nginx"
+      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
+      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+    }
   }
 
   spec {
-    dynamic "tls" {
-      for_each = var.domain_name != "localhost" ? [1] : []
-      content {
-        hosts       = ["prometheus.${var.domain_name}"]
-        secret_name = "prometheus-tls"
-      }
+    tls {
+      hosts       = ["prometheus.nolift.training"]
+      secret_name = "prometheus-tls"
     }
 
     rule {
-      host = var.domain_name != "localhost" ? "prometheus.${var.domain_name}" : "prometheus.${local.lb_ip}.nip.io"
+      host = "prometheus.nolift.training"
       http {
         path {
           path      = "/"
@@ -146,31 +128,22 @@ resource "kubernetes_ingress_v1" "loki" {
   metadata {
     name      = "loki-ingress"
     namespace = kubernetes_namespace.monitoring[0].metadata[0].name
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class" = "nginx"
-      },
-      var.domain_name != "localhost" ? {
-        "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-        "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-        "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-      } : {
-        "nginx.ingress.kubernetes.io/ssl-redirect" = "false"
-      }
-    )
+    annotations = {
+      "kubernetes.io/ingress.class"                    = "nginx"
+      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
+      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+    }
   }
 
   spec {
-    dynamic "tls" {
-      for_each = var.domain_name != "localhost" ? [1] : []
-      content {
-        hosts       = ["loki.${var.domain_name}"]
-        secret_name = "loki-tls"
-      }
+    tls {
+      hosts       = ["loki.nolift.training"]
+      secret_name = "loki-tls"
     }
 
     rule {
-      host = var.domain_name != "localhost" ? "loki.${var.domain_name}" : "loki.${local.lb_ip}.nip.io"
+      host = "loki.nolift.training"
       http {
         path {
           path      = "/"
@@ -200,31 +173,22 @@ resource "kubernetes_ingress_v1" "rabbitmq_management" {
   metadata {
     name      = "rabbitmq-management-ingress"
     namespace = kubernetes_namespace.app[0].metadata[0].name
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class" = "nginx"
-      },
-      var.domain_name != "localhost" ? {
-        "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-        "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-        "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-      } : {
-        "nginx.ingress.kubernetes.io/ssl-redirect" = "false"
-      }
-    )
+    annotations = {
+      "kubernetes.io/ingress.class"                    = "nginx"
+      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
+      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+    }
   }
 
   spec {
-    dynamic "tls" {
-      for_each = var.domain_name != "localhost" ? [1] : []
-      content {
-        hosts       = ["rabbitmq.${var.domain_name}"]
-        secret_name = "rabbitmq-tls"
-      }
+    tls {
+      hosts       = ["rabbitmq.nolift.training"]
+      secret_name = "rabbitmq-tls"
     }
 
     rule {
-      host = var.domain_name != "localhost" ? "rabbitmq.${var.domain_name}" : "rabbitmq.${local.lb_ip}.nip.io"
+      host = "rabbitmq.nolift.training"
       http {
         path {
           path      = "/"

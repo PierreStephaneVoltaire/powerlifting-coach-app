@@ -333,32 +333,23 @@ resource "kubernetes_ingress_v1" "openwebui" {
   metadata {
     name      = "openwebui-ingress"
     namespace = kubernetes_namespace.openwebui[0].metadata[0].name
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class"                 = "nginx"
-        "nginx.ingress.kubernetes.io/proxy-body-size" = "50m"
-      },
-      var.domain_name != "localhost" ? {
-        "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-        "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-        "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-      } : {
-        "nginx.ingress.kubernetes.io/ssl-redirect" = "false"
-      }
-    )
+    annotations = {
+      "kubernetes.io/ingress.class"                    = "nginx"
+      "nginx.ingress.kubernetes.io/proxy-body-size"    = "50m"
+      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
+      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+    }
   }
 
   spec {
-    dynamic "tls" {
-      for_each = var.domain_name != "localhost" ? [1] : []
-      content {
-        hosts       = ["openwebui.${var.domain_name}"]
-        secret_name = "openwebui-tls"
-      }
+    tls {
+      hosts       = ["openwebui.nolift.training"]
+      secret_name = "openwebui-tls"
     }
 
     rule {
-      host = var.domain_name != "localhost" ? "openwebui.${var.domain_name}" : "openwebui.${local.lb_ip}.nip.io"
+      host = "openwebui.nolift.training"
 
       http {
         path {
