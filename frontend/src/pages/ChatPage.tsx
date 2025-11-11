@@ -18,7 +18,7 @@ export const ChatPage: React.FC = () => {
 
       try {
         // Get the OpenWebUI URL from environment or config
-        const openWebUIUrl = import.meta.env.VITE_OPENWEBUI_URL || 'http://localhost:3000';
+        const openWebUIUrl = process.env.REACT_APP_OPENWEBUI_URL || 'http://localhost:3000';
 
         // TODO: Implement JWT token passing to OpenWebUI for authentication
         // For now, we'll just load the iframe
