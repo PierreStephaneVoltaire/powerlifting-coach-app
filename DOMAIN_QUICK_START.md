@@ -2,48 +2,47 @@
 
 ## TL;DR
 
-You want to use AWS Route 53 for domain registration but Azure DNS for management.
+Domain registered on **Namecheap** (nolift.training), DNS managed by **Azure DNS**.
 
 **Setup in 5 Steps:**
 
-1. **Buy domain on Route 53** (~$12/year)
-2. **Update terraform.tfvars**: `domain_name = "yourdomain.com"`
+1. ✅ **Domain purchased**: `nolift.training` (Namecheap)
+2. **Update terraform.tfvars**: `domain_name = "nolift.training"` ✅ DONE
 3. **Run terraform apply** → Get Azure nameservers
-4. **Update Route 53 nameservers** → Point to Azure DNS
+4. **Update Namecheap nameservers** → Point to Azure DNS
 5. **Configure email domain** in Azure Communication Services
 
-**Total Cost**: ~$18-21/year ($12 domain + $6 Azure DNS)
+**Total Cost**: ~$36/year ($30 domain + $6 Azure DNS)
 
 ---
 
-## 1. Purchase Domain on Route 53
+## 1. ✅ Domain Purchased
 
-```bash
-# Go to AWS Console → Route 53 → Register Domain
-# Search and buy your domain (e.g., coachpotato.app)
-# Wait 10-15 minutes for registration
-```
+Domain **nolift.training** purchased from Namecheap.
 
-## 2. Update Terraform Configuration
+## 2. ✅ Terraform Configuration Updated
 
-**Create or update `infrastructure/terraform.tfvars`:**
+File **`infrastructure/terraform.tfvars`** has been created with:
 
 ```hcl
-# Required: Your domain name
-domain_name = "yourdomain.com"  # Change this!
+# Domain Configuration
+domain_name = "nolift.training"  ✅
 
-# Existing variables (already set)
-azure_subscription_id = "your-subscription-id"
-project_name         = "coachpotato"
-environment          = "dev"
+# Project Configuration
+project_name = "coachpotato"
+environment  = "dev"
 
-# These will be filled in later (Step 5)
-azure_email_domain_verification_code = ""  # From Azure portal
-azure_email_dkim_selector1          = ""  # From Azure portal
-azure_email_dkim_value1             = ""  # From Azure portal
-azure_email_dkim_selector2          = ""  # From Azure portal
-azure_email_dkim_value2             = ""  # From Azure portal
+# Kubernetes Configuration
+kubernetes_resources_enabled = true
+argocd_resources_enabled     = true
 ```
+
+**⚠️ ACTION REQUIRED**: You need to add your Azure subscription ID:
+```hcl
+azure_subscription_id = "your-subscription-id-here"
+```
+
+The rest (email, OAuth) can be filled in later during Step 5.
 
 ## 3. Deploy Infrastructure
 
@@ -67,21 +66,28 @@ azure_nameservers = [
 
 **SAVE THESE NAMESERVERS!** You need them for the next step.
 
-## 4. Point Route 53 to Azure DNS
+## 4. Point Namecheap to Azure DNS
 
-1. Go to **AWS Console → Route 53 → Registered Domains**
-2. Click your domain
-3. Click **"Add or edit name servers"**
-4. **Replace** the existing nameservers with the Azure nameservers from Step 3
-5. **Save**
-6. Wait 1-2 hours for propagation (can take up to 48 hours)
+1. **Log into Namecheap**: https://www.namecheap.com
+2. Go to **Domain List** → Click **"Manage"** next to `nolift.training`
+3. Scroll to **"Nameservers"** section
+4. Select **"Custom DNS"** from the dropdown
+5. **Enter the 4 Azure nameservers** from Step 3 (⚠️ remove trailing dots!)
+   ```
+   ns1-01.azure-dns.com
+   ns2-01.azure-dns.net
+   ns3-01.azure-dns.org
+   ns4-01.azure-dns.info
+   ```
+6. Click the **checkmark** to save
+7. Wait 30 minutes to 2 hours for propagation (Namecheap is usually fast!)
 
 **Verify DNS propagation:**
 ```bash
-dig NS yourdomain.com
+dig NS nolift.training
 # Should show Azure nameservers
 
-dig app.yourdomain.com
+dig app.nolift.training
 # Should show your LoadBalancer IP
 ```
 
@@ -95,7 +101,7 @@ dig app.yourdomain.com
 # 2. Create resource (if not exists)
 # 3. Select same resource group as AKS cluster
 # 4. Go to Email → Domains → Add Domain → Custom Domain
-# 5. Enter your domain name
+# 5. Enter: nolift.training
 ```
 
 ### 5b. Get Verification Records
@@ -146,7 +152,7 @@ This creates:
 # Navigate to: APIs & Services → Credentials
 # Select your OAuth 2.0 Client ID
 # Add redirect URI:
-#   https://auth.yourdomain.com/realms/powerlifting-coach/broker/google/endpoint
+#   https://auth.nolift.training/realms/powerlifting-coach/broker/google/endpoint
 # Save
 ```
 
@@ -185,7 +191,7 @@ Then update your ingress resources to use TLS (see full docs/DOMAIN_SETUP.md for
 
 ```bash
 # Check nameservers
-dig NS yourdomain.com
+dig NS nolift.training
 
 # Force DNS cache flush
 sudo systemd-resolve --flush-caches  # Linux
@@ -195,8 +201,8 @@ sudo systemd-resolve --flush-caches  # Linux
 
 ```bash
 # Verify TXT records exist
-dig TXT yourdomain.com
-dig TXT selector1._domainkey.yourdomain.com
+dig TXT nolift.training
+dig TXT selector1._domainkey.nolift.training
 
 # Check Keycloak logs
 kubectl logs -n app deployment/keycloak | grep -i email
@@ -223,23 +229,26 @@ For detailed instructions, troubleshooting, and architecture details, see:
 
 | Item | Cost |
 |------|------|
-| Route 53 domain | ~$12-15/year |
+| Namecheap .training domain | ~$30/year |
 | Azure DNS zone | ~$0.50/month ($6/year) |
 | Azure Communication Services | Free (100 emails/day) |
 | cert-manager (HTTPS) | Free |
-| **Total** | **~$18-21/year** |
+| **Total** | **~$36/year** |
+
+Note: `.training` TLD is pricier than `.com`, but perfect for fitness/coaching apps!
 
 ## Your URLs After Setup
 
-With domain `yourdomain.com`:
+With domain `nolift.training`:
 
-- **Frontend**: https://app.yourdomain.com
-- **API**: https://api.yourdomain.com
-- **Auth/Keycloak**: https://auth.yourdomain.com
-- **Grafana**: https://grafana.yourdomain.com
-- **ArgoCD**: https://argocd.yourdomain.com
-- **Prometheus**: https://prometheus.yourdomain.com
-- **RabbitMQ**: https://rabbitmq.yourdomain.com
+- **Frontend**: https://app.nolift.training
+- **API**: https://api.nolift.training
+- **Auth/Keycloak**: https://auth.nolift.training
+- **Grafana**: https://grafana.nolift.training
+- **ArgoCD**: https://argocd.nolift.training
+- **Prometheus**: https://prometheus.nolift.training
+- **RabbitMQ**: https://rabbitmq.nolift.training
+- **OpenWebUI**: https://openwebui.nolift.training
 
 ## Next Steps
 
