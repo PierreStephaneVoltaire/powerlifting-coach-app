@@ -1,4 +1,3 @@
-# Monitoring namespace and resources
 resource "kubernetes_namespace" "monitoring" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -11,7 +10,6 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
-# Grafana admin password
 resource "random_password" "grafana_admin_password" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -19,7 +17,6 @@ resource "random_password" "grafana_admin_password" {
   special = true
 }
 
-# Update Grafana secret with random password
 resource "kubernetes_secret" "grafana_secrets" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -35,7 +32,6 @@ resource "kubernetes_secret" "grafana_secrets" {
   type = "Opaque"
 }
 
-# Ingress for Grafana
 resource "kubernetes_ingress_v1" "grafana" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -90,7 +86,6 @@ resource "kubernetes_ingress_v1" "grafana" {
   ]
 }
 
-# Ingress for Prometheus
 resource "kubernetes_ingress_v1" "prometheus" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -145,7 +140,6 @@ resource "kubernetes_ingress_v1" "prometheus" {
   ]
 }
 
-# Ingress for Loki
 resource "kubernetes_ingress_v1" "loki" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -200,7 +194,6 @@ resource "kubernetes_ingress_v1" "loki" {
   ]
 }
 
-# Ingress for RabbitMQ Management Console
 resource "kubernetes_ingress_v1" "rabbitmq_management" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 

@@ -2,13 +2,11 @@ locals {
   cluster_name = "${var.project_name}-${var.environment}"
 }
 
-# Resource Group
 resource "azurerm_resource_group" "this" {
   name     = "${local.cluster_name}-rg"
   location = var.region
 }
 
-# Storage Account for blob storage (replaces Digital Ocean Spaces)
 resource "azurerm_storage_account" "videos" {
   name                     = replace("${var.project_name}${var.environment}videos", "-", "")
   resource_group_name      = azurerm_resource_group.this.name
@@ -33,14 +31,12 @@ resource "azurerm_storage_account" "videos" {
   }
 }
 
-# Storage Container for videos
 resource "azurerm_storage_container" "videos" {
   name                  = var.storage_container_name
   storage_account_name  = azurerm_storage_account.videos.name
   container_access_type = "blob"
 }
 
-# Lifecycle Management Policy for blob expiration
 resource "azurerm_storage_management_policy" "videos" {
   storage_account_id = azurerm_storage_account.videos.id
 
@@ -58,7 +54,6 @@ resource "azurerm_storage_management_policy" "videos" {
   }
 }
 
-# AKS cluster with spot instances
 resource "azurerm_kubernetes_cluster" "k8s" {
   name                = local.cluster_name
   location            = azurerm_resource_group.this.location
@@ -73,11 +68,9 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     min_count           = 0
     max_count           = 3
     os_disk_size_gb     = 30
-
-    # Enable spot instances for cost savings
     priority        = "Spot"
     eviction_policy = "Delete"
-    spot_max_price  = -1 # Use Azure's current spot price
+    spot_max_price  = -1 
   }
 
   identity {

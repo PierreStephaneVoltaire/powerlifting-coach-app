@@ -1,4 +1,3 @@
-# OpenWebUI deployment for AI coaching chat interface
 resource "kubernetes_namespace" "openwebui" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -11,7 +10,6 @@ resource "kubernetes_namespace" "openwebui" {
   }
 }
 
-# Secret for OpenWebUI configuration
 resource "kubernetes_secret" "openwebui_config" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -21,7 +19,7 @@ resource "kubernetes_secret" "openwebui_config" {
   }
 
   data = {
-    OPENAI_API_KEY = var.openai_api_key  # Will need to add this to variables
+    OPENAI_API_KEY = var.openai_api_key 
     WEBUI_SECRET_KEY = random_password.openwebui_secret[0].result
   }
 
@@ -35,7 +33,6 @@ resource "random_password" "openwebui_secret" {
   special = true
 }
 
-# ConfigMap for powerlifting coach system prompt
 resource "kubernetes_config_map" "coach_system_prompt" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -217,7 +214,6 @@ EOT
   }
 }
 
-# Helm release for OpenWebUI
 resource "helm_release" "openwebui" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -229,10 +225,9 @@ resource "helm_release" "openwebui" {
   wait             = true
   wait_for_jobs    = true
 
-  # Basic configuration
   set {
     name  = "ollama.enabled"
-    value = "false"  # We'll use external LLM API
+    value = "false"  
   }
 
   set {
@@ -245,10 +240,9 @@ resource "helm_release" "openwebui" {
     value = "8080"
   }
 
-  # Environment variables
   set {
     name  = "env.OPENAI_API_BASE_URL"
-    value = var.litellm_endpoint  # Will need to add this variable
+    value = var.litellm_endpoint 
   }
 
   set {
@@ -258,15 +252,14 @@ resource "helm_release" "openwebui" {
 
   set {
     name  = "env.ENABLE_SIGNUP"
-    value = "false"  # Users sign up through our app
+    value = "false" 
   }
 
   set {
     name  = "env.ENABLE_LOGIN_FORM"
-    value = "false"  # Use SSO/JWT from our auth service
+    value = "false"  
   }
 
-  # Persistence for chat history
   set {
     name  = "persistence.enabled"
     value = "true"
@@ -277,7 +270,6 @@ resource "helm_release" "openwebui" {
     value = "5Gi"
   }
 
-  # Resource limits
   set {
     name  = "resources.requests.memory"
     value = "512Mi"
@@ -305,7 +297,6 @@ resource "helm_release" "openwebui" {
   ]
 }
 
-# Service for OpenWebUI
 resource "kubernetes_service" "openwebui" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -336,7 +327,6 @@ resource "kubernetes_service" "openwebui" {
   ]
 }
 
-# Ingress for OpenWebUI
 resource "kubernetes_ingress_v1" "openwebui" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
