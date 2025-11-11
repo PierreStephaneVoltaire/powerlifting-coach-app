@@ -145,3 +145,65 @@ output "openwebui_url" {
   description = "OpenWebUI chat interface URL"
   value       = var.kubernetes_resources_enabled ? "http://openwebui.${local.lb_ip}.nip.io" : "not-yet-available"
 }
+
+# DNS Outputs
+
+output "dns_zone_id" {
+  description = "Azure DNS zone ID"
+  value       = var.domain_name != "localhost" ? azurerm_dns_zone.main[0].id : "DNS zone not created (domain_name is localhost)"
+}
+
+output "dns_zone_name" {
+  description = "Azure DNS zone name"
+  value       = var.domain_name != "localhost" ? azurerm_dns_zone.main[0].name : "DNS zone not created (domain_name is localhost)"
+}
+
+output "azure_nameservers" {
+  description = "Azure DNS nameservers - Configure these in Route 53 as NS records"
+  value       = var.domain_name != "localhost" ? azurerm_dns_zone.main[0].name_servers : ["DNS zone not created (domain_name is localhost)"]
+}
+
+output "domain_urls" {
+  description = "Application URLs with custom domain (if configured)"
+  value = var.domain_name != "localhost" ? {
+    frontend = "https://app.${var.domain_name}"
+    api      = "https://api.${var.domain_name}"
+    auth     = "https://auth.${var.domain_name}"
+    grafana  = "https://grafana.${var.domain_name}"
+    argocd   = "https://argocd.${var.domain_name}"
+  } : "Custom domain not configured (domain_name is localhost)"
+}
+
+output "dns_setup_instructions" {
+  description = "Next steps for DNS configuration"
+  value = var.domain_name != "localhost" ? <<-EOT
+
+    ========================================
+    DNS SETUP INSTRUCTIONS
+    ========================================
+
+    1. In AWS Route 53, update your domain's nameservers to:
+       ${join("\n       ", azurerm_dns_zone.main[0].name_servers)}
+
+    2. Wait for DNS propagation (can take 24-48 hours)
+
+    3. Verify DNS propagation:
+       dig NS ${var.domain_name}
+
+    4. Set up Azure Communication Services email domain:
+       - Go to Azure Portal > Communication Services
+       - Add email domain: ${var.domain_name}
+       - Copy the verification code and update terraform.tfvars:
+         azure_email_domain_verification_code = "your-verification-code"
+       - Copy DKIM selectors and values to terraform.tfvars
+       - Run: terraform apply
+
+    5. Test email sending after domain verification
+
+    6. Update Google OAuth redirect URIs to:
+       https://auth.${var.domain_name}/realms/powerlifting-coach/broker/google/endpoint
+
+    ========================================
+  EOT
+  : "Set domain_name variable to configure DNS"
+}

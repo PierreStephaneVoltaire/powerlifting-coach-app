@@ -116,3 +116,48 @@ variable "google_oauth_client_secret" {
   sensitive   = true
   default     = ""
 }
+
+# DNS Configuration Variables
+
+variable "azure_email_domain_verification_code" {
+  description = "Azure Communication Services domain verification TXT record value"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "enable_mx_records" {
+  description = "Enable MX records for receiving email (only needed if you want to receive emails)"
+  type        = bool
+  default     = false
+}
+
+variable "azure_email_mx_endpoint" {
+  description = "Azure Communication Services MX endpoint (only needed if enable_mx_records is true)"
+  type        = string
+  default     = ""
+}
+
+variable "azure_email_dkim_selector1" {
+  description = "DKIM selector 1 from Azure Communication Services (e.g., selector1._domainkey)"
+  type        = string
+  default     = ""
+}
+
+variable "azure_email_dkim_value1" {
+  description = "DKIM value 1 from Azure Communication Services"
+  type        = string
+  default     = ""
+}
+
+variable "azure_email_dkim_selector2" {
+  description = "DKIM selector 2 from Azure Communication Services (e.g., selector2._domainkey)"
+  type        = string
+  default     = ""
+}
+
+variable "azure_email_dkim_value2" {
+  description = "DKIM value 2 from Azure Communication Services"
+  type        = string
+  default     = ""
+}
