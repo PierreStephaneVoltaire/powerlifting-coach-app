@@ -34,17 +34,33 @@ resource "kubernetes_ingress_v1" "argocd" {
   metadata {
     name      = "argocd-ingress"
     namespace = kubernetes_namespace.argocd[0].metadata[0].name
-    annotations = {
-      "kubernetes.io/ingress.class"                    = "nginx"
-      "nginx.ingress.kubernetes.io/ssl-redirect"       = "false"
-      "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTP"
-      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "false"
-    }
+    annotations = merge(
+      {
+        "kubernetes.io/ingress.class"                  = "nginx"
+        "nginx.ingress.kubernetes.io/backend-protocol" = "HTTP"
+      },
+      var.domain_name != "localhost" ? {
+        "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+        "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
+        "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+      } : {
+        "nginx.ingress.kubernetes.io/ssl-redirect"       = "false"
+        "nginx.ingress.kubernetes.io/force-ssl-redirect" = "false"
+      }
+    )
   }
 
   spec {
+    dynamic "tls" {
+      for_each = var.domain_name != "localhost" ? [1] : []
+      content {
+        hosts       = ["argocd.${var.domain_name}"]
+        secret_name = "argocd-tls"
+      }
+    }
+
     rule {
-      host = "argocd.${local.lb_ip}.nip.io"
+      host = var.domain_name != "localhost" ? "argocd.${var.domain_name}" : "argocd.${local.lb_ip}.nip.io"
       http {
         path {
           path      = "/"

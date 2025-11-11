@@ -148,3 +148,34 @@ resource "helm_release" "argocd_image_updater" {
     helm_release.argocd
   ]
 }
+
+# cert-manager for automatic TLS certificate management
+resource "helm_release" "cert_manager" {
+  count = var.kubernetes_resources_enabled && var.domain_name != "localhost" ? 1 : 0
+
+  name             = "cert-manager"
+  repository       = "https://charts.jetstack.io"
+  chart            = "cert-manager"
+  namespace        = "cert-manager"
+  create_namespace = true
+  version          = "v1.13.3"
+  wait             = true
+  wait_for_jobs    = true
+
+  # Install CRDs
+  set {
+    name  = "installCRDs"
+    value = "true"
+  }
+
+  # Enable prometheus metrics
+  set {
+    name  = "prometheus.enabled"
+    value = "true"
+  }
+
+  timeout = 10 * 60
+  depends_on = [
+    azurerm_kubernetes_cluster.k8s
+  ]
+}
