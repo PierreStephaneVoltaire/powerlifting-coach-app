@@ -88,9 +88,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     min_count           = 1
     max_count           = 1
     os_disk_size_gb     = 30
-    upgrade_settings {
-      max_surge = "10%"
-    }
+  
   }
 
   identity {
@@ -120,9 +118,6 @@ resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   eviction_policy       = "Delete"
   spot_max_price        = -1
 
-  upgrade_settings {
-    max_surge = "10%"
-  }
 
   node_labels = {
     "kubernetes.azure.com/scalesetpriority" = "spot"
