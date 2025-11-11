@@ -63,10 +63,10 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
   default_node_pool {
     name                = "default"
-    vm_size             = var.node_size
+    vm_size             = "Standard_B1s"
     enable_auto_scaling = true
     min_count           = 1
-    max_count           = 2
+    max_count           = 1
     os_disk_size_gb     = 30
   }
 
