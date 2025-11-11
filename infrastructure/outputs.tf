@@ -174,36 +174,4 @@ output "domain_urls" {
   } : "Custom domain not configured (domain_name is localhost)"
 }
 
-output "dns_setup_instructions" {
-  description = "Next steps for DNS configuration"
-  value = var.domain_name != "localhost" ? <<-EOT
 
-    ========================================
-    DNS SETUP INSTRUCTIONS
-    ========================================
-
-    1. In AWS Route 53, update your domain's nameservers to:
-       ${join("\n       ", azurerm_dns_zone.main[0].name_servers)}
-
-    2. Wait for DNS propagation (can take 24-48 hours)
-
-    3. Verify DNS propagation:
-       dig NS ${var.domain_name}
-
-    4. Set up Azure Communication Services email domain:
-       - Go to Azure Portal > Communication Services
-       - Add email domain: ${var.domain_name}
-       - Copy the verification code and update terraform.tfvars:
-         azure_email_domain_verification_code = "your-verification-code"
-       - Copy DKIM selectors and values to terraform.tfvars
-       - Run: terraform apply
-
-    5. Test email sending after domain verification
-
-    6. Update Google OAuth redirect URIs to:
-       https://auth.${var.domain_name}/realms/powerlifting-coach/broker/google/endpoint
-
-    ========================================
-  EOT
-  : "Set domain_name variable to configure DNS"
-}
