@@ -5,11 +5,8 @@ metadata:
   namespace: app
   annotations:
     kubernetes.io/ingress.class: nginx
-    # Enable automatic TLS certificate management with cert-manager
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    # Enable SSL redirect for HTTPS
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    # Force SSL redirect even when X-Forwarded-Proto is http
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: 100m
     nginx.ingress.kubernetes.io/enable-cors: "true"
@@ -20,7 +17,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
 spec:
-  # TLS configuration for automatic HTTPS certificates
   tls:
   - hosts:
     - app.nolift.training

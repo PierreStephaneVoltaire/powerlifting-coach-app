@@ -149,7 +149,6 @@ resource "helm_release" "argocd_image_updater" {
   ]
 }
 
-# cert-manager for automatic TLS certificate management
 resource "helm_release" "cert_manager" {
   count = var.kubernetes_resources_enabled && var.domain_name != "localhost" ? 1 : 0
 
@@ -162,13 +161,11 @@ resource "helm_release" "cert_manager" {
   wait             = true
   wait_for_jobs    = true
 
-  # Install CRDs
   set {
     name  = "installCRDs"
     value = "true"
   }
 
-  # Enable prometheus metrics
   set {
     name  = "prometheus.enabled"
     value = "true"
