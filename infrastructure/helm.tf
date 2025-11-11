@@ -34,7 +34,7 @@ resource "helm_release" "nginx_ingress" {
   }
   timeout = 25 * 60
   depends_on = [
-    digitalocean_kubernetes_cluster.k8s
+    azurerm_kubernetes_cluster.k8s
   ]
 }
 
@@ -79,7 +79,7 @@ resource "helm_release" "metrics_server" {
 
   timeout = 10 * 60
   depends_on = [
-    digitalocean_kubernetes_cluster.k8s
+    azurerm_kubernetes_cluster.k8s
   ]
 }
 

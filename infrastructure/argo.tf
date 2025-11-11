@@ -138,6 +138,6 @@ resource "kubernetes_manifest" "app" {
   }
   depends_on = [
     helm_release.argocd,
-    digitalocean_kubernetes_cluster.k8s
+    azurerm_kubernetes_cluster.k8s
   ]
 }

@@ -292,7 +292,7 @@ resource "helm_release" "openwebui" {
 
   timeout = 15 * 60
   depends_on = [
-    digitalocean_kubernetes_cluster.k8s,
+    azurerm_kubernetes_cluster.k8s,
     kubernetes_namespace.openwebui
   ]
 }

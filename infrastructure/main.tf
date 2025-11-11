@@ -63,8 +63,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
   default_node_pool {
     name                = "default"
-    vm_size             = "Standard_B1s"
-    enable_auto_scaling = true
+    vm_size             = "Standard_A1s"
     min_count           = 1
     max_count           = 1
     os_disk_size_gb     = 30
@@ -89,7 +88,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   name                  = "spot"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
   vm_size               = var.spot_node_size
-  enable_auto_scaling   = true
+  auto_scaling_enabled = true
   min_count             = var.spot_node_min_count
   max_count             = var.spot_node_max_count
   os_disk_size_gb       = 30
