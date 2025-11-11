@@ -15,6 +15,13 @@ spec:
       labels:
         app: machine-service
     spec:
+      nodeSelector:
+        workload-type: spot
+      tolerations:
+      - key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+        effect: NoSchedule
       containers:
       - name: machine-service
         image: machine-service:latest

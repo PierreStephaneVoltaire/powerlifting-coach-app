@@ -15,6 +15,13 @@ spec:
       labels:
         app: notification-service
     spec:
+      nodeSelector:
+        workload-type: spot
+      tolerations:
+      - key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+        effect: NoSchedule
       containers:
       - name: notification-service
         image: notification-service:latest
