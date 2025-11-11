@@ -61,6 +61,26 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   dns_prefix          = local.cluster_name
   kubernetes_version  = var.kubernetes_version
 
+  automatic_upgrade_channel = "stable"
+
+  maintenance_window_auto_upgrade {
+    frequency   = "Weekly"
+    interval    = 1
+    duration    = 4
+    day_of_week = "Sunday"
+    start_time  = "02:00"
+    utc_offset  = "-05:00"
+  }
+
+  maintenance_window_node_os {
+    frequency   = "Weekly"
+    interval    = 1
+    duration    = 4
+    day_of_week = "Sunday"
+    start_time  = "06:00"
+    utc_offset  = "-05:00"
+  }
+
   default_node_pool {
     name                = "default"
     vm_size             = "Standard_B2s"
@@ -68,6 +88,9 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     min_count           = 1
     max_count           = 1
     os_disk_size_gb     = 30
+    upgrade_settings {
+      max_surge = "10%"
+    }
   }
 
   identity {
@@ -96,6 +119,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   priority              = "Spot"
   eviction_policy       = "Delete"
   spot_max_price        = -1
+
+  upgrade_settings {
+    max_surge = "10%"
+  }
 
   node_labels = {
     "kubernetes.azure.com/scalesetpriority" = "spot"

@@ -56,33 +56,6 @@ output "load_balancer_ip" {
   description = "Load balancer IP address"
 }
 
-resource "helm_release" "metrics_server" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-
-  name             = "metrics-server"
-  repository       = "https://kubernetes-sigs.github.io/metrics-server/"
-  chart            = "metrics-server"
-  namespace        = "kube-system"
-  create_namespace = false
-  wait             = true
-  wait_for_jobs    = true
-
-  set {
-    name  = "args[0]"
-    value = "--kubelet-insecure-tls"
-  }
-
-  set {
-    name  = "args[1]"
-    value = "--kubelet-preferred-address-types=InternalIP"
-  }
-
-  timeout = 10 * 60
-  depends_on = [
-    azurerm_kubernetes_cluster.k8s
-  ]
-}
-
 resource "helm_release" "argocd_image_updater" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 

@@ -245,10 +245,10 @@ resource "helm_release" "openwebui" {
     value = var.litellm_endpoint 
   }
 
-  set {
-    name  = "env.DEFAULT_MODELS"
-    value = "gpt-4,gpt-3.5-turbo,claude-3-sonnet"
-  }
+  # set {
+  #   name  = "env.DEFAULT_MODELS"
+  #   value = "gpt-4,gpt-3.5-turbo,claude-3-sonnet"
+  # }
 
   set {
     name  = "env.ENABLE_SIGNUP"
