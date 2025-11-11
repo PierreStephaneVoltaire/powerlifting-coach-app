@@ -150,28 +150,28 @@ output "openwebui_url" {
 
 output "dns_zone_id" {
   description = "Azure DNS zone ID"
-  value       = var.domain_name != "localhost" ? azurerm_dns_zone.main[0].id : "DNS zone not created (domain_name is localhost)"
+  value       =  azurerm_dns_zone.main[0].id 
 }
 
 output "dns_zone_name" {
   description = "Azure DNS zone name"
-  value       = var.domain_name != "localhost" ? azurerm_dns_zone.main[0].name : "DNS zone not created (domain_name is localhost)"
+  value       =  azurerm_dns_zone.main[0].name 
 }
 
 output "azure_nameservers" {
   description = "Azure DNS nameservers - Configure these in Route 53 as NS records"
-  value       = var.domain_name != "localhost" ? azurerm_dns_zone.main[0].name_servers : ["DNS zone not created (domain_name is localhost)"]
+  value       =  azurerm_dns_zone.main[0].name_servers 
 }
 
 output "domain_urls" {
   description = "Application URLs with custom domain (if configured)"
-  value = var.domain_name != "localhost" ? {
+  value = {
     frontend = "https://app.${var.domain_name}"
     api      = "https://api.${var.domain_name}"
     auth     = "https://auth.${var.domain_name}"
     grafana  = "https://grafana.${var.domain_name}"
     argocd   = "https://argocd.${var.domain_name}"
-  } : "Custom domain not configured (domain_name is localhost)"
+  } 
 }
 
 
