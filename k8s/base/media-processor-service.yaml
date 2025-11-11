@@ -35,9 +35,9 @@ spec:
               name: app-secrets
               key: spaces-secret
         - name: SPACES_ENDPOINT
-          value: "https://coachpotatodevvideos.blob.core.windows.net"
+          value: "https://noliftdevvideos.blob.core.windows.net"
         - name: SPACES_BUCKET
-          value: "coachpotato-videos"
+          value: "nolift-videos"
         - name: SPACES_REGION
           value: "eastus"
         - name: FFMPEG_PATH

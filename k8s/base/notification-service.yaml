@@ -39,7 +39,7 @@ spec:
         - name: VIDEO_SERVICE
           value: "http://video-service:8082"
         - name: APP_URL
-          value: "https://app.coachpotato.app"
+          value: "https://app.nolift.training"
         - name: SMTP_HOST
           valueFrom:
             secretKeyRef:

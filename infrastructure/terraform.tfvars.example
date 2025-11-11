@@ -5,7 +5,7 @@ domain_name = "nolift.training"
 azure_subscription_id = "your-subscription-id-here"  # Required - get from Azure portal
 
 # Project Configuration
-project_name = "coachpotato"
+project_name = "nolift"
 environment  = "dev"
 
 # Azure Region

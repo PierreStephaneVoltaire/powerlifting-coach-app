@@ -30,15 +30,15 @@ func Load() *Config {
 
 	return &Config{
 		Port:              getEnv("PORT", "8082"),
-		DatabaseURL:       getEnv("DATABASE_URL", "postgres://app_user:password@localhost:5432/coachpotato_app?sslmode=disable"),
+		DatabaseURL:       getEnv("DATABASE_URL", "postgres://app_user:password@localhost:5432/nolift_app?sslmode=disable"),
 		AuthService:       getEnv("AUTH_SERVICE", "http://auth-service:8080"),
 		Environment:       getEnv("ENVIRONMENT", "development"),
 		JWTSecret:         getEnv("JWT_SECRET", "your-secret-key"),
 		SpacesAccessKey:   getEnv("SPACES_ACCESS_KEY", ""),
 		SpacesSecretKey:   getEnv("SPACES_SECRET_KEY", ""),
-		SpacesBucket:      getEnv("SPACES_BUCKET", "coachpotato-videos"),
+		SpacesBucket:      getEnv("SPACES_BUCKET", "nolift-videos"),
 		SpacesRegion:      getEnv("SPACES_REGION", "eastus"),
-		SpacesEndpoint:    getEnv("SPACES_ENDPOINT", "https://coachpotatodevvideos.blob.core.windows.net"),
+		SpacesEndpoint:    getEnv("SPACES_ENDPOINT", "https://noliftdevvideos.blob.core.windows.net"),
 		CDNUrl:            getEnv("CDN_URL", ""),
 		RabbitMQURL:       getEnv("RABBITMQ_URL", "amqp://admin:changeme123@rabbitmq:5672/"),
 		MaxFileSize:       maxFileSize,

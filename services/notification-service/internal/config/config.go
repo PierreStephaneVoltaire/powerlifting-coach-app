@@ -29,12 +29,12 @@ func Load() *Config {
 		SMTPPort:         getEnv("SMTP_PORT", "587"),
 		SMTPUsername:     getEnv("SMTP_USERNAME", ""),
 		SMTPPassword:     getEnv("SMTP_PASSWORD", ""),
-		EmailFromAddress: getEnv("EMAIL_FROM_ADDRESS", "noreply@coachpotato.app"),
+		EmailFromAddress: getEnv("EMAIL_FROM_ADDRESS", "noreply@nolift.training"),
 		UserService:      getEnv("USER_SERVICE", "http://user-service:8081"),
 		CoachService:     getEnv("COACH_SERVICE", "http://coach-service:8085"),
 		ProgramService:   getEnv("PROGRAM_SERVICE", "http://program-service:8084"),
 		VideoService:     getEnv("VIDEO_SERVICE", "http://video-service:8082"),
-		AppURL:           getEnv("APP_URL", "https://app.coachpotato.app"),
+		AppURL:           getEnv("APP_URL", "https://app.nolift.training"),
 	}
 }
 

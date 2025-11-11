@@ -60,6 +60,7 @@ temp/
 **/.terraformrc
 **/crash.log
 **/crash.*.log
+**/.terraform**
 
 # Kubeconfig files
 kubeconfig*

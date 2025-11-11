@@ -7,7 +7,7 @@ variable "azure_subscription_id" {
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "coachpotato"
+  default     = "nolift"
 }
 
 variable "environment" {
@@ -61,7 +61,7 @@ variable "kubernetes_version" {
 variable "storage_container_name" {
   description = "Azure Storage container name for videos"
   type        = string
-  default     = "coachpotato-videos"
+  default     = "nolift-videos"
 }
 
 variable "kubernetes_resources_enabled" {
@@ -90,7 +90,7 @@ variable "litellm_endpoint" {
 }
 
 variable "domain_name" {
-  description = "Domain name for the application (e.g., coachpotato.app)"
+  description = "Domain name for the application (e.g., nolift.training)"
   type        = string
   default     = "localhost"
 }
@@ -116,9 +116,9 @@ variable "azure_email_smtp_password" {
 }
 
 variable "azure_email_from_email" {
-  description = "Verified email address in Azure Communication Services to send from (e.g., noreply@coachpotato.app)"
+  description = "Verified email address in Azure Communication Services to send from (e.g., noreply@nolift.training)"
   type        = string
-  default     = "noreply@coachpotato.app"
+  default     = "noreply@nolift.training"
 }
 
 variable "google_oauth_client_id" {
