@@ -23,6 +23,29 @@ resource "helm_release" "argocd" {
     value = "true"
   }
 
+  # Configure all ArgoCD components to run on spot nodes
+  set {
+    name  = "global.tolerations[0].key"
+    value = "kubernetes.azure.com/scalesetpriority"
+  }
+  set {
+    name  = "global.tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "global.tolerations[0].value"
+    value = "spot"
+  }
+  set {
+    name  = "global.tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "global.nodeSelector.workload-type"
+    value = "spot"
+  }
+
   depends_on = [
     kubernetes_namespace.argocd
   ]

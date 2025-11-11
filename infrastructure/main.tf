@@ -82,13 +82,13 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   }
 
   default_node_pool {
-    name                = "default"
-    vm_size             = "Standard_B2s"
-    auto_scaling_enabled=true
-    min_count           = 1
-    max_count           = 1
-    os_disk_size_gb     = 30
-  
+    name                 = "default"
+    vm_size              = "Standard_B1s"
+    auto_scaling_enabled = true
+    min_count            = 1
+    max_count            = 1
+    os_disk_size_gb      = 30
+    temporary_name_for_rotation = "defaulttemp"
   }
 
   identity {
@@ -111,7 +111,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
   vm_size               = var.spot_node_size
   auto_scaling_enabled = true
-  min_count             = var.spot_node_min_count
+  min_count             = var.stopped ? 0 : var.spot_node_min_count
   max_count             = var.spot_node_max_count
   os_disk_size_gb       = 30
   priority              = "Spot"

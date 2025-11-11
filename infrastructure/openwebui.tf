@@ -290,6 +290,52 @@ resource "helm_release" "openwebui" {
     value = "1000m"
   }
 
+  # Configure OpenWebUI to run on spot nodes
+  set {
+    name  = "tolerations[0].key"
+    value = "kubernetes.azure.com/scalesetpriority"
+  }
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "tolerations[0].value"
+    value = "spot"
+  }
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "nodeSelector.workload-type"
+    value = "spot"
+  }
+
+  # Configure pipelines to run on spot nodes
+  set {
+    name  = "pipelines.tolerations[0].key"
+    value = "kubernetes.azure.com/scalesetpriority"
+  }
+  set {
+    name  = "pipelines.tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "pipelines.tolerations[0].value"
+    value = "spot"
+  }
+  set {
+    name  = "pipelines.tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "pipelines.nodeSelector.workload-type"
+    value = "spot"
+  }
+
   timeout = 15 * 60
   depends_on = [
     azurerm_kubernetes_cluster.k8s,

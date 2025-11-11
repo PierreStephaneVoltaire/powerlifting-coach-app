@@ -112,13 +112,17 @@ resource "kubernetes_secret" "azure_email_secret" {
   }
 
   data = {
-    smtp-host     = var.azure_email_smtp_host
-    smtp-username = var.azure_email_smtp_username
-    smtp-password = var.azure_email_smtp_password
-    from-email    = var.azure_email_from_email
+    smtp-host     = local.azure_email_smtp_host
+    smtp-username = var.domain_name != "localhost" ? "noreply@${var.domain_name}" : ""
+    smtp-password = var.domain_name != "localhost" ? azurerm_communication_service.this[0].primary_connection_string : ""
+    from-email    = var.domain_name != "localhost" ? "noreply@${var.domain_name}" : ""
   }
 
   type = "Opaque"
+
+  depends_on = [
+    azurerm_communication_service.this
+  ]
 }
 
 resource "kubernetes_secret" "google_oauth_secret" {

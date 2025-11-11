@@ -1,5 +1,5 @@
 resource "helm_release" "nginx_ingress" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   name             = "nginx-ingress"
   repository       = "https://kubernetes.github.io/ingress-nginx"
@@ -24,7 +24,7 @@ resource "helm_release" "nginx_ingress" {
 }
 
 data "kubernetes_service" "nginx_ingress" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   metadata {
     name      = "nginx-ingress-ingress-nginx-controller"
@@ -37,7 +37,7 @@ data "kubernetes_service" "nginx_ingress" {
 }
 
 output "load_balancer_ip" {
-  value       = var.kubernetes_resources_enabled ? data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : "not-yet-available"
+  value       = var.kubernetes_resources_enabled && !var.stopped ? data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : "stopped"
   description = "Load balancer IP address"
 }
 
@@ -123,6 +123,73 @@ resource "helm_release" "cert_manager" {
   set {
     name  = "prometheus.enabled"
     value = "true"
+  }
+
+  # Configure cert-manager to run on spot nodes
+  set {
+    name  = "tolerations[0].key"
+    value = "kubernetes.azure.com/scalesetpriority"
+  }
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "tolerations[0].value"
+    value = "spot"
+  }
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "nodeSelector.workload-type"
+    value = "spot"
+  }
+
+  set {
+    name  = "cainjector.tolerations[0].key"
+    value = "kubernetes.azure.com/scalesetpriority"
+  }
+  set {
+    name  = "cainjector.tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "cainjector.tolerations[0].value"
+    value = "spot"
+  }
+  set {
+    name  = "cainjector.tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "cainjector.nodeSelector.workload-type"
+    value = "spot"
+  }
+
+  set {
+    name  = "webhook.tolerations[0].key"
+    value = "kubernetes.azure.com/scalesetpriority"
+  }
+  set {
+    name  = "webhook.tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "webhook.tolerations[0].value"
+    value = "spot"
+  }
+  set {
+    name  = "webhook.tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "webhook.nodeSelector.workload-type"
+    value = "spot"
   }
 
   timeout = 10 * 60

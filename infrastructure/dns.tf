@@ -10,7 +10,7 @@ resource "azurerm_dns_zone" "main" {
 }
 
 locals {
-  dns_lb_ip = var.kubernetes_resources_enabled && var.domain_name != "localhost" ? (
+  dns_lb_ip = var.kubernetes_resources_enabled && var.domain_name != "localhost" && !var.stopped ? (
     length(data.kubernetes_service.nginx_ingress) > 0 ?
     data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : null
   ) : null
@@ -31,7 +31,7 @@ locals {
 }
 
 resource "azurerm_dns_a_record" "subdomains" {
-  for_each            = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? local.subdomains : []
+  for_each            = var.domain_name != "localhost" && var.kubernetes_resources_enabled && !var.stopped ? local.subdomains : []
   name                = each.key
   zone_name           = azurerm_dns_zone.main[0].name
   resource_group_name = azurerm_resource_group.this.name
@@ -46,20 +46,24 @@ resource "azurerm_dns_a_record" "subdomains" {
 }
 
 resource "azurerm_dns_txt_record" "email_verification" {
-  count               = var.domain_name != "localhost" && var.azure_email_domain_verification_code != "" ? 1 : 0
+  count               = var.domain_name != "localhost" ? 1 : 0
   name                = "@"
   zone_name           = azurerm_dns_zone.main[0].name
   resource_group_name = azurerm_resource_group.this.name
   ttl                 = 300
 
   record {
-    value = var.azure_email_domain_verification_code
+    value = azurerm_email_communication_service_domain.this[0].verification_records[0].domain[0].value
   }
 
   tags = {
     environment = var.environment
     project     = var.project_name
   }
+
+  depends_on = [
+    azurerm_email_communication_service_domain.this
+  ]
 }
 
 resource "azurerm_dns_txt_record" "spf" {
@@ -79,59 +83,6 @@ resource "azurerm_dns_txt_record" "spf" {
   }
 }
 
-resource "azurerm_dns_mx_record" "email" {
-  count               = var.domain_name != "localhost" && var.enable_mx_records ? 1 : 0
-  name                = "@"
-  zone_name           = azurerm_dns_zone.main[0].name
-  resource_group_name = azurerm_resource_group.this.name
-  ttl                 = 300
-
-  record {
-    preference = 10
-    exchange   = var.azure_email_mx_endpoint
-  }
-
-  tags = {
-    environment = var.environment
-    project     = var.project_name
-  }
-}
-
-resource "azurerm_dns_txt_record" "dkim1" {
-  count               = var.domain_name != "localhost" && var.azure_email_dkim_selector1 != "" ? 1 : 0
-  name                = var.azure_email_dkim_selector1
-  zone_name           = azurerm_dns_zone.main[0].name
-  resource_group_name = azurerm_resource_group.this.name
-  ttl                 = 300
-
-  record {
-    value = var.azure_email_dkim_value1
-  }
-
-  tags = {
-    environment = var.environment
-    project     = var.project_name
-  }
-}
-
-resource "azurerm_dns_txt_record" "dkim2" {
-  count               = var.domain_name != "localhost" && var.azure_email_dkim_selector2 != "" ? 1 : 0
-  name                = var.azure_email_dkim_selector2
-  zone_name           = azurerm_dns_zone.main[0].name
-  resource_group_name = azurerm_resource_group.this.name
-  ttl                 = 300
-
-  record {
-    value = var.azure_email_dkim_value2
-  }
-
-  tags = {
-    environment = var.environment
-    project     = var.project_name
-  }
-}
-
-
 resource "azurerm_dns_txt_record" "dmarc" {
   count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
   name                = "_dmarc"
@@ -140,7 +91,7 @@ resource "azurerm_dns_txt_record" "dmarc" {
   ttl                 = 300
 
   record {
-    value = "v=DMARC1; p=quarantine; rua=mailto:${var.azure_email_from_email}"
+    value = "v=DMARC1; p=quarantine; rua=mailto:noreply@${var.domain_name}"
   }
 
   tags = {
