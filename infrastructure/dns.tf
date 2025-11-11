@@ -16,23 +16,23 @@ locals {
   ) : null
 }
 
-resource "azurerm_dns_a_record" "app" {
-  count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
-  name                = "app"
-  zone_name           = azurerm_dns_zone.main[0].name
-  resource_group_name = azurerm_resource_group.this.name
-  ttl                 = 300
-  records             = [local.dns_lb_ip]
-
-  tags = {
-    environment = var.environment
-    project     = var.project_name
-  }
+locals {
+  subdomains = toset([
+    "app",
+    "api",
+    "auth",
+    "argocd",
+    "grafana",
+    "prometheus",
+    "loki",
+    "rabbitmq",
+    "openwebui"
+  ])
 }
 
-resource "azurerm_dns_a_record" "api" {
-  count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
-  name                = "api"
+resource "azurerm_dns_a_record" "subdomains" {
+  for_each            = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? local.subdomains : []
+  name                = each.key
   zone_name           = azurerm_dns_zone.main[0].name
   resource_group_name = azurerm_resource_group.this.name
   ttl                 = 300
@@ -41,20 +41,7 @@ resource "azurerm_dns_a_record" "api" {
   tags = {
     environment = var.environment
     project     = var.project_name
-  }
-}
-
-resource "azurerm_dns_a_record" "auth" {
-  count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
-  name                = "auth"
-  zone_name           = azurerm_dns_zone.main[0].name
-  resource_group_name = azurerm_resource_group.this.name
-  ttl                 = 300
-  records             = [local.dns_lb_ip]
-
-  tags = {
-    environment = var.environment
-    project     = var.project_name
+    subdomain   = each.key
   }
 }
 
