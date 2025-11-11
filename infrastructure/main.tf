@@ -65,12 +65,9 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     name                = "default"
     vm_size             = var.node_size
     enable_auto_scaling = true
-    min_count           = 0
-    max_count           = 3
+    min_count           = 1
+    max_count           = 2
     os_disk_size_gb     = 30
-    priority        = "Spot"
-    eviction_policy = "Delete"
-    spot_max_price  = -1 
   }
 
   identity {
@@ -85,5 +82,33 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   tags = {
     environment = var.environment
     project     = var.project_name
+  }
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "spot" {
+  name                  = "spot"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
+  vm_size               = var.spot_node_size
+  enable_auto_scaling   = true
+  min_count             = var.spot_node_min_count
+  max_count             = var.spot_node_max_count
+  os_disk_size_gb       = 30
+  priority              = "Spot"
+  eviction_policy       = "Delete"
+  spot_max_price        = -1
+
+  node_labels = {
+    "kubernetes.azure.com/scalesetpriority" = "spot"
+    "workload-type"                         = "spot"
+  }
+
+  node_taints = [
+    "kubernetes.azure.com/scalesetpriority=spot:NoSchedule"
+  ]
+
+  tags = {
+    environment = var.environment
+    project     = var.project_name
+    node_type   = "spot"
   }
 }
