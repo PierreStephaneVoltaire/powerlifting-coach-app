@@ -34,6 +34,24 @@ variable "node_count" {
   default     = 1
 }
 
+variable "spot_node_size" {
+  description = "Azure VM size for spot instance nodes"
+  type        = string
+  default     = "Standard_B2s"
+}
+
+variable "spot_node_min_count" {
+  description = "Minimum number of spot instance nodes"
+  type        = number
+  default     = 0
+}
+
+variable "spot_node_max_count" {
+  description = "Maximum number of spot instance nodes"
+  type        = number
+  default     = 5
+}
+
 variable "kubernetes_version" {
   description = "Kubernetes cluster version"
   type        = string
