@@ -18,7 +18,7 @@
 ### Authentication
 When running kubectl commands, always use the kubeconfig file:
 ```bash
-export KUBECONFIG=/mnt/c/Users/Pierre/Documents/powerlifting-coach-app/infrastructure/kubeconfig.yaml
+export KUBECONFIG=infrastructure/kubeconfig.yaml
 ```
 
 ## Pre-Commit Validation
