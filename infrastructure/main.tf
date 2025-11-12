@@ -33,7 +33,7 @@ resource "azurerm_storage_account" "videos" {
 
 resource "azurerm_storage_container" "videos" {
   name                  = var.storage_container_name
-  storage_account_name  = azurerm_storage_account.videos.name
+  storage_account_id    = azurerm_storage_account.videos.id
   container_access_type = "blob"
 }
 
@@ -60,9 +60,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   resource_group_name = azurerm_resource_group.this.name
   dns_prefix          = local.cluster_name
   kubernetes_version  = var.kubernetes_version
-
   automatic_upgrade_channel = "stable"
-
   maintenance_window_auto_upgrade {
     frequency   = "Weekly"
     interval    = 1
@@ -109,6 +107,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   name                  = "spot"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
+  temporary_name_for_rotation="temp"
   vm_size               = var.spot_node_size
   auto_scaling_enabled = true
   min_count             = var.stopped ? 0 : var.spot_node_min_count

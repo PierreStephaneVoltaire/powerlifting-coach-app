@@ -215,7 +215,7 @@ EOT
 }
 
 resource "helm_release" "openwebui" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   name             = "openwebui"
   repository       = "https://helm.openwebui.com/"

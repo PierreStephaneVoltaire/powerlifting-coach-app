@@ -41,8 +41,13 @@ resource "azurerm_communication_service" "this" {
 }
 
 # Link the email domain to the communication service
+# This requires the domain to be verified first, so it's controlled by a variable
+# Steps:
+# 1. Apply with email_domain_verified=false (creates domain and DNS records)
+# 2. Wait for Azure to verify the domain (check in Azure Portal)
+# 3. Apply with email_domain_verified=true (links the domain)
 resource "azurerm_communication_service_email_domain_association" "this" {
-  count                  = var.domain_name != "localhost" ? 1 : 0
+  count                  = var.domain_name != "localhost" && var.email_domain_verified ? 1 : 0
   communication_service_id = azurerm_communication_service.this[0].id
   email_service_domain_id  = azurerm_email_communication_service_domain.this[0].id
 }

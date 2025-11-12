@@ -7,7 +7,7 @@ resource "kubernetes_namespace" "argocd" {
 }
 
 resource "helm_release" "argocd" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   name          = "argocd"
   repository    = "https://argoproj.github.io/argo-helm"

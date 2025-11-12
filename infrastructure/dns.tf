@@ -45,13 +45,20 @@ resource "azurerm_dns_a_record" "subdomains" {
   }
 }
 
-resource "azurerm_dns_txt_record" "email_verification" {
+# Combined TXT record for @ - includes both SPF and email verification
+resource "azurerm_dns_txt_record" "root" {
   count               = var.domain_name != "localhost" ? 1 : 0
   name                = "@"
   zone_name           = azurerm_dns_zone.main[0].name
   resource_group_name = azurerm_resource_group.this.name
   ttl                 = 300
 
+  # SPF record
+  record {
+    value = "v=spf1 include:azurecomm.net ~all"
+  }
+
+  # Email domain verification
   record {
     value = azurerm_email_communication_service_domain.this[0].verification_records[0].domain[0].value
   }
@@ -66,25 +73,45 @@ resource "azurerm_dns_txt_record" "email_verification" {
   ]
 }
 
-resource "azurerm_dns_txt_record" "spf" {
-  count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
-  name                = "@"
+# DKIM CNAME records for email authentication
+resource "azurerm_dns_cname_record" "dkim1" {
+  count               = var.domain_name != "localhost" ? 1 : 0
+  name                = "selector1-azurecomm-prod-net._domainkey"
   zone_name           = azurerm_dns_zone.main[0].name
   resource_group_name = azurerm_resource_group.this.name
-  ttl                 = 300
-
-  record {
-    value = "v=spf1 include:azurecomm.net ~all"
-  }
+  ttl                 = 3600
+  record              = "selector1-azurecomm-prod-net._domainkey.azurecomm.net"
 
   tags = {
     environment = var.environment
     project     = var.project_name
   }
+
+  depends_on = [
+    azurerm_email_communication_service_domain.this
+  ]
+}
+
+resource "azurerm_dns_cname_record" "dkim2" {
+  count               = var.domain_name != "localhost" ? 1 : 0
+  name                = "selector2-azurecomm-prod-net._domainkey"
+  zone_name           = azurerm_dns_zone.main[0].name
+  resource_group_name = azurerm_resource_group.this.name
+  ttl                 = 3600
+  record              = "selector2-azurecomm-prod-net._domainkey.azurecomm.net"
+
+  tags = {
+    environment = var.environment
+    project     = var.project_name
+  }
+
+  depends_on = [
+    azurerm_email_communication_service_domain.this
+  ]
 }
 
 resource "azurerm_dns_txt_record" "dmarc" {
-  count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
+  count               = var.domain_name != "localhost" ? 1 : 0
   name                = "_dmarc"
   zone_name           = azurerm_dns_zone.main[0].name
   resource_group_name = azurerm_resource_group.this.name

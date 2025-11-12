@@ -115,3 +115,9 @@ variable "google_oauth_client_secret" {
   default     = ""
 }
 
+variable "email_domain_verified" {
+  description = "Whether the email domain has been verified in Azure. Set to false initially, then true after domain verification completes."
+  type        = bool
+  default     = false
+}
+
