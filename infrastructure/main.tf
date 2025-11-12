@@ -57,6 +57,7 @@ resource "azurerm_storage_management_policy" "videos" {
 resource "azurerm_kubernetes_cluster" "k8s" {
   name                = local.cluster_name
   location            = azurerm_resource_group.this.location
+  oidc_issuer_enabled=true
   resource_group_name = azurerm_resource_group.this.name
   dns_prefix          = local.cluster_name
   kubernetes_version  = var.kubernetes_version
@@ -87,6 +88,11 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     max_count            = 1
     os_disk_size_gb      = 30
     temporary_name_for_rotation = "defaulttemp"
+    upgrade_settings {
+             drain_timeout_in_minutes      = 0 
+              max_surge                     = "10%"
+             node_soak_duration_in_minutes = 0 
+            }
   }
 
   identity {
@@ -110,7 +116,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   temporary_name_for_rotation="temp"
   vm_size               = var.spot_node_size
   auto_scaling_enabled = true
-  min_count             = var.stopped ? 0 : var.spot_node_min_count
+  min_count             = var.spot_node_min_count
   max_count             = var.spot_node_max_count
   os_disk_size_gb       = 30
   priority              = "Spot"
