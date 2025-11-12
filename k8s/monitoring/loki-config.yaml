@@ -74,13 +74,6 @@ spec:
       labels:
         app: loki
     spec:
-      nodeSelector:
-        workload-type: spot
-      tolerations:
-      - key: kubernetes.azure.com/scalesetpriority
-        operator: Equal
-        value: spot
-        effect: NoSchedule
       containers:
       - name: loki
         image: grafana/loki:2.9.0

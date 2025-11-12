@@ -124,13 +124,6 @@ spec:
       labels:
         app: grafana
     spec:
-      nodeSelector:
-        workload-type: spot
-      tolerations:
-      - key: kubernetes.azure.com/scalesetpriority
-        operator: Equal
-        value: spot
-        effect: NoSchedule
       securityContext:
         fsGroup: 472
         runAsUser: 472

@@ -132,13 +132,6 @@ spec:
       labels:
         app: prometheus
     spec:
-      nodeSelector:
-        workload-type: spot
-      tolerations:
-      - key: kubernetes.azure.com/scalesetpriority
-        operator: Equal
-        value: spot
-        effect: NoSchedule
       serviceAccountName: prometheus
       securityContext:
         fsGroup: 65534
