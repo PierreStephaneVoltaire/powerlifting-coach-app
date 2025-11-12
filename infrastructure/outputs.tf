@@ -87,8 +87,8 @@ output "argocd_url" {
 }
 
 output "argocd_admin_password" {
-  description = "ArgoCD admin password (get with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)"
-  value       = "Run: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+  description = "ArgoCD admin password"
+  value       = var.kubernetes_resources_enabled ? "stored-in-k8s-secret" : "not-yet-available"
 }
 
 output "frontend_url" {
@@ -160,8 +160,8 @@ output "dns_zone_name" {
 }
 
 output "azure_nameservers" {
-  description = "Azure DNS nameservers - Configure these in Route 53 as NS records"
-  value       =  azurerm_dns_zone.main[0].name_servers 
+  description = "Azure DNS nameservers"
+  value       =  azurerm_dns_zone.main[0].name_servers
 }
 
 output "domain_urls" {
