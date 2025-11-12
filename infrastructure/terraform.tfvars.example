@@ -10,11 +10,11 @@ control_plane_instance_type = "t3a.small"  # Cheapest spot instance type
 control_plane_volume_size   = 30           # GB
 
 # Worker Configuration
-worker_instance_type    = "t3a.small"  # Cheapest spot instance type
-worker_volume_size      = 30           # GB
-worker_desired_capacity = 2            # Default number of workers
-worker_min_size         = 1            # Minimum workers for auto-scaling
-worker_max_size         = 5            # Maximum workers for auto-scaling
+worker_instance_type    = "t3a.medium"  # Medium spot instance type for workers
+worker_volume_size      = 30            # GB
+worker_desired_capacity = 2             # Default number of workers
+worker_min_size         = 1             # Minimum workers for auto-scaling
+worker_max_size         = 5             # Maximum workers for auto-scaling
 
 # Kubernetes Configuration
 max_pods_per_node = 110                # Maximum pods per worker node
@@ -40,3 +40,7 @@ google_oauth_client_secret = ""  # Optional
 # OpenAI Configuration (if needed)
 openai_api_key   = ""  # Optional
 litellm_endpoint = "https://api.openai.com/v1"  # Optional
+
+# Budget Configuration
+monthly_budget_limit       = 150                          # USD per month
+budget_notification_email  = "your-email@example.com"     # Email for budget alerts

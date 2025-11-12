@@ -109,33 +109,18 @@ resource "aws_autoscaling_group" "worker" {
       }
 
       override {
-        instance_type     = "t3a.small"
+        instance_type     = "t3a.medium"
         weighted_capacity = "2"
       }
 
       override {
-        instance_type     = "t3.small"
+        instance_type     = "t3.medium"
         weighted_capacity = "1"
       }
 
       override {
-        instance_type     = "t4g.small"
-        weighted_capacity = "3"
-      }
-
-      override {
-        instance_type     = "t3a.medium"
-        weighted_capacity = "4"
-      }
-
-      override {
-        instance_type     = "t3.medium"
-        weighted_capacity = "3"
-      }
-
-      override {
         instance_type     = "t4g.medium"
-        weighted_capacity = "6"
+        weighted_capacity = "3"
       }
     }
   }

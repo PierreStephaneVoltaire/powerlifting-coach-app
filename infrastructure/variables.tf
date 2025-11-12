@@ -34,7 +34,7 @@ variable "control_plane_volume_size" {
 variable "worker_instance_type" {
   description = "EC2 instance type for worker nodes (will use spot instances)"
   type        = string
-  default     = "t3a.small"
+  default     = "t3a.medium"
 }
 
 variable "worker_volume_size" {
@@ -129,5 +129,16 @@ variable "email_domain_verified" {
   description = "Whether the email domain has been verified in Azure. Set to false initially, then true after domain verification completes."
   type        = bool
   default     = false
+}
+
+variable "monthly_budget_limit" {
+  description = "Monthly budget limit in USD for AWS cost monitoring"
+  type        = number
+  default     = 150
+}
+
+variable "budget_notification_email" {
+  description = "Email address to receive budget notifications when spend exceeds thresholds"
+  type        = string
 }
 
