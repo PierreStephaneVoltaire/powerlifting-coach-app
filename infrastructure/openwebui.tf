@@ -356,7 +356,8 @@ resource "kubernetes_service" "openwebui" {
 
   spec {
     selector = {
-      app = "openwebui"
+      "app.kubernetes.io/name" = "open-webui"
+      "app.kubernetes.io/instance" = "openwebui"
     }
 
     port {
