@@ -112,15 +112,6 @@ resource "aws_security_group" "control_plane" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow all traffic from worker nodes
-  ingress {
-    description     = "Worker node traffic"
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    security_groups = [aws_security_group.worker.id]
-  }
-
   # Allow all outbound traffic
   egress {
     description = "All outbound traffic"
@@ -165,15 +156,6 @@ resource "aws_security_group" "worker" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow all traffic from control plane
-  ingress {
-    description     = "Control plane traffic"
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    security_groups = [aws_security_group.control_plane.id]
-  }
-
   # Allow all traffic between workers
   ingress {
     description = "Worker to worker traffic"
@@ -210,6 +192,27 @@ resource "aws_security_group" "worker" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+# Separate security group rules to avoid circular dependencies
+resource "aws_security_group_rule" "control_plane_from_worker" {
+  type                     = "ingress"
+  description              = "Allow all traffic from worker nodes"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  security_group_id        = aws_security_group.control_plane.id
+  source_security_group_id = aws_security_group.worker.id
+}
+
+resource "aws_security_group_rule" "worker_from_control_plane" {
+  type                     = "ingress"
+  description              = "Allow all traffic from control plane"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  security_group_id        = aws_security_group.worker.id
+  source_security_group_id = aws_security_group.control_plane.id
 }
 
 # Security group for NLB
