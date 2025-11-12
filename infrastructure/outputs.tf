@@ -151,17 +151,17 @@ output "openwebui_url" {
 
 output "dns_zone_id" {
   description = "Azure DNS zone ID"
-  value       =  azurerm_dns_zone.main[0].id 
+  value       = azurerm_dns_zone.main.id
 }
 
 output "dns_zone_name" {
   description = "Azure DNS zone name"
-  value       =  azurerm_dns_zone.main[0].name 
+  value       = azurerm_dns_zone.main.name
 }
 
 output "azure_nameservers" {
   description = "Azure DNS nameservers"
-  value       =  azurerm_dns_zone.main[0].name_servers
+  value       = azurerm_dns_zone.main.name_servers
 }
 
 output "domain_urls" {
