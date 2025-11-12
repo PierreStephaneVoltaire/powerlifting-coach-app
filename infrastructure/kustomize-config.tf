@@ -1,9 +1,9 @@
 locals {
-  lb_ip = var.kubernetes_resources_enabled ? data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : ""
+  lb_ip = var.kubernetes_resources_enabled && !var.stopped ? data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : ""
 }
 
 resource "local_file" "kustomization_patches" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   filename = "${path.module}/../k8s/overlays/production/kustomization.yaml"
   content  = <<-EOT
@@ -79,7 +79,7 @@ EOT
 }
 
 resource "local_file" "frontend_patch" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   filename = "${path.module}/../k8s/overlays/production/frontend-patch.yaml"
   content  = <<-EOT
@@ -104,7 +104,7 @@ EOT
 }
 
 resource "local_file" "auth_service_patch" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   filename = "${path.module}/../k8s/overlays/production/auth-service-patch.yaml"
   content  = <<-EOT
