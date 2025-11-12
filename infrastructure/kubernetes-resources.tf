@@ -113,9 +113,9 @@ resource "kubernetes_secret" "azure_email_secret" {
 
   data = {
     smtp-host     = local.azure_email_smtp_host
-    smtp-username = var.domain_name != "localhost" && length(azurerm_communication_service.this) > 0 ? "noreply@${var.domain_name}" : ""
-    smtp-password = var.domain_name != "localhost" && length(azurerm_communication_service.this) > 0 ? azurerm_communication_service.this[0].primary_connection_string : ""
-    from-email    = var.domain_name != "localhost" && length(azurerm_communication_service.this) > 0 ? "noreply@${var.domain_name}" : ""
+    smtp-username = "noreply@${var.domain_name}"
+    smtp-password = azurerm_communication_service.this.primary_connection_string
+    from-email    = "noreply@${var.domain_name}"
   }
 
   type = "Opaque"
