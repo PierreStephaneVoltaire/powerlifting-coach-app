@@ -17,19 +17,182 @@ resource "random_password" "grafana_admin_password" {
   special = true
 }
 
-resource "kubernetes_secret" "grafana_secrets" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+resource "helm_release" "kube_prometheus_stack" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
-  metadata {
-    name      = "grafana-secrets"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
-  }
+  name             = "kube-prometheus-stack"
+  repository       = "https://prometheus-community.github.io/helm-charts"
+  chart            = "kube-prometheus-stack"
+  namespace        = kubernetes_namespace.monitoring[0].metadata[0].name
+  create_namespace = false
+  version          = "56.6.2"
 
-  data = {
-    admin-password = random_password.grafana_admin_password[0].result
-  }
+  values = [
+    yamlencode({
+      prometheus = {
+        prometheusSpec = {
+          retention = "15d"
+          resources = {
+            requests = {
+              cpu    = "200m"
+              memory = "512Mi"
+            }
+            limits = {
+              cpu    = "500m"
+              memory = "2Gi"
+            }
+          }
+          storageSpec = {
+            volumeClaimTemplate = {
+              spec = {
+                storageClassName = "ebs-sc"
+                accessModes      = ["ReadWriteOnce"]
+                resources = {
+                  requests = {
+                    storage = "50Gi"
+                  }
+                }
+              }
+            }
+          }
+        }
+        service = {
+          type = "ClusterIP"
+          port = 9090
+        }
+      }
+      grafana = {
+        enabled = true
+        adminPassword = random_password.grafana_admin_password[0].result
+        persistence = {
+          enabled          = true
+          storageClassName = "ebs-sc"
+          size             = "10Gi"
+        }
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "256Mi"
+          }
+          limits = {
+            cpu    = "200m"
+            memory = "512Mi"
+          }
+        }
+        service = {
+          type = "ClusterIP"
+          port = 3000
+        }
+      }
+      alertmanager = {
+        enabled = false
+      }
+      kubeStateMetrics = {
+        enabled = true
+      }
+      nodeExporter = {
+        enabled = true
+      }
+    })
+  ]
 
-  type = "Opaque"
+  depends_on = [
+    helm_release.ebs_csi_driver,
+    kubernetes_namespace.monitoring
+  ]
+}
+
+resource "helm_release" "loki" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  name             = "loki"
+  repository       = "https://grafana.github.io/helm-charts"
+  chart            = "loki"
+  namespace        = kubernetes_namespace.monitoring[0].metadata[0].name
+  create_namespace = false
+  version          = "5.43.3"
+
+  values = [
+    yamlencode({
+      loki = {
+        auth_enabled = false
+        commonConfig = {
+          replication_factor = 1
+        }
+        storage = {
+          type = "filesystem"
+        }
+      }
+      singleBinary = {
+        replicas = 1
+        persistence = {
+          enabled          = true
+          storageClass     = "ebs-sc"
+          size             = "30Gi"
+        }
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "256Mi"
+          }
+          limits = {
+            cpu    = "200m"
+            memory = "512Mi"
+          }
+        }
+      }
+      gateway = {
+        enabled = false
+      }
+      monitoring = {
+        lokiCanary = {
+          enabled = false
+        }
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.ebs_csi_driver,
+    kubernetes_namespace.monitoring
+  ]
+}
+
+resource "helm_release" "promtail" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  name             = "promtail"
+  repository       = "https://grafana.github.io/helm-charts"
+  chart            = "promtail"
+  namespace        = kubernetes_namespace.monitoring[0].metadata[0].name
+  create_namespace = false
+  version          = "6.15.5"
+
+  values = [
+    yamlencode({
+      config = {
+        clients = [
+          {
+            url = "http://loki:3100/loki/api/v1/push"
+          }
+        ]
+      }
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "64Mi"
+        }
+        limits = {
+          cpu    = "100m"
+          memory = "128Mi"
+        }
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.loki
+  ]
 }
 
 resource "kubernetes_ingress_v1" "grafana" {
@@ -48,21 +211,21 @@ resource "kubernetes_ingress_v1" "grafana" {
 
   spec {
     tls {
-      hosts       = ["grafana.nolift.training"]
+      hosts       = ["grafana.${var.domain_name}"]
       secret_name = "grafana-tls"
     }
 
     rule {
-      host = "grafana.nolift.training"
+      host = "grafana.${var.domain_name}"
       http {
         path {
           path      = "/"
           path_type = "Prefix"
           backend {
             service {
-              name = "grafana"
+              name = "kube-prometheus-stack-grafana"
               port {
-                number = 3000
+                number = 80
               }
             }
           }
@@ -72,8 +235,8 @@ resource "kubernetes_ingress_v1" "grafana" {
   }
 
   depends_on = [
-    kubernetes_namespace.monitoring,
-    data.kubernetes_service.nginx_ingress
+    helm_release.kube_prometheus_stack,
+    helm_release.nginx_ingress
   ]
 }
 
@@ -93,19 +256,19 @@ resource "kubernetes_ingress_v1" "prometheus" {
 
   spec {
     tls {
-      hosts       = ["prometheus.nolift.training"]
+      hosts       = ["prometheus.${var.domain_name}"]
       secret_name = "prometheus-tls"
     }
 
     rule {
-      host = "prometheus.nolift.training"
+      host = "prometheus.${var.domain_name}"
       http {
         path {
           path      = "/"
           path_type = "Prefix"
           backend {
             service {
-              name = "prometheus"
+              name = "kube-prometheus-stack-prometheus"
               port {
                 number = 9090
               }
@@ -117,8 +280,8 @@ resource "kubernetes_ingress_v1" "prometheus" {
   }
 
   depends_on = [
-    kubernetes_namespace.monitoring,
-    data.kubernetes_service.nginx_ingress
+    helm_release.kube_prometheus_stack,
+    helm_release.nginx_ingress
   ]
 }
 
@@ -138,12 +301,12 @@ resource "kubernetes_ingress_v1" "loki" {
 
   spec {
     tls {
-      hosts       = ["loki.nolift.training"]
+      hosts       = ["loki.${var.domain_name}"]
       secret_name = "loki-tls"
     }
 
     rule {
-      host = "loki.nolift.training"
+      host = "loki.${var.domain_name}"
       http {
         path {
           path      = "/"
@@ -162,8 +325,8 @@ resource "kubernetes_ingress_v1" "loki" {
   }
 
   depends_on = [
-    kubernetes_namespace.monitoring,
-    data.kubernetes_service.nginx_ingress
+    helm_release.loki,
+    helm_release.nginx_ingress
   ]
 }
 
@@ -183,12 +346,12 @@ resource "kubernetes_ingress_v1" "rabbitmq_management" {
 
   spec {
     tls {
-      hosts       = ["rabbitmq.nolift.training"]
+      hosts       = ["rabbitmq.${var.domain_name}"]
       secret_name = "rabbitmq-tls"
     }
 
     rule {
-      host = "rabbitmq.nolift.training"
+      host = "rabbitmq.${var.domain_name}"
       http {
         path {
           path      = "/"
@@ -208,6 +371,6 @@ resource "kubernetes_ingress_v1" "rabbitmq_management" {
 
   depends_on = [
     kubernetes_namespace.app,
-    data.kubernetes_service.nginx_ingress
+    helm_release.nginx_ingress
   ]
 }
