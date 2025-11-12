@@ -64,7 +64,7 @@ resource "aws_ssm_parameter" "k3s_token" {
 }
 
 resource "aws_lb" "control_plane" {
-  name_prefix                      = "k3s-cp-"
+  name_prefix                      = "cp-"
   internal                         = false
   load_balancer_type               = "network"
   subnets                          = aws_subnet.public[*].id
@@ -79,7 +79,7 @@ resource "aws_lb" "control_plane" {
 }
 
 resource "aws_lb_target_group" "control_plane_api" {
-  name_prefix          = "k3s-api-"
+  name_prefix          = "api-"
   port                 = 6443
   protocol             = "TCP"
   vpc_id               = aws_vpc.main.id
