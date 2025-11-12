@@ -1,60 +1,64 @@
-output "cluster_id" {
-  description = "Kubernetes cluster ID"
-  value       = azurerm_kubernetes_cluster.k8s.id
-}
+# k3s Cluster Outputs
 
 output "cluster_name" {
-  description = "Kubernetes cluster name"
-  value       = azurerm_kubernetes_cluster.k8s.name
+  description = "k3s cluster name"
+  value       = local.cluster_name
 }
 
 output "cluster_endpoint" {
-  description = "Kubernetes cluster endpoint"
-  value       = azurerm_kubernetes_cluster.k8s.kube_config[0].host
-  sensitive = true
+  description = "k3s API server endpoint (via NLB)"
+  value       = "https://${aws_lb.control_plane.dns_name}:6443"
 }
 
-output "cluster_ca_certificate" {
-  description = "Kubernetes cluster CA certificate"
-  value       = azurerm_kubernetes_cluster.k8s.kube_config[0].cluster_ca_certificate
-  sensitive   = true
+output "nlb_dns_name" {
+  description = "Network Load Balancer DNS name for control plane"
+  value       = aws_lb.control_plane.dns_name
 }
 
-output "resource_group_name" {
-  description = "Resource group name"
-  value       = azurerm_resource_group.this.name
+output "control_plane_asg_name" {
+  description = "Control plane Auto Scaling Group name"
+  value       = aws_autoscaling_group.control_plane.name
 }
 
-output "storage_account_name" {
-  description = "Storage account name"
-  value       = azurerm_storage_account.videos.name
+output "worker_asg_name" {
+  description = "Worker Auto Scaling Group name"
+  value       = aws_autoscaling_group.worker.name
 }
 
-output "storage_container_name" {
-  description = "Storage container name"
-  value       = azurerm_storage_container.videos.name
+output "vpc_id" {
+  description = "VPC ID"
+  value       = aws_vpc.main.id
 }
 
-output "storage_account_endpoint" {
-  description = "Storage account blob endpoint"
-  value       = azurerm_storage_account.videos.primary_blob_endpoint
+output "public_subnet_ids" {
+  description = "Public subnet IDs"
+  value       = aws_subnet.public[*].id
 }
 
-output "storage_access_key" {
-  description = "Storage account access key"
-  value       = azurerm_storage_account.videos.primary_access_key
-  sensitive   = true
+# S3 Storage Outputs
+output "s3_videos_bucket" {
+  description = "S3 bucket name for videos"
+  value       = aws_s3_bucket.videos.id
 }
 
-output "storage_connection_string" {
-  description = "Storage account connection string"
-  value       = azurerm_storage_account.videos.primary_connection_string
-  sensitive   = true
+output "s3_videos_bucket_arn" {
+  description = "S3 bucket ARN for videos"
+  value       = aws_s3_bucket.videos.arn
+}
+
+output "s3_videos_endpoint" {
+  description = "S3 bucket endpoint URL"
+  value       = "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
+}
+
+output "s3_config_bucket" {
+  description = "S3 bucket for k3s configuration"
+  value       = aws_s3_bucket.k3s_config.id
 }
 
 output "region" {
-  description = "Deployment region"
-  value       = var.region
+  description = "AWS deployment region"
+  value       = var.aws_region
 }
 
 output "postgres_password" {
@@ -149,19 +153,19 @@ output "openwebui_url" {
 
 # DNS Outputs
 
-output "dns_zone_id" {
-  description = "Azure DNS zone ID"
-  value       = azurerm_dns_zone.main.id
+output "route53_zone_id" {
+  description = "Route53 hosted zone ID"
+  value       = aws_route53_zone.main.zone_id
 }
 
-output "dns_zone_name" {
-  description = "Azure DNS zone name"
-  value       = azurerm_dns_zone.main.name
+output "route53_zone_name" {
+  description = "Route53 hosted zone name"
+  value       = aws_route53_zone.main.name
 }
 
-output "azure_nameservers" {
-  description = "Azure DNS nameservers"
-  value       = azurerm_dns_zone.main.name_servers
+output "aws_nameservers" {
+  description = "AWS Route53 nameservers - Update these in your domain registrar (Namecheap)"
+  value       = aws_route53_zone.main.name_servers
 }
 
 output "domain_urls" {

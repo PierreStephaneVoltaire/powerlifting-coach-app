@@ -1,112 +1,87 @@
+# k3s Cluster on AWS with Spot Instances
+# Main configuration file
+
 locals {
   cluster_name = "${var.project_name}-${var.environment}"
 }
 
-resource "azurerm_resource_group" "this" {
-  name     = "${local.cluster_name}-rg"
-  location = var.region
-}
-
-resource "azurerm_storage_account" "videos" {
-  name                     = replace("${var.project_name}${var.environment}videos", "-", "")
-  resource_group_name      = azurerm_resource_group.this.name
-  location                 = azurerm_resource_group.this.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  account_kind             = "StorageV2"
-
-  blob_properties {
-    cors_rule {
-      allowed_headers    = ["*"]
-      allowed_methods    = ["GET", "HEAD"]
-      allowed_origins    = ["*"]
-      exposed_headers    = ["*"]
-      max_age_in_seconds = 3600
-    }
-  }
+# S3 bucket for video storage (replaces Azure Blob Storage)
+resource "aws_s3_bucket" "videos" {
+  bucket_prefix = "${local.cluster_name}-videos-"
 
   tags = {
-    environment = var.environment
-    project     = var.project_name
+    Name        = "${local.cluster_name}-videos"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
-resource "azurerm_storage_container" "videos" {
-  name                  = var.storage_container_name
-  storage_account_id    = azurerm_storage_account.videos.id
-  container_access_type = "blob"
+# Enable versioning for video bucket
+resource "aws_s3_bucket_versioning" "videos" {
+  bucket = aws_s3_bucket.videos.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
-resource "azurerm_storage_management_policy" "videos" {
-  storage_account_id = azurerm_storage_account.videos.id
+# CORS configuration for video bucket
+resource "aws_s3_bucket_cors_configuration" "videos" {
+  bucket = aws_s3_bucket.videos.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["*"]
+    max_age_seconds = 3600
+  }
+}
+
+# Public access block for video bucket (allow public read)
+resource "aws_s3_bucket_public_access_block" "videos" {
+  bucket = aws_s3_bucket.videos.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# Bucket policy for public read access
+resource "aws_s3_bucket_policy" "videos" {
+  bucket = aws_s3_bucket.videos.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.videos.arn}/*"
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.videos]
+}
+
+# Lifecycle policy for video bucket (delete after 120 days)
+resource "aws_s3_bucket_lifecycle_configuration" "videos" {
+  bucket = aws_s3_bucket.videos.id
 
   rule {
-    name    = "expire-after-120-days"
-    enabled = true
-    filters {
-      blob_types = ["blockBlob"]
+    id     = "expire-after-120-days"
+    status = "Enabled"
+
+    expiration {
+      days = 120
     }
-    actions {
-      base_blob {
-        delete_after_days_since_modification_greater_than = 120
-      }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
     }
-  }
-}
-
-resource "azurerm_kubernetes_cluster" "k8s" {
-  name                = local.cluster_name
-  location            = azurerm_resource_group.this.location
-  oidc_issuer_enabled=true
-  resource_group_name = azurerm_resource_group.this.name
-  dns_prefix          = local.cluster_name
-  kubernetes_version  = var.kubernetes_version
-  automatic_upgrade_channel = "stable"
-  maintenance_window_auto_upgrade {
-    frequency   = "Weekly"
-    interval    = 1
-    duration    = 4
-    day_of_week = "Sunday"
-    start_time  = "02:00"
-    utc_offset  = "-05:00"
-  }
-
-  maintenance_window_node_os {
-    frequency   = "Weekly"
-    interval    = 1
-    duration    = 4
-    day_of_week = "Sunday"
-    start_time  = "06:00"
-    utc_offset  = "-05:00"
-  }
-
-  default_node_pool {
-    name                 = "default"
-    vm_size              = "Standard_B2s"
-    auto_scaling_enabled = true
-    min_count            = 1
-    max_count            = 5
-    max_pods             = 110
-    os_disk_size_gb      = 30
-    temporary_name_for_rotation = "defaulttemp"
-    upgrade_settings {
-             drain_timeout_in_minutes      = 0
-              max_surge                     = "10%"
-             node_soak_duration_in_minutes = 0
-            }
-  }
-
-  identity {
-    type = "SystemAssigned"
-  }
-
-  network_profile {
-    network_plugin = "azure"
-    network_policy = "azure"
-  }
-
-  tags = {
-    environment = var.environment
-    project     = var.project_name
   }
 }
