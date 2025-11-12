@@ -1,17 +1,12 @@
 #!/bin/bash
-# Enable ArgoCD application for continuous deployment
-# Run this after init-infra.sh and DNS propagation
-
 set -e
 
 cd "$(dirname "$0")/../infrastructure"
 
 echo "=== Enabling ArgoCD Applications (requires ArgoCD helm chart installed) ==="
-# Stage 3: Create ArgoCD Application CRDs
 terraform apply \
   -var="kubernetes_resources_enabled=true" \
-  -var="argocd_resources_enabled=true" \
-  -var="email_domain_verified=false"
+  -var="argocd_resources_enabled=true"
 
 echo ""
 echo "=== Getting ArgoCD admin password ==="
