@@ -1,5 +1,4 @@
 resource "azurerm_dns_zone" "main" {
-  count               = var.domain_name != "localhost" ? 1 : 0
   name                = var.domain_name
   resource_group_name = azurerm_resource_group.this.name
 
@@ -10,7 +9,7 @@ resource "azurerm_dns_zone" "main" {
 }
 
 locals {
-  dns_lb_ip = var.kubernetes_resources_enabled && var.domain_name != "localhost" && !var.stopped ? (
+  dns_lb_ip = var.kubernetes_resources_enabled && !var.stopped ? (
     length(data.kubernetes_service.nginx_ingress) > 0 ?
     data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : null
   ) : null
@@ -31,9 +30,9 @@ locals {
 }
 
 resource "azurerm_dns_a_record" "subdomains" {
-  for_each            = var.domain_name != "localhost" && var.kubernetes_resources_enabled && !var.stopped ? local.subdomains : []
+  for_each            = var.kubernetes_resources_enabled && !var.stopped ? local.subdomains : []
   name                = each.key
-  zone_name           = azurerm_dns_zone.main[0].name
+  zone_name           = azurerm_dns_zone.main.name
   resource_group_name = azurerm_resource_group.this.name
   ttl                 = 300
   records             = [local.dns_lb_ip]
@@ -46,14 +45,13 @@ resource "azurerm_dns_a_record" "subdomains" {
 }
 
 resource "azurerm_dns_txt_record" "email_verification" {
-  count               = var.domain_name != "localhost" ? 1 : 0
   name                = "@"
-  zone_name           = azurerm_dns_zone.main[0].name
+  zone_name           = azurerm_dns_zone.main.name
   resource_group_name = azurerm_resource_group.this.name
   ttl                 = 300
 
   record {
-    value = azurerm_email_communication_service_domain.this[0].verification_records[0].domain[0].value
+    value = azurerm_email_communication_service_domain.this.verification_records[0].domain[0].value
   }
 
   tags = {
@@ -67,9 +65,9 @@ resource "azurerm_dns_txt_record" "email_verification" {
 }
 
 resource "azurerm_dns_txt_record" "spf" {
-  count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
+  count               = var.kubernetes_resources_enabled ? 1 : 0
   name                = "@"
-  zone_name           = azurerm_dns_zone.main[0].name
+  zone_name           = azurerm_dns_zone.main.name
   resource_group_name = azurerm_resource_group.this.name
   ttl                 = 300
 
@@ -84,9 +82,9 @@ resource "azurerm_dns_txt_record" "spf" {
 }
 
 resource "azurerm_dns_txt_record" "dmarc" {
-  count               = var.domain_name != "localhost" && var.kubernetes_resources_enabled ? 1 : 0
+  count               = var.kubernetes_resources_enabled ? 1 : 0
   name                = "_dmarc"
-  zone_name           = azurerm_dns_zone.main[0].name
+  zone_name           = azurerm_dns_zone.main.name
   resource_group_name = azurerm_resource_group.this.name
   ttl                 = 300
 

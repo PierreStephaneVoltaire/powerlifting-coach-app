@@ -29,13 +29,13 @@ patchesJson6902:
     patch: |-
       - op: replace
         path: /spec/rules/0/host
-        value: app.nolift.training
+        value: app.${var.domain_name}
       - op: replace
         path: /spec/rules/1/host
-        value: api.nolift.training
+        value: api.${var.domain_name}
       - op: replace
         path: /spec/rules/2/host
-        value: auth.nolift.training
+        value: auth.${var.domain_name}
 
 images:
   - name: auth-service
@@ -95,9 +95,9 @@ spec:
       - name: frontend
         env:
         - name: REACT_APP_API_URL
-          value: "https://api.nolift.training"
+          value: "https://api.${var.domain_name}"
         - name: REACT_APP_AUTH_URL
-          value: "https://api.nolift.training/auth"
+          value: "https://api.${var.domain_name}/auth"
 EOT
 
   depends_on = [data.kubernetes_service.nginx_ingress]

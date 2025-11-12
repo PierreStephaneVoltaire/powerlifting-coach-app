@@ -104,7 +104,7 @@ resource "helm_release" "argocd_image_updater" {
 }
 
 resource "helm_release" "cert_manager" {
-  count = var.kubernetes_resources_enabled && var.domain_name != "localhost" ? 1 : 0
+  count = var.kubernetes_resources_enabled ? 1 : 0
 
   name             = "cert-manager"
   repository       = "https://charts.jetstack.io"

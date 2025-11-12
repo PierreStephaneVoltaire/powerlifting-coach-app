@@ -98,7 +98,6 @@ variable "litellm_endpoint" {
 variable "domain_name" {
   description = "Domain name for the application (e.g., nolift.training)"
   type        = string
-  default     = "localhost"
 }
 
 variable "google_oauth_client_id" {
