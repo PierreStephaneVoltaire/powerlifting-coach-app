@@ -124,6 +124,13 @@ spec:
       labels:
         app: grafana
     spec:
+      nodeSelector:
+        workload-type: spot
+      tolerations:
+      - key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+        effect: NoSchedule
       containers:
       - name: grafana
         image: grafana/grafana:10.1.0

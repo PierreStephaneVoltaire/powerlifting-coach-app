@@ -43,6 +43,13 @@ spec:
       labels:
         app: litellm
     spec:
+      nodeSelector:
+        workload-type: spot
+      tolerations:
+      - key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+        effect: NoSchedule
       containers:
       - name: litellm
         image: ghcr.io/berriai/litellm:main-latest

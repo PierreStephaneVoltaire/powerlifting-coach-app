@@ -15,6 +15,13 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      nodeSelector:
+        workload-type: spot
+      tolerations:
+      - key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+        effect: NoSchedule
       containers:
       - name: rabbitmq
         image: public.ecr.aws/docker/library/rabbitmq:4-management-alpine
