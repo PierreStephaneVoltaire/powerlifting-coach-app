@@ -45,12 +45,12 @@ resource "kubernetes_ingress_v1" "argocd" {
 
   spec {
     tls {
-      hosts       = ["argocd.nolift.training"]
+      hosts       = ["argocd.${var.domain_name}"]
       secret_name = "argocd-tls"
     }
 
     rule {
-      host = "argocd.nolift.training"
+      host = "argocd.${var.domain_name}"
       http {
         path {
           path      = "/"
@@ -137,7 +137,6 @@ resource "kubernetes_manifest" "app" {
     }
   }
   depends_on = [
-    helm_release.argocd,
-    azurerm_kubernetes_cluster.k8s
+    helm_release.argocd
   ]
 }
