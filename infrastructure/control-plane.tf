@@ -1,10 +1,6 @@
-# k3s Control Plane Configuration with HA setup
-# 3 spot instances behind a Network Load Balancer
-
-# Get latest Ubuntu 24.04 LTS AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical
+  owners      = ["099720109477"]
 
   filter {
     name   = "name"
@@ -17,19 +13,18 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-# S3 bucket for Ansible playbooks and k3s token
-resource "aws_s3_bucket" "k3s_config" {
-  bucket_prefix = "${local.cluster_name}-k3s-config-"
+resource "aws_s3_bucket" "ansible_playbooks" {
+  bucket_prefix = "${local.cluster_name}-ansible-"
 
   tags = {
-    Name        = "${local.cluster_name}-k3s-config"
+    Name        = "${local.cluster_name}-ansible"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "k3s_config" {
-  bucket = aws_s3_bucket.k3s_config.id
+resource "aws_s3_bucket_public_access_block" "ansible_playbooks" {
+  bucket = aws_s3_bucket.ansible_playbooks.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -37,27 +32,43 @@ resource "aws_s3_bucket_public_access_block" "k3s_config" {
   restrict_public_buckets = true
 }
 
-# Generate random token for k3s cluster
+resource "aws_s3_object" "control_plane_playbook" {
+  bucket = aws_s3_bucket.ansible_playbooks.id
+  key    = "control-plane.yml"
+  source = "${path.module}/ansible/control-plane.yml"
+  etag   = filemd5("${path.module}/ansible/control-plane.yml")
+}
+
+resource "aws_s3_object" "worker_playbook" {
+  bucket = aws_s3_bucket.ansible_playbooks.id
+  key    = "worker.yml"
+  source = "${path.module}/ansible/worker.yml"
+  etag   = filemd5("${path.module}/ansible/worker.yml")
+}
+
 resource "random_password" "k3s_token" {
   length  = 32
   special = false
 }
 
-# Upload k3s token to S3
-resource "aws_s3_object" "k3s_token" {
-  bucket  = aws_s3_bucket.k3s_config.id
-  key     = "k3s-token"
-  content = random_password.k3s_token.result
+resource "aws_ssm_parameter" "k3s_token" {
+  name  = "/${local.cluster_name}/k3s/token"
+  type  = "SecureString"
+  value = random_password.k3s_token.result
+
+  tags = {
+    Name        = "${local.cluster_name}-k3s-token"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }
 
-# Network Load Balancer for control plane
 resource "aws_lb" "control_plane" {
-  name_prefix        = "k3s-cp-"
-  internal           = false
-  load_balancer_type = "network"
-  subnets            = aws_subnet.public[*].id
-
-  enable_deletion_protection = false
+  name_prefix                      = "k3s-cp-"
+  internal                         = false
+  load_balancer_type               = "network"
+  subnets                          = aws_subnet.public[*].id
+  enable_deletion_protection       = false
   enable_cross_zone_load_balancing = true
 
   tags = {
@@ -67,12 +78,12 @@ resource "aws_lb" "control_plane" {
   }
 }
 
-# Target group for k3s API server
 resource "aws_lb_target_group" "control_plane_api" {
-  name_prefix = "k3s-api-"
-  port        = 6443
-  protocol    = "TCP"
-  vpc_id      = aws_vpc.main.id
+  name_prefix          = "k3s-api-"
+  port                 = 6443
+  protocol             = "TCP"
+  vpc_id               = aws_vpc.main.id
+  deregistration_delay = 30
 
   health_check {
     enabled             = true
@@ -83,8 +94,6 @@ resource "aws_lb_target_group" "control_plane_api" {
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
-
-  deregistration_delay = 30
 
   tags = {
     Name        = "${local.cluster_name}-control-plane-api-tg"
@@ -97,7 +106,6 @@ resource "aws_lb_target_group" "control_plane_api" {
   }
 }
 
-# Listener for k3s API server
 resource "aws_lb_listener" "control_plane_api" {
   load_balancer_arn = aws_lb.control_plane.arn
   port              = "6443"
@@ -109,7 +117,6 @@ resource "aws_lb_listener" "control_plane_api" {
   }
 }
 
-# Launch template for control plane nodes
 resource "aws_launch_template" "control_plane" {
   name_prefix   = "${local.cluster_name}-control-plane-"
   image_id      = data.aws_ami.ubuntu.id
@@ -149,10 +156,10 @@ resource "aws_launch_template" "control_plane" {
     resource_type = "instance"
 
     tags = {
-      Name        = "${local.cluster_name}-control-plane"
-      Environment = var.environment
-      Project     = var.project_name
-      Role        = "control-plane"
+      Name                                          = "${local.cluster_name}-control-plane"
+      Environment                                   = var.environment
+      Project                                       = var.project_name
+      Role                                          = "control-plane"
       "kubernetes.io/cluster/${local.cluster_name}" = "owned"
     }
   }
@@ -168,11 +175,11 @@ resource "aws_launch_template" "control_plane" {
   }
 
   user_data = base64encode(templatefile("${path.module}/user-data/control-plane.sh", {
-    cluster_name      = local.cluster_name
-    s3_bucket         = aws_s3_bucket.k3s_config.id
-    nlb_dns_name      = aws_lb.control_plane.dns_name
-    region            = var.aws_region
-    pod_network_cidr  = var.pod_network_cidr
+    cluster_name     = local.cluster_name
+    s3_bucket        = aws_s3_bucket.ansible_playbooks.id
+    nlb_dns_name     = aws_lb.control_plane.dns_name
+    region           = var.aws_region
+    pod_network_cidr = var.pod_network_cidr
   }))
 
   lifecycle {
@@ -180,20 +187,18 @@ resource "aws_launch_template" "control_plane" {
   }
 
   depends_on = [
-    aws_s3_object.k3s_token
+    aws_ssm_parameter.k3s_token,
+    aws_s3_object.control_plane_playbook
   ]
 }
 
-# Auto Scaling Group for control plane
 resource "aws_autoscaling_group" "control_plane" {
-  name_prefix         = "${local.cluster_name}-control-plane-"
-  vpc_zone_identifier = aws_subnet.public[*].id
-  target_group_arns   = [aws_lb_target_group.control_plane_api.arn]
-
-  desired_capacity = 3
-  min_size         = 3
-  max_size         = 3
-
+  name_prefix               = "${local.cluster_name}-control-plane-"
+  vpc_zone_identifier       = aws_subnet.public[*].id
+  target_group_arns         = [aws_lb_target_group.control_plane_api.arn]
+  desired_capacity          = 3
+  min_size                  = 3
+  max_size                  = 3
   health_check_type         = "ELB"
   health_check_grace_period = 300
   default_cooldown          = 300
@@ -223,10 +228,9 @@ resource "aws_autoscaling_group" "control_plane" {
         version            = "$Latest"
       }
 
-      # Multiple instance types for spot instance flexibility
       override {
         instance_type     = "t3a.small"
-        weighted_capacity = "1"
+        weighted_capacity = "2"
       }
 
       override {
@@ -235,8 +239,8 @@ resource "aws_autoscaling_group" "control_plane" {
       }
 
       override {
-        instance_type     = "t2.small"
-        weighted_capacity = "1"
+        instance_type     = "t4g.small"
+        weighted_capacity = "3"
       }
     }
   }

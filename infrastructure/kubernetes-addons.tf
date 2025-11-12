@@ -1,26 +1,5 @@
-# Kubernetes Add-ons for k3s cluster
-# These will be deployed after the cluster is ready
-
-# Wait for control plane to be ready
-resource "time_sleep" "wait_for_cluster" {
-  depends_on = [
-    aws_autoscaling_group.control_plane
-  ]
-
-  create_duration = "180s"
-}
-
-# Download kubeconfig from S3
-data "aws_s3_object" "kubeconfig" {
-  count      = var.kubernetes_resources_enabled ? 1 : 0
-  bucket     = aws_s3_bucket.k3s_config.id
-  key        = "kubeconfig.yaml"
-  depends_on = [time_sleep.wait_for_cluster]
-}
-
-# NGINX Ingress Controller
 resource "helm_release" "nginx_ingress" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   name             = "ingress-nginx"
   repository       = "https://kubernetes.github.io/ingress-nginx"
@@ -60,11 +39,8 @@ resource "helm_release" "nginx_ingress" {
       }
     })
   ]
-
-  depends_on = [time_sleep.wait_for_cluster]
 }
 
-# AWS EBS CSI Driver
 resource "helm_release" "ebs_csi_driver" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -96,15 +72,15 @@ resource "helm_release" "ebs_csi_driver" {
       }
       storageClasses = [
         {
-          name              = "ebs-sc"
+          name = "ebs-sc"
           annotations = {
             "storageclass.kubernetes.io/is-default-class" = "true"
           }
           volumeBindingMode = "WaitForFirstConsumer"
           parameters = {
-            type      = "gp3"
-            encrypted = "true"
-            iops      = "3000"
+            type       = "gp3"
+            encrypted  = "true"
+            iops       = "3000"
             throughput = "125"
           }
         }
@@ -115,7 +91,6 @@ resource "helm_release" "ebs_csi_driver" {
   depends_on = [helm_release.nginx_ingress]
 }
 
-# metrics-server
 resource "helm_release" "metrics_server" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -148,7 +123,6 @@ resource "helm_release" "metrics_server" {
   depends_on = [helm_release.nginx_ingress]
 }
 
-# cert-manager
 resource "helm_release" "cert_manager" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -207,7 +181,6 @@ resource "helm_release" "cert_manager" {
   depends_on = [helm_release.nginx_ingress]
 }
 
-# ClusterIssuer for Let's Encrypt (after cert-manager is installed)
 resource "kubectl_manifest" "letsencrypt_prod" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -240,7 +213,6 @@ resource "kubectl_manifest" "letsencrypt_prod" {
   depends_on = [helm_release.cert_manager]
 }
 
-# external-dns for automatic Route53 DNS management
 resource "helm_release" "external_dns" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 

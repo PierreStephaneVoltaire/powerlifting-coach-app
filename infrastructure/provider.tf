@@ -24,10 +24,6 @@ terraform {
       source  = "hashicorp/local"
       version = "~> 2.4"
     }
-    time = {
-      source  = "hashicorp/time"
-      version = "~> 0.9"
-    }
   }
 }
 
@@ -43,35 +39,79 @@ provider "aws" {
   }
 }
 
-# Kubernetes provider configuration
-# This requires the kubeconfig to be available from S3
-# We'll use config_path to read from the local kubeconfig file
+data "aws_ssm_parameter" "k3s_ca_cert" {
+  count      = var.kubernetes_resources_enabled ? 1 : 0
+  name       = "/${local.cluster_name}/k3s/ca-cert"
+  depends_on = [aws_autoscaling_group.control_plane]
+}
+
+data "aws_ssm_parameter" "k3s_client_cert" {
+  count      = var.kubernetes_resources_enabled ? 1 : 0
+  name       = "/${local.cluster_name}/k3s/client-cert"
+  depends_on = [aws_autoscaling_group.control_plane]
+}
+
+data "aws_ssm_parameter" "k3s_client_key" {
+  count      = var.kubernetes_resources_enabled ? 1 : 0
+  name       = "/${local.cluster_name}/k3s/client-key"
+  depends_on = [aws_autoscaling_group.control_plane]
+}
+
 provider "kubernetes" {
-  config_path = var.kubernetes_resources_enabled ? local_file.kubeconfig[0].filename : null
+  host                   = var.kubernetes_resources_enabled ? "https://${aws_lb.control_plane.dns_name}:6443" : null
+  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_ca_cert[0].value) : null
+  client_certificate     = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_cert[0].value) : null
+  client_key             = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_key[0].value) : null
 }
 
 provider "helm" {
   kubernetes {
-    config_path = var.kubernetes_resources_enabled ? local_file.kubeconfig[0].filename : null
+    host                   = var.kubernetes_resources_enabled ? "https://${aws_lb.control_plane.dns_name}:6443" : null
+    cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_ca_cert[0].value) : null
+    client_certificate     = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_cert[0].value) : null
+    client_key             = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_key[0].value) : null
   }
 }
 
 provider "kubectl" {
-  config_path = var.kubernetes_resources_enabled ? local_file.kubeconfig[0].filename : null
+  host                   = var.kubernetes_resources_enabled ? "https://${aws_lb.control_plane.dns_name}:6443" : null
+  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_ca_cert[0].value) : null
+  client_certificate     = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_cert[0].value) : null
+  client_key             = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_key[0].value) : null
+  load_config_file       = false
 }
 
-# Download and save kubeconfig from S3
 resource "local_file" "kubeconfig" {
   count    = var.kubernetes_resources_enabled ? 1 : 0
-  content  = data.aws_s3_object.kubeconfig[0].body
   filename = "${path.module}/kubeconfig.yaml"
-
-  depends_on = [
-    data.aws_s3_object.kubeconfig
-  ]
+  content = yamlencode({
+    apiVersion = "v1"
+    kind       = "Config"
+    clusters = [{
+      name = local.cluster_name
+      cluster = {
+        certificate-authority-data = data.aws_ssm_parameter.k3s_ca_cert[0].value
+        server                     = "https://${aws_lb.control_plane.dns_name}:6443"
+      }
+    }]
+    users = [{
+      name = "admin"
+      user = {
+        client-certificate-data = data.aws_ssm_parameter.k3s_client_cert[0].value
+        client-key-data         = data.aws_ssm_parameter.k3s_client_key[0].value
+      }
+    }]
+    contexts = [{
+      name = local.cluster_name
+      context = {
+        cluster = local.cluster_name
+        user    = "admin"
+      }
+    }]
+    current-context = local.cluster_name
+  })
 }
 
 output "kubeconfig_path" {
-  value       = var.kubernetes_resources_enabled ? local_file.kubeconfig[0].filename : "Run terraform apply with kubernetes_resources_enabled=true to generate kubeconfig"
-  description = "Path to the kubeconfig file for accessing the k3s cluster"
+  value = var.kubernetes_resources_enabled ? local_file.kubeconfig[0].filename : null
 }

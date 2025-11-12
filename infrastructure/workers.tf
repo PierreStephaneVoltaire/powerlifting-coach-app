@@ -1,7 +1,3 @@
-# k3s Worker Nodes Configuration
-# Auto-scaling spot instances with max-pods=110
-
-# Launch template for worker nodes
 resource "aws_launch_template" "worker" {
   name_prefix   = "${local.cluster_name}-worker-"
   image_id      = data.aws_ami.ubuntu.id
@@ -41,10 +37,10 @@ resource "aws_launch_template" "worker" {
     resource_type = "instance"
 
     tags = {
-      Name        = "${local.cluster_name}-worker"
-      Environment = var.environment
-      Project     = var.project_name
-      Role        = "worker"
+      Name                                          = "${local.cluster_name}-worker"
+      Environment                                   = var.environment
+      Project                                       = var.project_name
+      Role                                          = "worker"
       "kubernetes.io/cluster/${local.cluster_name}" = "owned"
     }
   }
@@ -61,7 +57,7 @@ resource "aws_launch_template" "worker" {
 
   user_data = base64encode(templatefile("${path.module}/user-data/worker.sh", {
     cluster_name = local.cluster_name
-    s3_bucket    = aws_s3_bucket.k3s_config.id
+    s3_bucket    = aws_s3_bucket.ansible_playbooks.id
     nlb_dns_name = aws_lb.control_plane.dns_name
     region       = var.aws_region
     max_pods     = var.max_pods_per_node
@@ -72,19 +68,17 @@ resource "aws_launch_template" "worker" {
   }
 
   depends_on = [
-    aws_autoscaling_group.control_plane
+    aws_autoscaling_group.control_plane,
+    aws_s3_object.worker_playbook
   ]
 }
 
-# Auto Scaling Group for worker nodes
 resource "aws_autoscaling_group" "worker" {
-  name_prefix         = "${local.cluster_name}-worker-"
-  vpc_zone_identifier = aws_subnet.public[*].id
-
-  desired_capacity = var.worker_desired_capacity
-  min_size         = var.worker_min_size
-  max_size         = var.worker_max_size
-
+  name_prefix               = "${local.cluster_name}-worker-"
+  vpc_zone_identifier       = aws_subnet.public[*].id
+  desired_capacity          = var.stopped ? 0 : var.worker_desired_capacity
+  min_size                  = var.stopped ? 0 : var.worker_min_size
+  max_size                  = var.worker_max_size
   health_check_type         = "EC2"
   health_check_grace_period = 300
   default_cooldown          = 60
@@ -114,8 +108,6 @@ resource "aws_autoscaling_group" "worker" {
         version            = "$Latest"
       }
 
-      # Multiple cheap spot instance types for flexibility
-      # Prefer t3a (AMD) and t4g (ARM) for cost savings
       override {
         instance_type     = "t3a.small"
         weighted_capacity = "2"
@@ -123,7 +115,12 @@ resource "aws_autoscaling_group" "worker" {
 
       override {
         instance_type     = "t3.small"
-        weighted_capacity = "2"
+        weighted_capacity = "1"
+      }
+
+      override {
+        instance_type     = "t4g.small"
+        weighted_capacity = "3"
       }
 
       override {
@@ -133,17 +130,12 @@ resource "aws_autoscaling_group" "worker" {
 
       override {
         instance_type     = "t3.medium"
-        weighted_capacity = "4"
+        weighted_capacity = "3"
       }
 
       override {
-        instance_type     = "t2.small"
-        weighted_capacity = "2"
-      }
-
-      override {
-        instance_type     = "t2.medium"
-        weighted_capacity = "4"
+        instance_type     = "t4g.medium"
+        weighted_capacity = "6"
       }
     }
   }
@@ -186,56 +178,4 @@ resource "aws_autoscaling_group" "worker" {
   depends_on = [
     aws_autoscaling_group.control_plane
   ]
-}
-
-# Auto scaling policies for worker nodes based on CPU utilization
-resource "aws_autoscaling_policy" "worker_scale_up" {
-  name                   = "${local.cluster_name}-worker-scale-up"
-  scaling_adjustment     = 1
-  adjustment_type        = "ChangeInCapacity"
-  cooldown               = 60
-  autoscaling_group_name = aws_autoscaling_group.worker.name
-}
-
-resource "aws_autoscaling_policy" "worker_scale_down" {
-  name                   = "${local.cluster_name}-worker-scale-down"
-  scaling_adjustment     = -1
-  adjustment_type        = "ChangeInCapacity"
-  cooldown               = 300
-  autoscaling_group_name = aws_autoscaling_group.worker.name
-}
-
-# CloudWatch alarms for auto scaling
-resource "aws_cloudwatch_metric_alarm" "worker_cpu_high" {
-  alarm_name          = "${local.cluster_name}-worker-cpu-high"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = "60"
-  statistic           = "Average"
-  threshold           = "70"
-  alarm_description   = "Scale up if CPU exceeds 70%"
-  alarm_actions       = [aws_autoscaling_policy.worker_scale_up.arn]
-
-  dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.worker.name
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "worker_cpu_low" {
-  alarm_name          = "${local.cluster_name}-worker-cpu-low"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = "300"
-  statistic           = "Average"
-  threshold           = "30"
-  alarm_description   = "Scale down if CPU below 30%"
-  alarm_actions       = [aws_autoscaling_policy.worker_scale_down.arn]
-
-  dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.worker.name
-  }
 }
