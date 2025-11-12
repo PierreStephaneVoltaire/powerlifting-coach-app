@@ -96,32 +96,34 @@ resource "kubernetes_secret" "app_secrets" {
     rabbitmq-url            = "amqp://admin:${urlencode(random_password.rabbitmq_password[0].result)}@rabbitmq:5672/"
     keycloak-client-secret  = random_password.keycloak_client_secret[0].result
     keycloak-admin-password = random_password.keycloak_admin_password[0].result
-    spaces-key              = azurerm_storage_account.videos.name
-    spaces-secret           = azurerm_storage_account.videos.primary_access_key
+    spaces-key              = aws_iam_access_key.s3_videos[0].id
+    spaces-secret           = aws_iam_access_key.s3_videos[0].secret
   }
 
   type = "Opaque"
 }
 
-resource "kubernetes_secret" "azure_email_secret" {
+resource "kubernetes_secret" "ses_email_secret" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
   metadata {
-    name      = "azure-email-secret"
+    name      = "ses-email-secret"
     namespace = kubernetes_namespace.app[0].metadata[0].name
   }
 
   data = {
-    smtp-host     = local.azure_email_smtp_host
-    smtp-username = "noreply@${var.domain_name}"
-    smtp-password = azurerm_communication_service.this.primary_connection_string
+    smtp-host     = local.ses_smtp_endpoint
+    smtp-port     = "587"
+    smtp-username = aws_iam_access_key.ses_smtp[0].id
+    smtp-password = aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4
     from-email    = "noreply@${var.domain_name}"
   }
 
   type = "Opaque"
 
   depends_on = [
-    azurerm_communication_service.this
+    aws_ses_domain_identity.main,
+    aws_iam_access_key.ses_smtp
   ]
 }
 

@@ -2,7 +2,8 @@
 # Main configuration file
 
 locals {
-  cluster_name = "${var.project_name}-${var.environment}"
+  cluster_name         = "${var.project_name}-${var.environment}"
+  ses_smtp_endpoint    = "email-smtp.${var.aws_region}.amazonaws.com"
 }
 
 # S3 bucket for video storage (replaces Azure Blob Storage)
@@ -85,3 +86,45 @@ resource "aws_s3_bucket_lifecycle_configuration" "videos" {
     }
   }
 }
+
+resource "aws_iam_user" "s3_videos" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+  name  = "${local.cluster_name}-s3-videos"
+
+  tags = {
+    Name        = "${local.cluster_name}-s3-videos"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_iam_access_key" "s3_videos" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+  user  = aws_iam_user.s3_videos[0].name
+}
+
+resource "aws_iam_user_policy" "s3_videos" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+  name  = "${local.cluster_name}-s3-videos-policy"
+  user  = aws_iam_user.s3_videos[0].name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.videos.arn,
+          "${aws_s3_bucket.videos.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
