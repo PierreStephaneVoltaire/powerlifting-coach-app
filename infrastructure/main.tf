@@ -34,7 +34,7 @@ resource "aws_s3_bucket_cors_configuration" "videos" {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "HEAD"]
     allowed_origins = ["*"]
-    expose_headers  = ["*"]
+    expose_headers  = ["ETag", "Content-Length", "Content-Type"]
     max_age_seconds = 3600
   }
 }
