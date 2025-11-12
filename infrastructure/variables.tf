@@ -1,7 +1,8 @@
-variable "azure_subscription_id" {
-  description = "Azure subscription ID"
+# AWS Configuration
+variable "aws_region" {
+  description = "AWS region"
   type        = string
-  sensitive   = true
+  default     = "ca-central-1"
 }
 
 variable "project_name" {
@@ -16,54 +17,64 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "region" {
-  description = "Azure region"
+# Control Plane Configuration
+variable "control_plane_instance_type" {
+  description = "EC2 instance type for control plane nodes (will use spot instances)"
   type        = string
-  default     = "eastus"
+  default     = "t3a.small"
 }
 
-variable "node_size" {
-  description = "Azure VM size for Kubernetes nodes"
-  type        = string
-  default     = "Standard_B2s"
+variable "control_plane_volume_size" {
+  description = "EBS volume size in GB for control plane nodes"
+  type        = number
+  default     = 30
 }
 
-variable "node_count" {
-  description = "Number of Kubernetes nodes"
+# Worker Configuration
+variable "worker_instance_type" {
+  description = "EC2 instance type for worker nodes (will use spot instances)"
+  type        = string
+  default     = "t3a.medium"
+}
+
+variable "worker_volume_size" {
+  description = "EBS volume size in GB for worker nodes"
+  type        = number
+  default     = 30
+}
+
+variable "worker_desired_capacity" {
+  description = "Desired number of worker nodes"
+  type        = number
+  default     = 2
+}
+
+variable "worker_min_size" {
+  description = "Minimum number of worker nodes"
   type        = number
   default     = 1
 }
 
-variable "spot_node_size" {
-  description = "Azure VM size for spot instance nodes. Using B-series for cost efficiency."
-  type        = string
-  default     = "Standard_B2ms"
-}
-
-variable "spot_node_min_count" {
-  description = "Minimum number of spot instance nodes"
-  type        = number
-  default     = 1
-}
-
-variable "spot_node_max_count" {
-  description = "Maximum number of spot instance nodes"
+variable "worker_max_size" {
+  description = "Maximum number of worker nodes"
   type        = number
   default     = 5
 }
 
-variable "kubernetes_version" {
-  description = "Kubernetes cluster version"
-  type        = string
-  default     = "1.28"
+variable "max_pods_per_node" {
+  description = "Maximum number of pods per node"
+  type        = number
+  default     = 110
 }
 
-variable "storage_container_name" {
-  description = "Azure Storage container name for videos"
+# Network Configuration
+variable "pod_network_cidr" {
+  description = "CIDR block for pod network"
   type        = string
-  default     = "nolift-videos"
+  default     = "10.42.0.0/16"
 }
 
+# Kubernetes Configuration
 variable "kubernetes_resources_enabled" {
   description = "Enable Kubernetes resources (namespaces, secrets, ArgoCD). Set to false for initial cluster creation, then true for second apply"
   type        = bool
@@ -77,7 +88,7 @@ variable "argocd_resources_enabled" {
 }
 
 variable "stopped" {
-  description = "When true, scales spot node pool to 0 and deletes LoadBalancer to save costs. Default node pool (nginx-ingress only) remains at 1 node."
+  description = "When true, scales worker nodes to 0 to save costs. Control plane remains running."
   type        = bool
   default     = false
 }
@@ -118,5 +129,16 @@ variable "email_domain_verified" {
   description = "Whether the email domain has been verified in Azure. Set to false initially, then true after domain verification completes."
   type        = bool
   default     = false
+}
+
+variable "monthly_budget_limit" {
+  description = "Monthly budget limit in USD for AWS cost monitoring"
+  type        = number
+  default     = 150
+}
+
+variable "budget_notification_email" {
+  description = "Email address to receive budget notifications when spend exceeds thresholds"
+  type        = string
 }
 

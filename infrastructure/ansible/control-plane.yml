@@ -1,0 +1,74 @@
+---
+- name: Setup k3s control plane node
+  hosts: localhost
+  become: yes
+  vars:
+    k3s_version: "v1.28.5+k3s1"
+    k3s_token: "{{ lookup('env', 'K3S_TOKEN') }}"
+    nlb_dns_name: "{{ lookup('env', 'NLB_DNS_NAME') }}"
+    private_ip: "{{ lookup('env', 'PRIVATE_IP') }}"
+    pod_cidr: "{{ lookup('env', 'POD_NETWORK_CIDR') }}"
+    cluster_name: "{{ lookup('env', 'CLUSTER_NAME') }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') }}"
+
+  tasks:
+    - name: Check if k3s is already installed
+      stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Check if this node is already initialized
+      stat:
+        path: /var/lib/rancher/k3s/server/node-token
+      register: k3s_initialized
+      when: k3s_binary.stat.exists
+
+    - name: Install k3s server
+      shell: |
+        curl -sfL https://get.k3s.io | sh -s - server \
+          --token="{{ k3s_token }}" \
+          --tls-san="{{ nlb_dns_name }}" \
+          --tls-san="{{ private_ip }}" \
+          --node-ip="{{ private_ip }}" \
+          --cluster-init \
+          --disable=traefik \
+          --disable=servicelb \
+          --write-kubeconfig-mode=644 \
+          --kubelet-arg="max-pods=110" \
+          --cluster-cidr="{{ pod_cidr }}" \
+          --node-label="node-role.kubernetes.io/control-plane=true" \
+          --node-taint="node-role.kubernetes.io/control-plane:NoSchedule"
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+      when: not k3s_binary.stat.exists or not k3s_initialized.stat.exists
+
+    - name: Wait for k3s to be ready
+      wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        state: present
+        timeout: 300
+
+    - name: Enable and start k3s
+      systemd:
+        name: k3s
+        enabled: yes
+        state: started
+
+    - name: Wait for node to be ready
+      shell: k3s kubectl get nodes | grep -i ready
+      register: node_ready
+      retries: 30
+      delay: 10
+      until: node_ready.rc == 0
+      changed_when: false
+
+    - name: Extract certificates from kubeconfig
+      shell: |
+        CA_CERT=$(grep certificate-authority-data /etc/rancher/k3s/k3s.yaml | awk '{print $2}')
+        CLIENT_CERT=$(grep client-certificate-data /etc/rancher/k3s/k3s.yaml | awk '{print $2}')
+        CLIENT_KEY=$(grep client-key-data /etc/rancher/k3s/k3s.yaml | awk '{print $2}')
+
+        aws ssm put-parameter --name "/{{ cluster_name }}/k3s/ca-cert" --value "$CA_CERT" --type SecureString --overwrite --region {{ aws_region }}
+        aws ssm put-parameter --name "/{{ cluster_name }}/k3s/client-cert" --value "$CLIENT_CERT" --type SecureString --overwrite --region {{ aws_region }}
+        aws ssm put-parameter --name "/{{ cluster_name }}/k3s/client-key" --value "$CLIENT_KEY" --type SecureString --overwrite --region {{ aws_region }}
+      ignore_errors: yes

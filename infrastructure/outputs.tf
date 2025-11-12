@@ -1,178 +1,148 @@
-output "cluster_id" {
-  description = "Kubernetes cluster ID"
-  value       = azurerm_kubernetes_cluster.k8s.id
-}
-
 output "cluster_name" {
-  description = "Kubernetes cluster name"
-  value       = azurerm_kubernetes_cluster.k8s.name
+  value = local.cluster_name
 }
 
 output "cluster_endpoint" {
-  description = "Kubernetes cluster endpoint"
-  value       = azurerm_kubernetes_cluster.k8s.kube_config[0].host
-  sensitive = true
+  value = "https://${aws_lb.control_plane.dns_name}:6443"
 }
 
-output "cluster_ca_certificate" {
-  description = "Kubernetes cluster CA certificate"
-  value       = azurerm_kubernetes_cluster.k8s.kube_config[0].cluster_ca_certificate
-  sensitive   = true
+output "nlb_dns_name" {
+  value = aws_lb.control_plane.dns_name
 }
 
-output "resource_group_name" {
-  description = "Resource group name"
-  value       = azurerm_resource_group.this.name
+output "control_plane_asg_name" {
+  value = aws_autoscaling_group.control_plane.name
 }
 
-output "storage_account_name" {
-  description = "Storage account name"
-  value       = azurerm_storage_account.videos.name
+output "worker_asg_name" {
+  value = aws_autoscaling_group.worker.name
 }
 
-output "storage_container_name" {
-  description = "Storage container name"
-  value       = azurerm_storage_container.videos.name
+output "vpc_id" {
+  value = aws_vpc.main.id
 }
 
-output "storage_account_endpoint" {
-  description = "Storage account blob endpoint"
-  value       = azurerm_storage_account.videos.primary_blob_endpoint
+output "public_subnet_ids" {
+  value = aws_subnet.public[*].id
 }
 
-output "storage_access_key" {
-  description = "Storage account access key"
-  value       = azurerm_storage_account.videos.primary_access_key
-  sensitive   = true
+output "s3_videos_bucket" {
+  value = aws_s3_bucket.videos.id
 }
 
-output "storage_connection_string" {
-  description = "Storage account connection string"
-  value       = azurerm_storage_account.videos.primary_connection_string
-  sensitive   = true
+output "s3_videos_bucket_arn" {
+  value = aws_s3_bucket.videos.arn
+}
+
+output "s3_videos_endpoint" {
+  value = "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
+}
+
+output "s3_ansible_bucket" {
+  value = aws_s3_bucket.ansible_playbooks.id
 }
 
 output "region" {
-  description = "Deployment region"
-  value       = var.region
+  value = var.aws_region
 }
 
 output "postgres_password" {
-  description = "PostgreSQL database password"
-  value       = var.kubernetes_resources_enabled ? random_password.postgres_password[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.postgres_password[0].result : null
+  sensitive = true
 }
 
 output "rabbitmq_password" {
-  description = "RabbitMQ password"
-  value       = var.kubernetes_resources_enabled ? random_password.rabbitmq_password[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.rabbitmq_password[0].result : null
+  sensitive = true
 }
 
 output "keycloak_client_secret" {
-  description = "Keycloak client secret"
-  value       = var.kubernetes_resources_enabled ? random_password.keycloak_client_secret[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.keycloak_client_secret[0].result : null
+  sensitive = true
 }
 
 output "keycloak_admin_password" {
-  description = "Keycloak admin password"
-  value       = var.kubernetes_resources_enabled ? random_password.keycloak_admin_password[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.keycloak_admin_password[0].result : null
+  sensitive = true
 }
 
 output "argocd_url" {
-  description = "ArgoCD UI URL"
-  value       = var.kubernetes_resources_enabled ? "https://argocd.nolift.training" : "not-yet-available"
-}
-
-output "argocd_admin_password" {
-  description = "ArgoCD admin password"
-  value       = var.kubernetes_resources_enabled ? "stored-in-k8s-secret" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://argocd.${var.domain_name}" : null
 }
 
 output "frontend_url" {
-  description = "Frontend application URL"
-  value       = var.kubernetes_resources_enabled ? "https://app.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://app.${var.domain_name}" : null
 }
 
 output "api_url" {
-  description = "API base URL"
-  value       = var.kubernetes_resources_enabled ? "https://api.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://api.${var.domain_name}" : null
 }
 
 output "auth_url" {
-  description = "Keycloak authentication URL"
-  value       = var.kubernetes_resources_enabled ? "https://auth.nolift.training" : "not-yet-available"
-}
-
-output "keycloak_url" {
-  description = "Keycloak admin console URL"
-  value       = var.kubernetes_resources_enabled ? "https://auth.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://auth.${var.domain_name}" : null
 }
 
 output "grafana_url" {
-  description = "Grafana dashboard URL"
-  value       = var.kubernetes_resources_enabled ? "https://grafana.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://grafana.${var.domain_name}" : null
 }
 
 output "grafana_admin_password" {
-  description = "Grafana admin password"
-  value       = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : null
+  sensitive = true
 }
 
 output "prometheus_url" {
-  description = "Prometheus metrics URL"
-  value       = var.kubernetes_resources_enabled ? "https://prometheus.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://prometheus.${var.domain_name}" : null
 }
 
 output "loki_url" {
-  description = "Loki logs URL"
-  value       = var.kubernetes_resources_enabled ? "https://loki.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://loki.${var.domain_name}" : null
 }
 
 output "rabbitmq_management_url" {
-  description = "RabbitMQ management console URL"
-  value       = var.kubernetes_resources_enabled ? "https://rabbitmq.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://rabbitmq.${var.domain_name}" : null
 }
 
 output "rabbitmq_management_username" {
-  description = "RabbitMQ management console username"
-  value       = "admin"
+  value = "admin"
 }
 
 output "openwebui_url" {
-  description = "OpenWebUI chat interface URL"
-  value       = var.kubernetes_resources_enabled ? "https://openwebui.nolift.training" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://openwebui.${var.domain_name}" : null
 }
 
-# DNS Outputs
-
-output "dns_zone_id" {
-  description = "Azure DNS zone ID"
-  value       = azurerm_dns_zone.main.id
+output "route53_zone_id" {
+  value = aws_route53_zone.main.zone_id
 }
 
-output "dns_zone_name" {
-  description = "Azure DNS zone name"
-  value       = azurerm_dns_zone.main.name
+output "route53_zone_name" {
+  value = aws_route53_zone.main.name
 }
 
-output "azure_nameservers" {
-  description = "Azure DNS nameservers"
-  value       = azurerm_dns_zone.main.name_servers
+output "aws_nameservers" {
+  value = aws_route53_zone.main.name_servers
 }
 
 output "domain_urls" {
-  description = "Application URLs with custom domain (if configured)"
   value = {
     frontend = "https://app.${var.domain_name}"
     api      = "https://api.${var.domain_name}"
     auth     = "https://auth.${var.domain_name}"
     grafana  = "https://grafana.${var.domain_name}"
     argocd   = "https://argocd.${var.domain_name}"
-  } 
+  }
 }
 
+output "ses_smtp_endpoint" {
+  value = "email-smtp.${var.aws_region}.amazonaws.com"
+}
 
+output "ses_smtp_username" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.ses_smtp[0].id : null
+  sensitive = true
+}
+
+output "ses_smtp_password" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4 : null
+  sensitive = true
+}

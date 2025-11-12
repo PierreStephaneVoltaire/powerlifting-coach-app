@@ -1,62 +1,81 @@
-# Azure Communication Services for Email
-
-locals {
-  azure_email_smtp_host = "smtp.azurecomm.net"
+resource "aws_ses_domain_identity" "main" {
+  domain = var.domain_name
 }
 
-resource "azurerm_email_communication_service" "this" {
-  name                = "${var.project_name}-${var.environment}-email"
-  resource_group_name = azurerm_resource_group.this.name
-  data_location       = "United States"
+resource "aws_ses_domain_dkim" "main" {
+  domain = aws_ses_domain_identity.main.domain
+}
+
+resource "aws_route53_record" "ses_verification" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "_amazonses.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 600
+  records = [aws_ses_domain_identity.main.verification_token]
+}
+
+resource "aws_route53_record" "ses_dkim" {
+  count   = 3
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "${element(aws_ses_domain_dkim.main.dkim_tokens, count.index)}._domainkey.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = 600
+  records = ["${element(aws_ses_domain_dkim.main.dkim_tokens, count.index)}.dkim.amazonses.com"]
+}
+
+resource "aws_ses_domain_mail_from" "main" {
+  domain           = aws_ses_domain_identity.main.domain
+  mail_from_domain = "mail.${var.domain_name}"
+}
+
+resource "aws_route53_record" "ses_mail_from_mx" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = aws_ses_domain_mail_from.main.mail_from_domain
+  type    = "MX"
+  ttl     = 600
+  records = ["10 feedback-smtp.${var.aws_region}.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_mail_from_txt" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = aws_ses_domain_mail_from.main.mail_from_domain
+  type    = "TXT"
+  ttl     = 600
+  records = ["v=spf1 include:amazonses.com ~all"]
+}
+
+resource "aws_iam_user" "ses_smtp" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+  name  = "${local.cluster_name}-ses-smtp"
 
   tags = {
-    environment = var.environment
-    project     = var.project_name
+    Name        = "${local.cluster_name}-ses-smtp"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
-resource "azurerm_email_communication_service_domain" "this" {
-  name                = var.domain_name
-  email_service_id    = azurerm_email_communication_service.this.id
-  domain_management   = "CustomerManaged"
-
-  tags = {
-    environment = var.environment
-    project     = var.project_name
-  }
+resource "aws_iam_access_key" "ses_smtp" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+  user  = aws_iam_user.ses_smtp[0].name
 }
 
-resource "azurerm_communication_service" "this" {
-  name                = "${var.project_name}-${var.environment}-comm"
-  resource_group_name = azurerm_resource_group.this.name
-  data_location       = "United States"
+resource "aws_iam_user_policy" "ses_smtp" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+  name  = "${local.cluster_name}-ses-smtp-policy"
+  user  = aws_iam_user.ses_smtp[0].name
 
-  tags = {
-    environment = var.environment
-    project     = var.project_name
-  }
-}
-
-# Link the email domain to the communication service
-# This requires the domain to be verified first, so it's controlled by a variable
-# Steps:
-# 1. Apply with email_domain_verified=false (creates domain and DNS records)
-# 2. Wait for Azure to verify the domain (check in Azure Portal)
-# 3. Apply with email_domain_verified=true (links the domain)
-resource "azurerm_communication_service_email_domain_association" "this" {
-  count                    = var.email_domain_verified ? 1 : 0
-  communication_service_id = azurerm_communication_service.this.id
-  email_service_domain_id  = azurerm_email_communication_service_domain.this.id
-}
-
-# Output the connection string for SMTP
-output "azure_email_connection_string" {
-  description = "Azure Communication Services connection string (use as azure_email_smtp_password)"
-  value       = azurerm_communication_service.this.primary_connection_string
-  sensitive   = true
-}
-
-output "azure_email_smtp_username" {
-  description = "SMTP username (your verified sender email)"
-  value       = "noreply@${var.domain_name}"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
