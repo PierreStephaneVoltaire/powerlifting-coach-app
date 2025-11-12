@@ -19,7 +19,7 @@ resource "kubernetes_secret" "openwebui_config" {
   }
 
   data = {
-    OPENAI_API_KEY = var.openai_api_key 
+    OPENAI_API_KEY   = var.openai_api_key
     WEBUI_SECRET_KEY = random_password.openwebui_secret[0].result
   }
 
@@ -227,7 +227,7 @@ resource "helm_release" "openwebui" {
 
   set {
     name  = "ollama.enabled"
-    value = "false"  
+    value = "false"
   }
 
   set {
@@ -242,22 +242,17 @@ resource "helm_release" "openwebui" {
 
   set {
     name  = "env.OPENAI_API_BASE_URL"
-    value = var.litellm_endpoint 
+    value = var.litellm_endpoint
   }
-
-  # set {
-  #   name  = "env.DEFAULT_MODELS"
-  #   value = "gpt-4,gpt-3.5-turbo,claude-3-sonnet"
-  # }
 
   set {
     name  = "env.ENABLE_SIGNUP"
-    value = "false" 
+    value = "false"
   }
 
   set {
     name  = "env.ENABLE_LOGIN_FORM"
-    value = "false"  
+    value = "false"
   }
 
   set {
@@ -290,10 +285,40 @@ resource "helm_release" "openwebui" {
     value = "1000m"
   }
 
+  set {
+    name  = "extraEnvVars[0].name"
+    value = "OPENAI_API_KEY"
+  }
+
+  set {
+    name  = "extraEnvVars[0].valueFrom.secretKeyRef.name"
+    value = kubernetes_secret.openwebui_config[0].metadata[0].name
+  }
+
+  set {
+    name  = "extraEnvVars[0].valueFrom.secretKeyRef.key"
+    value = "OPENAI_API_KEY"
+  }
+
+  set {
+    name  = "extraEnvVars[1].name"
+    value = "WEBUI_SECRET_KEY"
+  }
+
+  set {
+    name  = "extraEnvVars[1].valueFrom.secretKeyRef.name"
+    value = kubernetes_secret.openwebui_config[0].metadata[0].name
+  }
+
+  set {
+    name  = "extraEnvVars[1].valueFrom.secretKeyRef.key"
+    value = "WEBUI_SECRET_KEY"
+  }
+
   timeout = 15 * 60
   depends_on = [
-    azurerm_kubernetes_cluster.k8s,
-    kubernetes_namespace.openwebui
+    kubernetes_namespace.openwebui,
+    kubernetes_secret.openwebui_config
   ]
 }
 
@@ -310,7 +335,7 @@ resource "kubernetes_service" "openwebui" {
 
   spec {
     selector = {
-      "app.kubernetes.io/name" = "open-webui"
+      "app.kubernetes.io/name"     = "open-webui"
       "app.kubernetes.io/instance" = "openwebui"
     }
 
@@ -345,12 +370,12 @@ resource "kubernetes_ingress_v1" "openwebui" {
 
   spec {
     tls {
-      hosts       = ["openwebui.nolift.training"]
+      hosts       = ["openwebui.${var.domain_name}"]
       secret_name = "openwebui-tls"
     }
 
     rule {
-      host = "openwebui.nolift.training"
+      host = "openwebui.${var.domain_name}"
 
       http {
         path {
@@ -372,6 +397,6 @@ resource "kubernetes_ingress_v1" "openwebui" {
 
   depends_on = [
     kubernetes_service.openwebui,
-    data.kubernetes_service.nginx_ingress
+    helm_release.nginx_ingress
   ]
 }
