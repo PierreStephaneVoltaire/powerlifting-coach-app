@@ -237,11 +237,6 @@ resource "aws_autoscaling_group" "control_plane" {
         instance_type     = "t3.small"
         weighted_capacity = "1"
       }
-
-      override {
-        instance_type     = "t4g.small"
-        weighted_capacity = "3"
-      }
     }
   }
 
