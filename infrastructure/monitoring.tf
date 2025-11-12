@@ -1,28 +1,16 @@
-resource "kubernetes_namespace" "monitoring" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-
-  metadata {
-    name = "monitoring"
-    labels = {
-      name        = "monitoring"
-      environment = var.environment
-    }
-  }
-}
-
 resource "random_password" "grafana_admin_password" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && var.monitoring_stack_enabled ? 1 : 0
 
   length  = 32
   special = true
 }
 
 resource "kubernetes_secret" "grafana_secrets" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && var.monitoring_stack_enabled ? 1 : 0
 
   metadata {
     name      = "grafana-secrets"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+    namespace = kubernetes_namespace.app[0].metadata[0].name
   }
 
   data = {
@@ -33,11 +21,11 @@ resource "kubernetes_secret" "grafana_secrets" {
 }
 
 resource "kubernetes_ingress_v1" "grafana" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && var.monitoring_stack_enabled ? 1 : 0
 
   metadata {
     name      = "grafana-ingress"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+    namespace = kubernetes_namespace.app[0].metadata[0].name
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
@@ -72,17 +60,17 @@ resource "kubernetes_ingress_v1" "grafana" {
   }
 
   depends_on = [
-    kubernetes_namespace.monitoring,
+    kubernetes_namespace.app,
     data.kubernetes_service.nginx_ingress
   ]
 }
 
 resource "kubernetes_ingress_v1" "prometheus" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && var.monitoring_stack_enabled ? 1 : 0
 
   metadata {
     name      = "prometheus-ingress"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+    namespace = kubernetes_namespace.app[0].metadata[0].name
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
@@ -117,17 +105,17 @@ resource "kubernetes_ingress_v1" "prometheus" {
   }
 
   depends_on = [
-    kubernetes_namespace.monitoring,
+    kubernetes_namespace.app,
     data.kubernetes_service.nginx_ingress
   ]
 }
 
 resource "kubernetes_ingress_v1" "loki" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && var.monitoring_stack_enabled ? 1 : 0
 
   metadata {
     name      = "loki-ingress"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+    namespace = kubernetes_namespace.app[0].metadata[0].name
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
@@ -162,7 +150,7 @@ resource "kubernetes_ingress_v1" "loki" {
   }
 
   depends_on = [
-    kubernetes_namespace.monitoring,
+    kubernetes_namespace.app,
     data.kubernetes_service.nginx_ingress
   ]
 }

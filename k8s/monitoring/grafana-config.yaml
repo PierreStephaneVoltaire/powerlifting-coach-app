@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-datasources
-  namespace: monitoring
+  namespace: app
 data:
   datasources.yaml: |
     apiVersion: 1
@@ -22,7 +22,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-dashboard-providers
-  namespace: monitoring
+  namespace: app
 data:
   dashboards.yaml: |
     apiVersion: 1
@@ -41,7 +41,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-dashboards
-  namespace: monitoring
+  namespace: app
 data:
   powerlifting-coach-overview.json: |
     {
@@ -111,7 +111,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
-  namespace: monitoring
+  namespace: app
   labels:
     app: grafana
 spec:
@@ -172,7 +172,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grafana
-  namespace: monitoring
+  namespace: app
 spec:
   selector:
     app: grafana
@@ -186,7 +186,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: grafana-pvc
-  namespace: monitoring
+  namespace: app
 spec:
   accessModes:
     - ReadWriteOnce
@@ -199,7 +199,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: grafana-secrets
-  namespace: monitoring
+  namespace: app
 type: Opaque
 data:
   admin-password: YWRtaW4xMjM= # admin123 base64 encoded

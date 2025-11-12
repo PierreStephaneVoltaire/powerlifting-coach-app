@@ -164,3 +164,49 @@ resource "kubernetes_manifest" "app" {
     azurerm_kubernetes_cluster.k8s
   ]
 }
+
+resource "kubernetes_manifest" "monitoring_app" {
+  count = var.kubernetes_resources_enabled && var.argocd_resources_enabled && var.monitoring_stack_enabled ? 1 : 0
+
+  field_manager {
+    force_conflicts = true
+  }
+
+  manifest = {
+    "apiVersion" = "argoproj.io/v1alpha1"
+    "kind"       = "Application"
+    "metadata" = {
+      "name"      = "${var.project_name}-monitoring"
+      "namespace" = kubernetes_namespace.argocd[0].metadata[0].name
+    }
+    "spec" = {
+      "project" = "default"
+
+      "source" = {
+        "repoURL"        = "https://github.com/PierreStephaneVoltaire/powerlifting-coach-app"
+        "path"           = "./k8s/monitoring"
+        "targetRevision" = "HEAD"
+      }
+
+      "destination" = {
+        "server"    = "https://kubernetes.default.svc"
+        "namespace" = "app"
+      }
+
+      "syncPolicy" = {
+        "automated" = {
+          "prune"    = true
+          "selfHeal" = true
+        }
+        "syncOptions" = [
+          "CreateNamespace=true"
+        ]
+      }
+    }
+  }
+  depends_on = [
+    helm_release.argocd,
+    azurerm_kubernetes_cluster.k8s,
+    kubernetes_secret.grafana_secrets
+  ]
+}

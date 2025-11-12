@@ -115,3 +115,9 @@ variable "google_oauth_client_secret" {
   default     = ""
 }
 
+variable "monitoring_stack_enabled" {
+  description = "Enable monitoring stack (Prometheus, Grafana, Loki) deployment via ArgoCD"
+  type        = bool
+  default     = false
+}
+
