@@ -37,11 +37,11 @@ resource "aws_launch_template" "worker" {
     resource_type = "instance"
 
     tags = {
-      Name                                          = "${local.cluster_name}-worker"
-      Environment                                   = var.environment
-      Project                                       = var.project_name
-      Role                                          = "worker"
-      "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+      Name              = "${local.cluster_name}-worker"
+      Environment       = var.environment
+      Project           = var.project_name
+      Role              = "worker"
+      KubernetesCluster = local.cluster_name
     }
   }
 
@@ -150,8 +150,8 @@ resource "aws_autoscaling_group" "worker" {
   }
 
   tag {
-    key                 = "kubernetes.io/cluster/${local.cluster_name}"
-    value               = "owned"
+    key                 = "KubernetesCluster"
+    value               = local.cluster_name
     propagate_at_launch = true
   }
 

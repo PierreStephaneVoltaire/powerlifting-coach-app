@@ -9,8 +9,8 @@ resource "aws_budgets_budget" "monthly_cost" {
   cost_filter {
     name = "TagKeyValue"
     values = [
-      "Project$$${var.project_name}",
-      "Environment$$${var.environment}"
+      "Project$${var.project_name}",
+      "Environment$${var.environment}"
     ]
   }
 

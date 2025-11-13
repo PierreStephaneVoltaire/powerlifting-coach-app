@@ -21,7 +21,7 @@ variable "environment" {
 variable "control_plane_instance_type" {
   description = "EC2 instance type for control plane nodes (will use spot instances)"
   type        = string
-  default     = "t3a.small"
+  default     = "t3.small"
 }
 
 variable "control_plane_volume_size" {
@@ -34,7 +34,7 @@ variable "control_plane_volume_size" {
 variable "worker_instance_type" {
   description = "EC2 instance type for worker nodes (will use spot instances)"
   type        = string
-  default     = "t3a.medium"
+  default     = "t3.medium"
 }
 
 variable "worker_volume_size" {

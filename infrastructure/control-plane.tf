@@ -156,11 +156,11 @@ resource "aws_launch_template" "control_plane" {
     resource_type = "instance"
 
     tags = {
-      Name                                          = "${local.cluster_name}-control-plane"
-      Environment                                   = var.environment
-      Project                                       = var.project_name
-      Role                                          = "control-plane"
-      "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+      Name              = "${local.cluster_name}-control-plane"
+      Environment       = var.environment
+      Project           = var.project_name
+      Role              = "control-plane"
+      KubernetesCluster = local.cluster_name
     }
   }
 
@@ -229,12 +229,7 @@ resource "aws_autoscaling_group" "control_plane" {
       }
 
       override {
-        instance_type     = "t3a.small"
-        weighted_capacity = "2"
-      }
-
-      override {
-        instance_type     = "t3.small"
+        instance_type     = "t3.medium"
         weighted_capacity = "1"
       }
     }
@@ -265,8 +260,8 @@ resource "aws_autoscaling_group" "control_plane" {
   }
 
   tag {
-    key                 = "kubernetes.io/cluster/${local.cluster_name}"
-    value               = "owned"
+    key                 = "KubernetesCluster"
+    value               = local.cluster_name
     propagate_at_launch = true
   }
 

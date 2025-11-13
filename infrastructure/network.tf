@@ -6,10 +6,10 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
 
   tags = {
-    Name        = "${local.cluster_name}-vpc"
-    Environment = var.environment
-    Project     = var.project_name
-    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+    Name              = "${local.cluster_name}-vpc"
+    Environment       = var.environment
+    Project           = var.project_name
+    KubernetesCluster = local.cluster_name
   }
 }
 
@@ -38,12 +38,12 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name        = "${local.cluster_name}-public-${count.index + 1}"
-    Environment = var.environment
-    Project     = var.project_name
-    Type        = "public"
-    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
-    "kubernetes.io/role/elb"                      = "1"
+    Name              = "${local.cluster_name}-public-${count.index + 1}"
+    Environment       = var.environment
+    Project           = var.project_name
+    Type              = "public"
+    KubernetesCluster = local.cluster_name
+    KubernetesRole    = "elb"
   }
 }
 
