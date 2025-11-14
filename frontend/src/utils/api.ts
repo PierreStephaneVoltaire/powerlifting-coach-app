@@ -472,3 +472,6 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+// Why: Re-export for dev mode support - wrapper handles routing to fake data
+export { api } from './apiWrapper';
