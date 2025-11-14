@@ -20,6 +20,11 @@ import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { ExerciseLibraryPage } from '@/pages/ExerciseLibraryPage';
 import { WorkoutHistoryPage } from '@/pages/WorkoutHistoryPage';
 import { CompPrepPage } from '@/pages/CompPrepPage';
+import { CoachDirectoryPage } from '@/pages/CoachDirectoryPage';
+import { CoachProfilePage } from '@/pages/CoachProfilePage';
+import { RelationshipManagerPage } from '@/pages/RelationshipManagerPage';
+import { AthleteProfilePage } from '@/pages/AthleteProfilePage';
+import { PrivacySettingsPage } from '@/pages/PrivacySettingsPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -61,6 +66,11 @@ function App() {
               <Route path="/exercises" element={<ExerciseLibraryPage />} />
               <Route path="/history" element={<WorkoutHistoryPage />} />
               <Route path="/comp-prep" element={<CompPrepPage />} />
+              <Route path="/coaches" element={<CoachDirectoryPage />} />
+              <Route path="/coaches/:coachId" element={<CoachProfilePage />} />
+              <Route path="/relationships" element={<RelationshipManagerPage />} />
+              <Route path="/athletes/:athleteId" element={<AthleteProfilePage />} />
+              <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
               <Route path="/dm/*" element={<DMPage />} />
               <Route path="/tools" element={<ToolsPage />} />
               <Route path="/" element={<Navigate to="/feed" replace />} />
