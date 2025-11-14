@@ -103,18 +103,18 @@ jobs:
       - name: Get latest tag
         id: get-tag
         run: |
-          # Get the latest tag that matches shared-v*.*.* pattern
-          LATEST_TAG=$(git tag -l "shared-v*.*.*" | sort -V | tail -1)
+          # Get the latest tag that matches shared/v*.*.* pattern
+          LATEST_TAG=$(git tag -l "shared/v*.*.*" | sort -V | tail -1)
 
           if [ -z "$LATEST_TAG" ]; then
             # No existing tag, start with v1.0.0
-            NEW_TAG="shared-v1.0.0"
+            NEW_TAG="shared/v1.0.0"
           else
             # Parse version and bump patch
-            VERSION=${LATEST_TAG#shared-v}
+            VERSION=${LATEST_TAG#shared/v}
             IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
             PATCH=$((PATCH + 1))
-            NEW_TAG="shared-v${MAJOR}.${MINOR}.${PATCH}"
+            NEW_TAG="shared/v${MAJOR}.${MINOR}.${PATCH}"
           fi
 
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
