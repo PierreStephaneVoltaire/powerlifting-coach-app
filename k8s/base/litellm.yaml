@@ -34,7 +34,7 @@ metadata:
   labels:
     app: litellm
 spec:
-  replicas: 0
+  replicas: 1  # Will be patched to 0 if ai_features_enabled=false
   selector:
     matchLabels:
       app: litellm
