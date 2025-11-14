@@ -171,3 +171,99 @@ type CoachDashboard struct {
 	TotalAthletes       int                 `json:"total_athletes"`
 	UnreadNotifications int                 `json:"unread_notifications"`
 }
+
+type RelationshipStatus string
+
+const (
+	StatusPending    RelationshipStatus = "pending"
+	StatusActive     RelationshipStatus = "active"
+	StatusTerminated RelationshipStatus = "terminated"
+)
+
+type CoachAthleteRelationship struct {
+	ID                 uuid.UUID          `json:"id" db:"id"`
+	CoachID            uuid.UUID          `json:"coach_id" db:"coach_id"`
+	AthleteID          uuid.UUID          `json:"athlete_id" db:"athlete_id"`
+	Status             RelationshipStatus `json:"status" db:"status"`
+	RequestMessage     *string            `json:"request_message" db:"request_message"`
+	RequestedAt        time.Time          `json:"requested_at" db:"requested_at"`
+	AcceptedAt         *time.Time         `json:"accepted_at" db:"accepted_at"`
+	TerminatedAt       *time.Time         `json:"terminated_at" db:"terminated_at"`
+	TerminatedBy       *uuid.UUID         `json:"terminated_by" db:"terminated_by"`
+	TerminationReason  *string            `json:"termination_reason" db:"termination_reason"`
+	CooldownUntil      *time.Time         `json:"cooldown_until" db:"cooldown_until"`
+	CreatedAt          time.Time          `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time          `json:"updated_at" db:"updated_at"`
+}
+
+type CoachCertification struct {
+	ID                      uuid.UUID  `json:"id" db:"id"`
+	CoachID                 uuid.UUID  `json:"coach_id" db:"coach_id"`
+	CertificationName       string     `json:"certification_name" db:"certification_name"`
+	IssuingOrganization     *string    `json:"issuing_organization" db:"issuing_organization"`
+	IssueDate               *time.Time `json:"issue_date" db:"issue_date"`
+	ExpiryDate              *time.Time `json:"expiry_date" db:"expiry_date"`
+	VerificationStatus      string     `json:"verification_status" db:"verification_status"`
+	VerificationDocumentURL *string    `json:"verification_document_url" db:"verification_document_url"`
+	CreatedAt               time.Time  `json:"created_at" db:"created_at"`
+}
+
+type CoachSuccessStory struct {
+	ID              uuid.UUID  `json:"id" db:"id"`
+	CoachID         uuid.UUID  `json:"coach_id" db:"coach_id"`
+	AthleteName     *string    `json:"athlete_name" db:"athlete_name"`
+	Achievement     string     `json:"achievement" db:"achievement"`
+	CompetitionName *string    `json:"competition_name" db:"competition_name"`
+	CompetitionDate *time.Time `json:"competition_date" db:"competition_date"`
+	TotalKg         *float64   `json:"total_kg" db:"total_kg"`
+	WeightClass     *string    `json:"weight_class" db:"weight_class"`
+	Federation      *string    `json:"federation" db:"federation"`
+	Placement       *int       `json:"placement" db:"placement"`
+	IsPublic        bool       `json:"is_public" db:"is_public"`
+	CreatedAt       time.Time  `json:"created_at" db:"created_at"`
+}
+
+type CoachProfile struct {
+	ID              uuid.UUID            `json:"id"`
+	UserID          uuid.UUID            `json:"user_id"`
+	Name            string               `json:"name"`
+	Email           string               `json:"email"`
+	Bio             *string              `json:"bio"`
+	Certifications  []CoachCertification `json:"certifications"`
+	SuccessStories  []CoachSuccessStory  `json:"success_stories"`
+	TotalAthletes   int                  `json:"total_athletes"`
+	CreatedAt       time.Time            `json:"created_at"`
+}
+
+type SendRelationshipRequestRequest struct {
+	CoachID        uuid.UUID `json:"coach_id" binding:"required"`
+	RequestMessage *string   `json:"request_message"`
+}
+
+type AcceptRelationshipRequest struct {
+}
+
+type TerminateRelationshipRequest struct {
+	TerminationReason *string `json:"termination_reason"`
+	CooldownDays      *int    `json:"cooldown_days"`
+}
+
+type CreateCertificationRequest struct {
+	CertificationName       string     `json:"certification_name" binding:"required"`
+	IssuingOrganization     *string    `json:"issuing_organization"`
+	IssueDate               *time.Time `json:"issue_date"`
+	ExpiryDate              *time.Time `json:"expiry_date"`
+	VerificationDocumentURL *string    `json:"verification_document_url"`
+}
+
+type CreateSuccessStoryRequest struct {
+	AthleteName     *string    `json:"athlete_name"`
+	Achievement     string     `json:"achievement" binding:"required"`
+	CompetitionName *string    `json:"competition_name"`
+	CompetitionDate *time.Time `json:"competition_date"`
+	TotalKg         *float64   `json:"total_kg"`
+	WeightClass     *string    `json:"weight_class"`
+	Federation      *string    `json:"federation"`
+	Placement       *int       `json:"placement"`
+	IsPublic        bool       `json:"is_public"`
+}

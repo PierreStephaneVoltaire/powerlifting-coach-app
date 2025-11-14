@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '@/utils/api';
-import { WorkoutDialog } from './WorkoutDialog';
+import { EnhancedWorkoutDialog } from './EnhancedWorkoutDialog';
 
 interface ProgramOverviewProps {
   program: any;
@@ -237,7 +237,7 @@ export const ProgramOverview: React.FC<ProgramOverviewProps> = ({ program, onRef
 
       {/* Workout Dialog */}
       {selectedSession && (
-        <WorkoutDialog
+        <EnhancedWorkoutDialog
           session={selectedSession}
           onClose={() => setSelectedSession(null)}
           onComplete={() => {

@@ -547,6 +547,244 @@ func (h *CoachHandlers) GetDashboard(c *gin.Context) {
 	c.JSON(http.StatusOK, dashboard)
 }
 
+func (h *CoachHandlers) SendRelationshipRequest(c *gin.Context) {
+	var req models.SendRelationshipRequestRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	athleteUUID, _ := uuid.Parse(userID)
+
+	relationship := &models.CoachAthleteRelationship{
+		CoachID:        req.CoachID,
+		AthleteID:      athleteUUID,
+		RequestMessage: req.RequestMessage,
+	}
+
+	if err := h.coachRepo.SendRelationshipRequest(relationship); err != nil {
+		log.Error().Err(err).Msg("Failed to send relationship request")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send relationship request"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, relationship)
+}
+
+func (h *CoachHandlers) AcceptRelationshipRequest(c *gin.Context) {
+	relationshipIDStr := c.Param("id")
+	relationshipID, err := uuid.Parse(relationshipIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid relationship ID"})
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	acceptedBy, _ := uuid.Parse(userID)
+
+	if err := h.coachRepo.AcceptRelationshipRequest(relationshipID, acceptedBy); err != nil {
+		log.Error().Err(err).Msg("Failed to accept relationship request")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	relationship, err := h.coachRepo.GetRelationshipByID(relationshipID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get updated relationship")
+		c.JSON(http.StatusOK, gin.H{"message": "Relationship accepted"})
+		return
+	}
+
+	c.JSON(http.StatusOK, relationship)
+}
+
+func (h *CoachHandlers) TerminateRelationship(c *gin.Context) {
+	relationshipIDStr := c.Param("id")
+	relationshipID, err := uuid.Parse(relationshipIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid relationship ID"})
+		return
+	}
+
+	var req models.TerminateRelationshipRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	terminatedBy, _ := uuid.Parse(userID)
+
+	if err := h.coachRepo.TerminateRelationship(relationshipID, terminatedBy, req.TerminationReason, req.CooldownDays); err != nil {
+		log.Error().Err(err).Msg("Failed to terminate relationship")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Relationship terminated"})
+}
+
+func (h *CoachHandlers) GetMyRelationships(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	userType := middleware.GetUserType(c)
+	userUUID, _ := uuid.Parse(userID)
+
+	statusStr := c.Query("status")
+	var status *models.RelationshipStatus
+	if statusStr != "" {
+		s := models.RelationshipStatus(statusStr)
+		status = &s
+	}
+
+	var relationships []models.CoachAthleteRelationship
+	var err error
+
+	if userType == "coach" {
+		relationships, err = h.coachRepo.GetRelationshipsByCoachID(userUUID, status)
+	} else {
+		relationships, err = h.coachRepo.GetRelationshipsByAthleteID(userUUID, status)
+	}
+
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get relationships")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get relationships"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"relationships": relationships})
+}
+
+func (h *CoachHandlers) GetRelationship(c *gin.Context) {
+	relationshipIDStr := c.Param("id")
+	relationshipID, err := uuid.Parse(relationshipIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid relationship ID"})
+		return
+	}
+
+	relationship, err := h.coachRepo.GetRelationshipByID(relationshipID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get relationship")
+		c.JSON(http.StatusNotFound, gin.H{"error": "Relationship not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, relationship)
+}
+
+func (h *CoachHandlers) CreateCertification(c *gin.Context) {
+	var req models.CreateCertificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	userType := middleware.GetUserType(c)
+
+	if userType != "coach" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only coaches can add certifications"})
+		return
+	}
+
+	coachUUID, _ := uuid.Parse(userID)
+
+	cert := &models.CoachCertification{
+		CoachID:                 coachUUID,
+		CertificationName:       req.CertificationName,
+		IssuingOrganization:     req.IssuingOrganization,
+		IssueDate:               req.IssueDate,
+		ExpiryDate:              req.ExpiryDate,
+		VerificationDocumentURL: req.VerificationDocumentURL,
+	}
+
+	if err := h.coachRepo.CreateCertification(cert); err != nil {
+		log.Error().Err(err).Msg("Failed to create certification")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create certification"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, cert)
+}
+
+func (h *CoachHandlers) GetCertifications(c *gin.Context) {
+	coachIDStr := c.Param("coach_id")
+	coachID, err := uuid.Parse(coachIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid coach ID"})
+		return
+	}
+
+	certs, err := h.coachRepo.GetCertificationsByCoachID(coachID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get certifications")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get certifications"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"certifications": certs})
+}
+
+func (h *CoachHandlers) CreateSuccessStory(c *gin.Context) {
+	var req models.CreateSuccessStoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	userType := middleware.GetUserType(c)
+
+	if userType != "coach" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only coaches can add success stories"})
+		return
+	}
+
+	coachUUID, _ := uuid.Parse(userID)
+
+	story := &models.CoachSuccessStory{
+		CoachID:         coachUUID,
+		AthleteName:     req.AthleteName,
+		Achievement:     req.Achievement,
+		CompetitionName: req.CompetitionName,
+		CompetitionDate: req.CompetitionDate,
+		TotalKg:         req.TotalKg,
+		WeightClass:     req.WeightClass,
+		Federation:      req.Federation,
+		Placement:       req.Placement,
+		IsPublic:        req.IsPublic,
+	}
+
+	if err := h.coachRepo.CreateSuccessStory(story); err != nil {
+		log.Error().Err(err).Msg("Failed to create success story")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create success story"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, story)
+}
+
+func (h *CoachHandlers) GetSuccessStories(c *gin.Context) {
+	coachIDStr := c.Param("coach_id")
+	coachID, err := uuid.Parse(coachIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid coach ID"})
+		return
+	}
+
+	publicOnly := c.Query("public_only") == "true"
+
+	stories, err := h.coachRepo.GetSuccessStoriesByCoachID(coachID, publicOnly)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get success stories")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get success stories"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success_stories": stories})
+}
+
 func (h *CoachHandlers) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "healthy",
