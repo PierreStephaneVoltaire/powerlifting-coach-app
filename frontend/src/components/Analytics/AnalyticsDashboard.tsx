@@ -60,17 +60,17 @@ export const AnalyticsDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Training Analytics</h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Training Analytics</h1>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Time Range</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Range</label>
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
@@ -81,11 +81,11 @@ export const AnalyticsDashboard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Lift Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Lift Type</label>
             <select
               value={selectedLift}
               onChange={(e) => setSelectedLift(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
             >
               <option value="all">All Lifts</option>
               <option value="squat">Squat</option>
@@ -104,66 +104,66 @@ export const AnalyticsDashboard: React.FC = () => {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Total Volume</h3>
-              <p className="text-3xl font-bold text-gray-900">{calculateTotalVolume()} kg</p>
-              <p className="text-sm text-gray-500 mt-1">Last {timeRange} days</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Volume</h3>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{calculateTotalVolume()} kg</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Last {timeRange} days</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Max Estimated 1RM</h3>
-              <p className="text-3xl font-bold text-gray-900">{calculateMaxE1RM()} kg</p>
-              <p className="text-sm text-gray-500 mt-1">Based on working sets</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Max Estimated 1RM</h3>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{calculateMaxE1RM()} kg</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Based on working sets</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Average RPE</h3>
-              <p className="text-3xl font-bold text-gray-900">{calculateAverageRPE()}</p>
-              <p className="text-sm text-gray-500 mt-1">Across all sessions</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Average RPE</h3>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{calculateAverageRPE()}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Across all sessions</p>
             </div>
           </div>
 
           {/* Charts */}
           <div className="space-y-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold mb-4">Volume Over Time</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Volume Over Time</h2>
               <VolumeChart data={volumeData} />
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold mb-4">Estimated 1RM Progression</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Estimated 1RM Progression</h2>
               <E1RMChart data={e1rmData} />
             </div>
           </div>
 
           {/* Exercise Breakdown */}
-          <div className="bg-white rounded-lg shadow p-6 mt-8">
-            <h2 className="text-xl font-bold mb-4">Exercise Breakdown</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Exercise Breakdown</h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Exercise
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Total Sets
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Total Reps
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Volume (kg)
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Avg Weight
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Avg RPE
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {volumeData
                     .reduce((acc: any[], curr) => {
                       const existing = acc.find(item => item.exercise_name === curr.exercise_name);
@@ -193,22 +193,22 @@ export const AnalyticsDashboard: React.FC = () => {
                     }, [])
                     .map((exercise: any) => (
                       <tr key={exercise.exercise_name}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                           {exercise.exercise_name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {exercise.total_sets}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {exercise.total_reps}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {exercise.total_volume.toFixed(0)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {exercise.avg_weight.toFixed(1)} kg
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {exercise.rpe_count > 0 ? (exercise.total_rpe / exercise.rpe_count).toFixed(1) : 'N/A'}
                         </td>
                       </tr>

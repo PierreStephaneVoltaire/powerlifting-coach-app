@@ -264,22 +264,22 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
   if (!isStarted) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-2xl w-full p-6">
-          <h2 className="text-2xl font-bold mb-4">{session.session_name}</h2>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{session.session_name}</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             📅 {new Date(session.scheduled_date).toLocaleDateString()}
           </p>
 
           <div className="mb-6">
-            <h3 className="font-semibold mb-3">Exercises ({session.exercises?.length || 0})</h3>
+            <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Exercises ({session.exercises?.length || 0})</h3>
             <div className="space-y-2">
               {session.exercises?.map((ex: any, idx: number) => (
-                <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded">
                   <div className="flex-1">
-                    <div className="font-medium">{ex.name}</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="font-medium text-gray-900 dark:text-white">{ex.name}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       {ex.sets}×{ex.reps} @ {ex.intensity || `RPE ${ex.rpe}`}
-                      {ex.notes && <span className="ml-2 text-gray-500">• {ex.notes}</span>}
+                      {ex.notes && <span className="ml-2 text-gray-500 dark:text-gray-500">• {ex.notes}</span>}
                     </div>
                   </div>
                 </div>
@@ -290,7 +290,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
             >
               Cancel
             </button>
@@ -308,17 +308,17 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-bold">{session.session_name}</h2>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{session.session_name}</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Exercise {currentExerciseIdx + 1} of {exercises.length}
               </p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -326,7 +326,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+          <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all"
               style={{
@@ -342,12 +342,12 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
             <div>
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900">{currentExercise.name}</h3>
-                  <p className="text-gray-600 mt-1">
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{currentExercise.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">
                     Target: {currentExercise.sets}×{currentExercise.reps} @ {currentExercise.intensity || `RPE ${currentExercise.rpe}`}
                   </p>
                   {currentExercise.notes && (
-                    <p className="text-sm text-gray-500 mt-2">💡 {currentExercise.notes}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">💡 {currentExercise.notes}</p>
                   )}
                 </div>
 
@@ -371,11 +371,11 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
 
               {/* Exercise Notes */}
               <div className="mb-4">
-                <label className="text-sm text-gray-600 block mb-1">Exercise Notes</label>
+                <label className="text-sm text-gray-600 dark:text-gray-400 block mb-1">Exercise Notes</label>
                 <textarea
                   value={exerciseNotes}
                   onChange={(e) => setExerciseNotes(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded text-sm"
                   placeholder="How did this exercise feel? Any technique notes..."
                   rows={2}
                 />
@@ -387,21 +387,21 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                   <div
                     key={setLog.set_number}
                     className={`border-2 rounded-lg p-4 ${
-                      setLog.completed ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                      setLog.completed ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700'
                     }`}
                   >
                     <div className="flex items-center gap-4 mb-2">
                       <div className="w-16 text-center">
-                        <div className="font-semibold text-gray-700">Set {setLog.set_number}</div>
+                        <div className="font-semibold text-gray-700 dark:text-gray-300">Set {setLog.set_number}</div>
                       </div>
 
                       {/* Set Type Selector */}
                       <div className="flex-1">
-                        <label className="text-xs text-gray-600 block mb-1">Type</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Type</label>
                         <select
                           value={setLog.set_type}
                           onChange={(e) => updateSetLog(setLog.set_number, 'set_type', e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded text-sm"
                         >
                           {SET_TYPES.map(type => (
                             <option key={type.value} value={type.value}>{type.label}</option>
@@ -410,30 +410,30 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                       </div>
 
                       <div className="flex-1">
-                        <label className="text-xs text-gray-600 block mb-1">Weight (kg)</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Weight (kg)</label>
                         <input
                           type="number"
                           step="0.5"
                           value={setLog.weight_kg || ''}
                           onChange={(e) => updateSetLog(setLog.set_number, 'weight_kg', parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded"
                           placeholder="0"
                         />
                       </div>
 
                       <div className="flex-1">
-                        <label className="text-xs text-gray-600 block mb-1">Reps</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Reps</label>
                         <input
                           type="number"
                           value={setLog.reps_completed || ''}
                           onChange={(e) => updateSetLog(setLog.set_number, 'reps_completed', parseInt(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded"
                           placeholder="0"
                         />
                       </div>
 
                       <div className="flex-1">
-                        <label className="text-xs text-gray-600 block mb-1">RPE</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">RPE</label>
                         <input
                           type="number"
                           step="0.5"
@@ -441,7 +441,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                           max="10"
                           value={setLog.rpe_actual || ''}
                           onChange={(e) => updateSetLog(setLog.set_number, 'rpe_actual', parseFloat(e.target.value) || undefined)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded"
                           placeholder="6.5"
                         />
                       </div>
@@ -451,7 +451,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                         className={`px-4 py-2 rounded font-medium ${
                           setLog.completed
                             ? 'bg-green-600 text-white hover:bg-green-700'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                         }`}
                       >
                         {setLog.completed ? '✓ Done' : 'Mark Complete'}
@@ -464,7 +464,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                         type="text"
                         value={setLog.notes || ''}
                         onChange={(e) => updateSetLog(setLog.set_number, 'notes', e.target.value)}
-                        className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                        className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded text-sm"
                         placeholder="Set notes (e.g., felt heavy, good bar speed, etc.)"
                       />
                     </div>
@@ -476,12 +476,12 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
         </div>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <div className="flex justify-between items-center">
             <button
               onClick={() => setCurrentExerciseIdx(Math.max(0, currentExerciseIdx - 1))}
               disabled={currentExerciseIdx === 0}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-white dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
             >
               ← Previous Exercise
             </button>
@@ -505,7 +505,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
 
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-gray-600 block mb-1">Overall RPE (1-10)</label>
+              <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Overall RPE (1-10)</label>
               <input
                 type="number"
                 step="0.5"
@@ -513,17 +513,17 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                 max="10"
                 value={rpeRating}
                 onChange={(e) => setRpeRating(parseFloat(e.target.value) || '')}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded"
                 placeholder="How hard was this workout?"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-600 block mb-1">Workout Notes</label>
+              <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Workout Notes</label>
               <input
                 type="text"
                 value={workoutNotes}
                 onChange={(e) => setWorkoutNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded"
                 placeholder="How did you feel?"
               />
             </div>
@@ -534,15 +534,15 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
       {/* Warmup Generator Modal */}
       {showWarmupGenerator && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">Generate Warm-up Sets</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Generate Warm-up Sets</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Enter a working weight for the first working set, then click generate to create progressive warm-up sets.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowWarmupGenerator(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
               >
                 Cancel
               </button>

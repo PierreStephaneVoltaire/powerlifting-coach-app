@@ -10,12 +10,14 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
+import { useTheme } from '@/context/ThemeContext';
 
 interface E1RMChartProps {
   data: any[];
 }
 
 export const E1RMChart: React.FC<E1RMChartProps> = ({ data }) => {
+  const { theme } = useTheme();
   // Group by exercise and date, taking the max e1RM for each day
   const groupedData = data.reduce((acc: any, curr) => {
     const dateStr = format(new Date(curr.date), 'MMM dd');
@@ -64,35 +66,45 @@ export const E1RMChart: React.FC<E1RMChartProps> = ({ data }) => {
 
   if (combinedData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
         No e1RM data available for the selected period
       </div>
     );
   }
 
+  const isDark = theme === 'dark';
+  const axisColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? '#374151' : '#e5e7eb';
+
   return (
     <ResponsiveContainer width="100%" height={400}>
       <LineChart data={combinedData}>
-        <CartesianGrid strokeDasharray="3 3" />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 12, fill: axisColor }}
           angle={-45}
           textAnchor="end"
           height={80}
+          stroke={axisColor}
         />
         <YAxis
-          label={{ value: 'Estimated 1RM (kg)', angle: -90, position: 'insideLeft' }}
-          tick={{ fontSize: 12 }}
+          label={{ value: 'Estimated 1RM (kg)', angle: -90, position: 'insideLeft', fill: axisColor }}
+          tick={{ fontSize: 12, fill: axisColor }}
+          stroke={axisColor}
         />
         <Tooltip
-          contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
+          contentStyle={{
+            backgroundColor: isDark ? '#1f2937' : '#fff',
+            border: `1px solid ${isDark ? '#374151' : '#ccc'}`,
+            color: isDark ? '#fff' : '#000',
+          }}
           formatter={(value: number | undefined, name: string) => {
             if (value === undefined) return ['N/A', name];
             return [`${value.toFixed(1)} kg`, name];
           }}
         />
-        <Legend />
+        <Legend wrapperStyle={{ color: axisColor }} />
         <Line
           type="monotone"
           dataKey="squat"

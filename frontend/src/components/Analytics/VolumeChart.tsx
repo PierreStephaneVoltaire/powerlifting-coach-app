@@ -10,12 +10,14 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
+import { useTheme } from '@/context/ThemeContext';
 
 interface VolumeChartProps {
   data: any[];
 }
 
 export const VolumeChart: React.FC<VolumeChartProps> = ({ data }) => {
+  const { theme } = useTheme();
   // Aggregate data by date
   const aggregatedData = data.reduce((acc: any[], curr) => {
     const dateStr = format(new Date(curr.date), 'MMM dd');
@@ -46,32 +48,42 @@ export const VolumeChart: React.FC<VolumeChartProps> = ({ data }) => {
 
   if (aggregatedData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
         No volume data available for the selected period
       </div>
     );
   }
 
+  const isDark = theme === 'dark';
+  const axisColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? '#374151' : '#e5e7eb';
+
   return (
     <ResponsiveContainer width="100%" height={400}>
       <LineChart data={aggregatedData}>
-        <CartesianGrid strokeDasharray="3 3" />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 12, fill: axisColor }}
           angle={-45}
           textAnchor="end"
           height={80}
+          stroke={axisColor}
         />
         <YAxis
-          label={{ value: 'Volume (kg)', angle: -90, position: 'insideLeft' }}
-          tick={{ fontSize: 12 }}
+          label={{ value: 'Volume (kg)', angle: -90, position: 'insideLeft', fill: axisColor }}
+          tick={{ fontSize: 12, fill: axisColor }}
+          stroke={axisColor}
         />
         <Tooltip
-          contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
+          contentStyle={{
+            backgroundColor: isDark ? '#1f2937' : '#fff',
+            border: `1px solid ${isDark ? '#374151' : '#ccc'}`,
+            color: isDark ? '#fff' : '#000',
+          }}
           formatter={(value: number) => [`${value.toFixed(0)} kg`, 'Volume']}
         />
-        <Legend />
+        <Legend wrapperStyle={{ color: axisColor }} />
         <Line
           type="monotone"
           dataKey="volume"
