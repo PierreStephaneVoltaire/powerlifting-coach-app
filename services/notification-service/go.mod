@@ -2,13 +2,12 @@ module github.com/powerlifting-coach-app/notification-service
 
 go 1.23.0
 
-toolchain go1.24.7
-
 require (
+	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.2
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.34.0
 	github.com/streadway/amqp v1.1.0
 )
 

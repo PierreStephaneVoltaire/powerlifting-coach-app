@@ -2,7 +2,7 @@ module github.com/powerlifting-coach-app/settings-service
 
 go 1.24.0
 
-toolchain go1.24.9
+toolchain go1.24.7
 
 require (
 	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.2

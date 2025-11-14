@@ -2,8 +2,6 @@ module github.com/powerlifting-coach-app/video-service
 
 go 1.23.0
 
-toolchain go1.24.9
-
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1
