@@ -74,6 +74,12 @@ variable "pod_network_cidr" {
   default     = "10.42.0.0/16"
 }
 
+variable "nginx_lb_ssh_allowed_cidr" {
+  description = "CIDR block allowed to SSH into nginx load balancer (e.g., your IP: 1.2.3.4/32)"
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
 # Kubernetes Configuration
 variable "kubernetes_resources_enabled" {
   description = "Enable Kubernetes resources (namespaces, secrets, ArgoCD). Set to false for initial cluster creation, then true for second apply"

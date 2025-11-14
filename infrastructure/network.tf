@@ -249,7 +249,7 @@ resource "aws_security_group" "nginx_lb" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.nginx_lb_ssh_allowed_cidr]
   }
 
   egress {
