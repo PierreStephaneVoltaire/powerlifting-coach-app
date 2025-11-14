@@ -63,60 +63,6 @@ resource "aws_ssm_parameter" "k3s_token" {
   }
 }
 
-resource "aws_lb" "control_plane" {
-  name_prefix                      = "cp-"
-  internal                         = false
-  load_balancer_type               = "network"
-  subnets                          = aws_subnet.public[*].id
-  enable_deletion_protection       = false
-  enable_cross_zone_load_balancing = true
-
-  tags = {
-    Name        = "${local.cluster_name}-control-plane-nlb"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-resource "aws_lb_target_group" "control_plane_api" {
-  name_prefix          = "api-"
-  port                 = 6443
-  protocol             = "TCP"
-  vpc_id               = aws_vpc.main.id
-  deregistration_delay = 30
-
-  health_check {
-    enabled             = true
-    protocol            = "TCP"
-    port                = "6443"
-    interval            = 10
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
-
-  tags = {
-    Name        = "${local.cluster_name}-control-plane-api-tg"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_lb_listener" "control_plane_api" {
-  load_balancer_arn = aws_lb.control_plane.arn
-  port              = "6443"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.control_plane_api.arn
-  }
-}
-
 resource "aws_launch_template" "control_plane" {
   name_prefix   = "${local.cluster_name}-control-plane-"
   image_id      = data.aws_ami.ubuntu.id
@@ -177,7 +123,7 @@ resource "aws_launch_template" "control_plane" {
   user_data = base64encode(templatefile("${path.module}/user-data/control-plane.sh", {
     cluster_name     = local.cluster_name
     s3_bucket        = aws_s3_bucket.ansible_playbooks.id
-    nlb_dns_name     = aws_lb.control_plane.dns_name
+    nginx_lb_ip      = aws_eip.nginx_lb.public_ip
     region           = var.aws_region
     pod_network_cidr = var.pod_network_cidr
   }))
@@ -195,11 +141,10 @@ resource "aws_launch_template" "control_plane" {
 resource "aws_autoscaling_group" "control_plane" {
   name_prefix               = "${local.cluster_name}-control-plane-"
   vpc_zone_identifier       = aws_subnet.public[*].id
-  target_group_arns         = [aws_lb_target_group.control_plane_api.arn]
   desired_capacity          = 3
   min_size                  = 3
   max_size                  = 3
-  health_check_type         = "ELB"
+  health_check_type         = "EC2"
   health_check_grace_period = 300
   default_cooldown          = 300
 
@@ -271,6 +216,6 @@ resource "aws_autoscaling_group" "control_plane" {
   }
 
   depends_on = [
-    aws_lb_listener.control_plane_api
+    aws_eip.nginx_lb
   ]
 }

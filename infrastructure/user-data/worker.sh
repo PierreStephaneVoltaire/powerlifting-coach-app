@@ -3,7 +3,7 @@ set -e
 
 CLUSTER_NAME="${cluster_name}"
 S3_BUCKET="${s3_bucket}"
-NLB_DNS_NAME="${nlb_dns_name}"
+NGINX_LB_IP="${nginx_lb_ip}"
 REGION="${region}"
 MAX_PODS="${max_pods}"
 
@@ -26,7 +26,7 @@ done
 aws s3 cp s3://$S3_BUCKET/worker.yml /tmp/worker.yml --region $REGION
 
 export K3S_TOKEN="$K3S_TOKEN"
-export NLB_DNS_NAME="$NLB_DNS_NAME"
+export NGINX_LB_IP="$NGINX_LB_IP"
 export PRIVATE_IP="$PRIVATE_IP"
 export MAX_PODS="$MAX_PODS"
 

@@ -58,7 +58,7 @@ resource "aws_launch_template" "worker" {
   user_data = base64encode(templatefile("${path.module}/user-data/worker.sh", {
     cluster_name = local.cluster_name
     s3_bucket    = aws_s3_bucket.ansible_playbooks.id
-    nlb_dns_name = aws_lb.control_plane.dns_name
+    nginx_lb_ip  = aws_eip.nginx_lb.public_ip
     region       = var.aws_region
     max_pods     = var.max_pods_per_node
   }))

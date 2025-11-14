@@ -58,7 +58,7 @@ data "aws_ssm_parameter" "k3s_client_key" {
 }
 
 provider "kubernetes" {
-  host                   = var.kubernetes_resources_enabled ? "https://${aws_lb.control_plane.dns_name}:6443" : null
+  host                   = var.kubernetes_resources_enabled ? "https://${aws_eip.nginx_lb.public_ip}:6443" : null
   cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_ca_cert[0].value) : null
   client_certificate     = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_cert[0].value) : null
   client_key             = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_key[0].value) : null
@@ -66,7 +66,7 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes {
-    host                   = var.kubernetes_resources_enabled ? "https://${aws_lb.control_plane.dns_name}:6443" : null
+    host                   = var.kubernetes_resources_enabled ? "https://${aws_eip.nginx_lb.public_ip}:6443" : null
     cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_ca_cert[0].value) : null
     client_certificate     = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_cert[0].value) : null
     client_key             = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_key[0].value) : null
@@ -74,7 +74,7 @@ provider "helm" {
 }
 
 provider "kubectl" {
-  host                   = var.kubernetes_resources_enabled ? "https://${aws_lb.control_plane.dns_name}:6443" : null
+  host                   = var.kubernetes_resources_enabled ? "https://${aws_eip.nginx_lb.public_ip}:6443" : null
   cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_ca_cert[0].value) : null
   client_certificate     = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_cert[0].value) : null
   client_key             = var.kubernetes_resources_enabled ? base64decode(data.aws_ssm_parameter.k3s_client_key[0].value) : null
@@ -91,7 +91,7 @@ resource "local_file" "kubeconfig" {
       name = local.cluster_name
       cluster = {
         certificate-authority-data = data.aws_ssm_parameter.k3s_ca_cert[0].value
-        server                     = "https://${aws_lb.control_plane.dns_name}:6443"
+        server                     = "https://${aws_eip.nginx_lb.public_ip}:6443"
       }
     }]
     users = [{

@@ -5,7 +5,7 @@
   vars:
     k3s_version: "v1.28.5+k3s1"
     k3s_token: "{{ lookup('env', 'K3S_TOKEN') }}"
-    nlb_dns_name: "{{ lookup('env', 'NLB_DNS_NAME') }}"
+    nginx_lb_ip: "{{ lookup('env', 'NGINX_LB_IP') }}"
     private_ip: "{{ lookup('env', 'PRIVATE_IP') }}"
     max_pods: "{{ lookup('env', 'MAX_PODS') }}"
 
@@ -16,7 +16,7 @@
       register: k3s_agent_binary
 
     - name: Wait for control plane to be ready
-      shell: curl -k https://{{ nlb_dns_name }}:6443/ping
+      shell: curl -k https://{{ nginx_lb_ip }}:6443/ping
       register: control_plane_ready
       retries: 60
       delay: 10
@@ -28,7 +28,7 @@
       shell: |
         curl -sfL https://get.k3s.io | sh -s - agent \
           --token="{{ k3s_token }}" \
-          --server="https://{{ nlb_dns_name }}:6443" \
+          --server="https://{{ nginx_lb_ip }}:6443" \
           --node-ip="{{ private_ip }}" \
           --kubelet-arg="max-pods={{ max_pods }}" \
           --node-label="node-role.kubernetes.io/worker=true"

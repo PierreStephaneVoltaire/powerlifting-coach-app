@@ -3,11 +3,12 @@ output "cluster_name" {
 }
 
 output "cluster_endpoint" {
-  value = "https://${aws_lb.control_plane.dns_name}:6443"
+  value = "https://${aws_eip.nginx_lb.public_ip}:6443"
 }
 
-output "nlb_dns_name" {
-  value = aws_lb.control_plane.dns_name
+output "nginx_lb_ip" {
+  value = aws_eip.nginx_lb.public_ip
+  description = "Nginx load balancer IP address for control plane"
 }
 
 output "control_plane_asg_name" {
