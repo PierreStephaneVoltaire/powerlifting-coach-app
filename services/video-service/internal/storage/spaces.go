@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
@@ -47,8 +46,6 @@ func NewSpacesClient(cfg *config.Config) (*SpacesClient, error) {
 }
 
 func (s *SpacesClient) GeneratePresignedUploadURL(key string, contentType string, duration time.Duration) (string, error) {
-	ctx := context.Background()
-
 	// Create SAS URL for upload
 	blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", s.accountName, s.containerName, key)
 
