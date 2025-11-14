@@ -271,15 +271,18 @@ func (r *ProgramRepository) GetExercisesBySessionID(sessionID uuid.UUID) ([]mode
 }
 
 func (r *ProgramRepository) LogCompletedSet(set *models.CompletedSet) error {
+	// Convert MediaURLs to JSON
+	mediaURLsJSON, _ := json.Marshal(set.MediaURLs)
+
 	query := `
 		INSERT INTO completed_sets (exercise_id, set_number, reps_completed, weight_kg,
-		                           rpe_actual, video_id, notes)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		                           rpe_actual, video_id, notes, set_type, media_urls, exercise_notes)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, completed_at`
 
 	err := r.db.QueryRow(query,
 		set.ExerciseID, set.SetNumber, set.RepsCompleted, set.WeightKg,
-		set.RPEActual, set.VideoID, set.Notes,
+		set.RPEActual, set.VideoID, set.Notes, set.SetType, mediaURLsJSON, set.ExerciseNotes,
 	).Scan(&set.ID, &set.CompletedAt)
 
 	if err != nil {
@@ -292,9 +295,9 @@ func (r *ProgramRepository) LogCompletedSet(set *models.CompletedSet) error {
 func (r *ProgramRepository) GetCompletedSetsByExerciseID(exerciseID uuid.UUID) ([]models.CompletedSet, error) {
 	query := `
 		SELECT id, exercise_id, set_number, reps_completed, weight_kg,
-		       rpe_actual, video_id, notes, completed_at
-		FROM completed_sets 
-		WHERE exercise_id = $1 
+		       rpe_actual, video_id, notes, set_type, media_urls, exercise_notes, completed_at
+		FROM completed_sets
+		WHERE exercise_id = $1
 		ORDER BY set_number`
 
 	rows, err := r.db.Query(query, exerciseID)
@@ -306,14 +309,20 @@ func (r *ProgramRepository) GetCompletedSetsByExerciseID(exerciseID uuid.UUID) (
 	var sets []models.CompletedSet
 	for rows.Next() {
 		var set models.CompletedSet
+		var mediaURLsJSON []byte
 
 		err := rows.Scan(
 			&set.ID, &set.ExerciseID, &set.SetNumber, &set.RepsCompleted,
 			&set.WeightKg, &set.RPEActual, &set.VideoID, &set.Notes,
-			&set.CompletedAt,
+			&set.SetType, &mediaURLsJSON, &set.ExerciseNotes, &set.CompletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan completed set: %w", err)
+		}
+
+		// Unmarshal MediaURLs
+		if len(mediaURLsJSON) > 0 {
+			json.Unmarshal(mediaURLsJSON, &set.MediaURLs)
 		}
 
 		sets = append(sets, set)

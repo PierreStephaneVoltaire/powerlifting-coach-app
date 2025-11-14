@@ -99,6 +99,12 @@ variable "stopped" {
   default     = false
 }
 
+variable "ai_features_enabled" {
+  description = "Enable AI features including LiteLLM deployment, chat interface, and AI coaching. Set to false to reduce costs."
+  type        = bool
+  default     = false
+}
+
 variable "openai_api_key" {
   description = "OpenAI API key for LLM access in OpenWebUI"
   type        = string

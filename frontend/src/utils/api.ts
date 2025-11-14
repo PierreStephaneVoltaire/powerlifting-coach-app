@@ -359,6 +359,112 @@ class ApiClient {
   startOfflineQueueProcessor() {
     offlineQueue.startAutoProcess();
   }
+
+  async getPreviousSets(exerciseName: string, limit = 5) {
+    const response = await this.client.get(`/api/v1/exercises/${encodeURIComponent(exerciseName)}/previous`, {
+      params: { limit }
+    });
+    return response.data;
+  }
+
+  async generateWarmups(workingWeightKg: number, liftType: string) {
+    const response = await this.client.post('/api/v1/exercises/warmups/generate', {
+      working_weight_kg: workingWeightKg,
+      lift_type: liftType,
+    });
+    return response.data;
+  }
+
+  async getExerciseLibrary(liftType?: string) {
+    const params = liftType ? { lift_type: liftType } : {};
+    const response = await this.client.get('/api/v1/exercises/library', { params });
+    return response.data;
+  }
+
+  async createCustomExercise(exerciseData: any) {
+    const response = await this.client.post('/api/v1/exercises/library', exerciseData);
+    return response.data;
+  }
+
+  async getWorkoutTemplates() {
+    const response = await this.client.get('/api/v1/templates/workouts');
+    return response.data;
+  }
+
+  async createWorkoutTemplate(templateData: any) {
+    const response = await this.client.post('/api/v1/templates/workouts', templateData);
+    return response.data;
+  }
+
+  async getVolumeData(startDate: string, endDate: string, exerciseName?: string) {
+    const response = await this.client.post('/api/v1/analytics/volume', {
+      start_date: startDate,
+      end_date: endDate,
+      exercise_name: exerciseName,
+    });
+    return response.data;
+  }
+
+  async getE1RMData(startDate: string, endDate: string, liftType?: string) {
+    const response = await this.client.post('/api/v1/analytics/e1rm', {
+      start_date: startDate,
+      end_date: endDate,
+      lift_type: liftType,
+    });
+    return response.data;
+  }
+
+  async getSessionHistory(startDate?: string, endDate?: string, limit = 50) {
+    const params: any = { limit };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+
+    const response = await this.client.get('/api/v1/sessions/history', { params });
+    return response.data;
+  }
+
+  async deleteSession(sessionId: string, reason?: string) {
+    const response = await this.client.delete(`/api/v1/sessions/${sessionId}`, {
+      data: { reason }
+    });
+    return response.data;
+  }
+
+  async proposeChange(programId: string, changes: any, description?: string) {
+    const response = await this.client.post('/api/v1/programs/changes/propose', {
+      program_id: programId,
+      proposed_changes: changes,
+      change_description: description,
+    });
+    return response.data;
+  }
+
+  async getPendingChanges(programId: string) {
+    const response = await this.client.get(`/api/v1/programs/${programId}/changes/pending`);
+    return response.data;
+  }
+
+  async applyChange(changeId: string) {
+    const response = await this.client.post(`/api/v1/programs/changes/${changeId}/apply`);
+    return response.data;
+  }
+
+  async rejectChange(changeId: string) {
+    const response = await this.client.post(`/api/v1/programs/changes/${changeId}/reject`);
+    return response.data;
+  }
+
+  async chatWithAI(message: string, programId?: string, coachContextEnable = false) {
+    const response = await this.client.post('/api/v1/programs/chat', {
+      message,
+      program_id: programId,
+      coach_context_enable: coachContextEnable,
+    });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
+
+// Why: Re-export for dev mode support - wrapper handles routing to fake data
+export { api } from './apiWrapper';
