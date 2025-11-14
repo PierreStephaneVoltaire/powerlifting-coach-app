@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '@/utils/api';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { DevModeProvider } from '@/context/DevModeContext';
+import { DevModeToggle } from '@/components/DevMode/DevModeToggle';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import { OnboardingCheck } from '@/components/Auth/OnboardingCheck';
 import { MainLayout } from '@/components/Layout/MainLayout';
@@ -29,9 +31,11 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <Router>
-          <Routes>
+      <DevModeProvider>
+        <ThemeProvider>
+          <DevModeToggle />
+          <Router>
+            <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/onboarding" element={
@@ -62,9 +66,10 @@ function App() {
               <Route path="/" element={<Navigate to="/feed" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/feed" replace />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
+            </Routes>
+          </Router>
+        </ThemeProvider>
+      </DevModeProvider>
     </QueryClientProvider>
   );
 }
