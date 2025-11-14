@@ -3,7 +3,7 @@ set -e
 
 CLUSTER_NAME="${cluster_name}"
 S3_BUCKET="${s3_bucket}"
-NLB_DNS_NAME="${nlb_dns_name}"
+NGINX_LB_IP="${nginx_lb_ip}"
 REGION="${region}"
 POD_NETWORK_CIDR="${pod_network_cidr}"
 
@@ -23,7 +23,7 @@ K3S_TOKEN=$(aws ssm get-parameter --name "/$CLUSTER_NAME/k3s/token" --with-decry
 aws s3 cp s3://$S3_BUCKET/control-plane.yml /tmp/control-plane.yml --region $REGION
 
 export K3S_TOKEN="$K3S_TOKEN"
-export NLB_DNS_NAME="$NLB_DNS_NAME"
+export NGINX_LB_IP="$NGINX_LB_IP"
 export PRIVATE_IP="$PRIVATE_IP"
 export POD_NETWORK_CIDR="$POD_NETWORK_CIDR"
 export CLUSTER_NAME="$CLUSTER_NAME"

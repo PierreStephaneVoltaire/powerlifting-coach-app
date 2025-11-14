@@ -215,37 +215,4 @@ resource "aws_security_group_rule" "worker_from_control_plane" {
   source_security_group_id = aws_security_group.control_plane.id
 }
 
-# Security group for NLB
-resource "aws_security_group" "nlb" {
-  name_prefix = "${local.cluster_name}-nlb-"
-  description = "Security group for Network Load Balancer"
-  vpc_id      = aws_vpc.main.id
-
-  # Allow k3s API server from anywhere
-  ingress {
-    description = "Kubernetes API server"
-    from_port   = 6443
-    to_port     = 6443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow all outbound traffic
-  egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "${local.cluster_name}-nlb-sg"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+# NLB security group removed - replaced with nginx load balancer (see nginx-lb.tf)

@@ -1,0 +1,161 @@
+---
+- name: Setup nginx load balancer for k3s control plane
+  hosts: localhost
+  become: yes
+  vars:
+    cluster_name: "{{ lookup('env', 'CLUSTER_NAME') }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') }}"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install nginx and required packages
+      apt:
+        name:
+          - nginx
+          - awscli
+          - jq
+        state: present
+
+    - name: Get control plane IPs from Parameter Store
+      shell: |
+        aws ssm get-parameter --name "/{{ cluster_name }}/k3s/control-plane-ips" --query 'Parameter.Value' --output text --region {{ aws_region }}
+      register: control_plane_ips_result
+      retries: 30
+      delay: 10
+      until: control_plane_ips_result.rc == 0 and control_plane_ips_result.stdout != "initializing"
+      changed_when: false
+
+    - name: Set control plane IPs fact
+      set_fact:
+        control_plane_ips: "{{ control_plane_ips_result.stdout.split(',') }}"
+
+    - name: Generate nginx stream configuration for TCP load balancing
+      template:
+        content: |
+          stream {
+              log_format basic '$remote_addr [$time_local] '
+                               '$protocol $status $bytes_sent $bytes_received '
+                               '$session_time';
+
+              access_log /var/log/nginx/k3s-stream-access.log basic;
+              error_log /var/log/nginx/k3s-stream-error.log;
+
+              upstream k3s_api_servers {
+                  least_conn;
+                  {% for ip in control_plane_ips %}
+                  server {{ ip }}:6443 max_fails=3 fail_timeout=30s;
+                  {% endfor %}
+              }
+
+              server {
+                  listen 6443;
+                  proxy_pass k3s_api_servers;
+                  proxy_timeout 10m;
+                  proxy_connect_timeout 5s;
+              }
+          }
+        dest: /etc/nginx/modules-available/k3s-stream.conf
+        owner: root
+        group: root
+        mode: '0644'
+      register: stream_config
+
+    - name: Create nginx main configuration
+      copy:
+        content: |
+          user www-data;
+          worker_processes auto;
+          pid /run/nginx.pid;
+          error_log /var/log/nginx/error.log;
+          include /etc/nginx/modules-enabled/*.conf;
+
+          events {
+              worker_connections 768;
+          }
+
+          # Include stream configuration
+          include /etc/nginx/modules-available/k3s-stream.conf;
+
+          # Empty http block to satisfy nginx requirements
+          http {
+              access_log /var/log/nginx/access.log;
+          }
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: '0644'
+      register: main_config
+
+    - name: Test nginx configuration
+      command: nginx -t
+      changed_when: false
+
+    - name: Enable and start nginx
+      systemd:
+        name: nginx
+        enabled: yes
+        state: started
+
+    - name: Reload nginx if configuration changed
+      systemd:
+        name: nginx
+        state: reloaded
+      when: stream_config.changed or main_config.changed
+
+    - name: Create systemd service to monitor and reload nginx on config changes
+      copy:
+        content: |
+          [Unit]
+          Description=Monitor k3s stream config and reload nginx
+          After=nginx.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/systemctl reload nginx
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/nginx-reload.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Create systemd path unit to watch nginx config
+      copy:
+        content: |
+          [Unit]
+          Description=Watch k3s stream config for changes
+
+          [Path]
+          PathModified=/etc/nginx/modules-available/k3s-stream.conf
+          Unit=nginx-reload.service
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/nginx-reload.path
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start nginx reload path monitor
+      systemd:
+        name: nginx-reload.path
+        enabled: yes
+        state: started
+
+    - name: Display nginx status
+      command: systemctl status nginx --no-pager
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Display upstream configuration
+      debug:
+        msg: "Nginx is load balancing to control plane IPs: {{ control_plane_ips | join(', ') }}"
