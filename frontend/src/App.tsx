@@ -17,6 +17,7 @@ import { ChatPage } from '@/pages/ChatPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { ExerciseLibraryPage } from '@/pages/ExerciseLibraryPage';
 import { WorkoutHistoryPage } from '@/pages/WorkoutHistoryPage';
+import { CompPrepPage } from '@/pages/CompPrepPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ function App() {
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/exercises" element={<ExerciseLibraryPage />} />
               <Route path="/history" element={<WorkoutHistoryPage />} />
+              <Route path="/comp-prep" element={<CompPrepPage />} />
               <Route path="/dm/*" element={<DMPage />} />
               <Route path="/tools" element={<ToolsPage />} />
               <Route path="/" element={<Navigate to="/feed" replace />} />
