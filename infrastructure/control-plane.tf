@@ -63,9 +63,6 @@ resource "aws_ssm_parameter" "k3s_token" {
   }
 }
 
-# NLB has been replaced with cost-effective nginx load balancer
-# See nginx-lb.tf for the new load balancer implementation
-
 resource "aws_launch_template" "control_plane" {
   name_prefix   = "${local.cluster_name}-control-plane-"
   image_id      = data.aws_ami.ubuntu.id
