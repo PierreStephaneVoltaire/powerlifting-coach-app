@@ -360,7 +360,6 @@ class ApiClient {
     offlineQueue.startAutoProcess();
   }
 
-  // Enhanced Workout Logging APIs
   async getPreviousSets(exerciseName: string, limit = 5) {
     const response = await this.client.get(`/api/v1/exercises/${encodeURIComponent(exerciseName)}/previous`, {
       params: { limit }
@@ -376,7 +375,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Exercise Library APIs
   async getExerciseLibrary(liftType?: string) {
     const params = liftType ? { lift_type: liftType } : {};
     const response = await this.client.get('/api/v1/exercises/library', { params });
@@ -388,7 +386,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Workout Template APIs
   async getWorkoutTemplates() {
     const response = await this.client.get('/api/v1/templates/workouts');
     return response.data;
@@ -399,7 +396,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Analytics APIs
   async getVolumeData(startDate: string, endDate: string, exerciseName?: string) {
     const response = await this.client.post('/api/v1/analytics/volume', {
       start_date: startDate,
@@ -418,7 +414,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Session History APIs
   async getSessionHistory(startDate?: string, endDate?: string, limit = 50) {
     const params: any = { limit };
     if (startDate) params.start_date = startDate;
@@ -435,7 +430,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Program Change Management APIs
   async proposeChange(programId: string, changes: any, description?: string) {
     const response = await this.client.post('/api/v1/programs/changes/propose', {
       program_id: programId,
@@ -460,7 +454,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Chat API
   async chatWithAI(message: string, programId?: string, coachContextEnable = false) {
     const response = await this.client.post('/api/v1/programs/chat', {
       message,

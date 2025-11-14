@@ -38,7 +38,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
     }));
     setExercises(initialExercises);
 
-    // Initialize logs for each exercise
     const initialLogs = new Map();
     initialExercises.forEach((ex: any) => {
       const sets: SetLog[] = [];
@@ -58,7 +57,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
     loadSavedProgress();
   }, [session]);
 
-  // Fetch previous sets for autofill
   useEffect(() => {
     if (currentExercise && isStarted) {
       fetchPreviousSets(currentExercise.name);
@@ -100,7 +98,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
     const exId = currentExercise.id || `ex-${currentExercise.order}`;
     const logs = [...(exerciseLogs.get(exId) || [])];
 
-    // Find the first working set with weight
     const firstWorkingSet = logs.find(s => s.set_type === 'working' && s.weight_kg > 0);
     if (!firstWorkingSet) {
       alert('Please enter a working weight first');
@@ -115,7 +112,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
 
       const warmups = response.data.warmup_sets || [];
 
-      // Insert warmup sets before working sets
       const warmupLogs: SetLog[] = warmups.map((wu: any, idx: number) => ({
         set_number: idx + 1,
         reps_completed: wu.reps,
@@ -125,7 +121,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
         notes: wu.plate_setup,
       }));
 
-      // Renumber existing sets
       const updatedLogs = [
         ...warmupLogs,
         ...logs.map((log, idx) => ({ ...log, set_number: warmupLogs.length + idx + 1 })),
@@ -325,7 +320,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
             </button>
           </div>
 
-          {/* Progress Bar */}
           <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all"
@@ -336,7 +330,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
           </div>
         </div>
 
-        {/* Exercise Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {currentExercise && (
             <div>
@@ -369,7 +362,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                 </div>
               </div>
 
-              {/* Exercise Notes */}
               <div className="mb-4">
                 <label className="text-sm text-gray-600 dark:text-gray-400 block mb-1">Exercise Notes</label>
                 <textarea
@@ -381,7 +373,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                 />
               </div>
 
-              {/* Sets Table */}
               <div className="space-y-2">
                 {currentLogs.map((setLog) => (
                   <div
@@ -395,7 +386,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                         <div className="font-semibold text-gray-700 dark:text-gray-300">Set {setLog.set_number}</div>
                       </div>
 
-                      {/* Set Type Selector */}
                       <div className="flex-1">
                         <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Type</label>
                         <select
@@ -458,7 +448,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
                       </button>
                     </div>
 
-                    {/* Set Notes */}
                     <div className="mt-2">
                       <input
                         type="text"
@@ -475,7 +464,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
           )}
         </div>
 
-        {/* Footer Navigation */}
         <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <div className="flex justify-between items-center">
             <button
@@ -531,7 +519,6 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
         </div>
       </div>
 
-      {/* Warmup Generator Modal */}
       {showWarmupGenerator && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
