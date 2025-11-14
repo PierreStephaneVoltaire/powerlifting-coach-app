@@ -116,7 +116,47 @@ func main() {
 				programs.POST("/export", programHandlers.ExportProgram)
 				programs.POST("/chat", programHandlers.ChatWithAI)
 				programs.POST("/log-workout", programHandlers.LogWorkout)
+
+				// Program change management (git-like)
+				programs.POST("/changes/propose", programHandlers.ProposeChange)
+				programs.GET("/:programId/changes/pending", programHandlers.GetPendingChanges)
+				programs.POST("/changes/:changeId/apply", programHandlers.ApplyChange)
+				programs.POST("/changes/:changeId/reject", programHandlers.RejectChange)
 			}
+		}
+
+		// Exercise library endpoints
+		exercises := v1.Group("/exercises")
+		exercises.Use(middleware.AuthMiddleware(authConfig))
+		{
+			exercises.GET("/library", programHandlers.GetExerciseLibrary)
+			exercises.POST("/library", programHandlers.CreateExerciseLibrary)
+			exercises.GET("/:exerciseName/previous", programHandlers.GetPreviousSets)
+			exercises.POST("/warmups/generate", programHandlers.GenerateWarmups)
+		}
+
+		// Workout template endpoints
+		templates := v1.Group("/templates")
+		templates.Use(middleware.AuthMiddleware(authConfig))
+		{
+			templates.GET("/workouts", programHandlers.GetWorkoutTemplates)
+			templates.POST("/workouts", programHandlers.CreateWorkoutTemplate)
+		}
+
+		// Analytics endpoints
+		analytics := v1.Group("/analytics")
+		analytics.Use(middleware.AuthMiddleware(authConfig))
+		{
+			analytics.POST("/volume", programHandlers.GetVolumeData)
+			analytics.POST("/e1rm", programHandlers.GetE1RMData)
+		}
+
+		// Session history endpoints
+		sessions := v1.Group("/sessions")
+		sessions.Use(middleware.AuthMiddleware(authConfig))
+		{
+			sessions.GET("/history", programHandlers.GetSessionHistory)
+			sessions.DELETE("/:sessionId", programHandlers.DeleteSession)
 		}
 	}
 

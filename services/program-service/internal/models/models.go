@@ -89,16 +89,34 @@ type Exercise struct {
 	CompletedSets     []CompletedSet `json:"completed_sets,omitempty"`
 }
 
+type SetType string
+
+const (
+	SetTypeWarmUp   SetType = "warm_up"
+	SetTypeWorking  SetType = "working"
+	SetTypeBackoff  SetType = "backoff"
+	SetTypeAMRAP    SetType = "amrap"
+	SetTypeFailure  SetType = "failure"
+	SetTypeDropSet  SetType = "drop_set"
+	SetTypeCluster  SetType = "cluster"
+	SetTypePause    SetType = "pause"
+	SetTypeTempo    SetType = "tempo"
+	SetTypeCustom   SetType = "custom"
+)
+
 type CompletedSet struct {
-	ID            uuid.UUID  `json:"id" db:"id"`
-	ExerciseID    uuid.UUID  `json:"exercise_id" db:"exercise_id"`
-	SetNumber     int        `json:"set_number" db:"set_number"`
-	RepsCompleted int        `json:"reps_completed" db:"reps_completed"`
-	WeightKg      float64    `json:"weight_kg" db:"weight_kg"`
-	RPEActual     *float64   `json:"rpe_actual" db:"rpe_actual"`
-	VideoID       *uuid.UUID `json:"video_id" db:"video_id"`
-	Notes         *string    `json:"notes" db:"notes"`
-	CompletedAt   time.Time  `json:"completed_at" db:"completed_at"`
+	ID            uuid.UUID       `json:"id" db:"id"`
+	ExerciseID    uuid.UUID       `json:"exercise_id" db:"exercise_id"`
+	SetNumber     int             `json:"set_number" db:"set_number"`
+	RepsCompleted int             `json:"reps_completed" db:"reps_completed"`
+	WeightKg      float64         `json:"weight_kg" db:"weight_kg"`
+	RPEActual     *float64        `json:"rpe_actual" db:"rpe_actual"`
+	VideoID       *uuid.UUID      `json:"video_id" db:"video_id"`
+	Notes         *string         `json:"notes" db:"notes"`
+	SetType       SetType         `json:"set_type" db:"set_type"`
+	MediaURLs     []string        `json:"media_urls" db:"media_urls"`
+	ExerciseNotes *string         `json:"exercise_notes" db:"exercise_notes"`
+	CompletedAt   time.Time       `json:"completed_at" db:"completed_at"`
 }
 
 type AIConversation struct {
@@ -192,6 +210,9 @@ type LoggedSet struct {
 	RPEActual     *float64   `json:"rpe_actual"`
 	VideoID       *uuid.UUID `json:"video_id"`
 	Notes         *string    `json:"notes"`
+	SetType       SetType    `json:"set_type"`
+	MediaURLs     []string   `json:"media_urls"`
+	ExerciseNotes *string    `json:"exercise_notes"`
 }
 
 type ProgramResponse struct {
