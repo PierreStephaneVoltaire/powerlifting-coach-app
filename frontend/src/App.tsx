@@ -14,6 +14,9 @@ import { ProgramPage } from '@/pages/ProgramPage';
 import { DMPage } from '@/pages/DMPage';
 import { ToolsPage } from '@/pages/ToolsPage';
 import { ChatPage } from '@/pages/ChatPage';
+import { AnalyticsPage } from '@/pages/AnalyticsPage';
+import { ExerciseLibraryPage } from '@/pages/ExerciseLibraryPage';
+import { WorkoutHistoryPage } from '@/pages/WorkoutHistoryPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -49,6 +52,9 @@ function App() {
             }>
               <Route path="/feed" element={<FeedPage />} />
               <Route path="/program" element={<ProgramPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/exercises" element={<ExerciseLibraryPage />} />
+              <Route path="/history" element={<WorkoutHistoryPage />} />
               <Route path="/dm/*" element={<DMPage />} />
               <Route path="/tools" element={<ToolsPage />} />
               <Route path="/" element={<Navigate to="/feed" replace />} />

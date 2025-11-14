@@ -15,6 +15,9 @@ export const MainLayout: React.FC = () => {
   const navItems = [
     { to: '/feed', label: 'Feed' },
     { to: '/program', label: 'Program' },
+    { to: '/analytics', label: 'Analytics' },
+    { to: '/exercises', label: 'Exercises' },
+    { to: '/history', label: 'History' },
     { to: '/dm', label: 'Messages' },
     { to: '/tools', label: 'Tools' },
   ];
