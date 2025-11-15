@@ -1,9 +1,9 @@
-# k3s Cluster on AWS with Spot Instances
+# EKS Cluster on AWS with Spot Instances
 # Main configuration file
 
 locals {
-  cluster_name         = "${var.project_name}-${var.environment}"
-  ses_smtp_endpoint    = "email-smtp.${var.aws_region}.amazonaws.com"
+  cluster_name      = "${var.project_name}-${var.environment}"
+  ses_smtp_endpoint = "email-smtp.${var.aws_region}.amazonaws.com"
 }
 
 # S3 bucket for video storage (replaces Azure Blob Storage)

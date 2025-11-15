@@ -3,20 +3,23 @@ output "cluster_name" {
 }
 
 output "cluster_endpoint" {
-  value = "https://${aws_eip.nginx_lb.public_ip}:6443"
+  value = aws_eks_cluster.main.endpoint
 }
 
-output "nginx_lb_ip" {
-  value = aws_eip.nginx_lb.public_ip
-  description = "Nginx load balancer IP address for control plane"
+output "eks_cluster_id" {
+  value = aws_eks_cluster.main.id
 }
 
-output "control_plane_asg_name" {
-  value = aws_autoscaling_group.control_plane.name
+output "eks_cluster_arn" {
+  value = aws_eks_cluster.main.arn
 }
 
-output "worker_asg_name" {
-  value = aws_autoscaling_group.worker.name
+output "eks_cluster_version" {
+  value = aws_eks_cluster.main.version
+}
+
+output "eks_node_group_id" {
+  value = aws_eks_node_group.main.id
 }
 
 output "vpc_id" {
@@ -37,10 +40,6 @@ output "s3_videos_bucket_arn" {
 
 output "s3_videos_endpoint" {
   value = "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
-}
-
-output "s3_ansible_bucket" {
-  value = aws_s3_bucket.ansible_playbooks.id
 }
 
 output "region" {
