@@ -3,27 +3,23 @@ output "cluster_name" {
 }
 
 output "cluster_endpoint" {
-  value = aws_eks_cluster.main.endpoint
+  value = module.eks.cluster_endpoint
 }
 
 output "eks_cluster_id" {
-  value = aws_eks_cluster.main.id
+  value = module.eks.cluster_id
 }
 
 output "eks_cluster_arn" {
-  value = aws_eks_cluster.main.arn
+  value = module.eks.cluster_arn
 }
 
 output "eks_cluster_version" {
-  value = aws_eks_cluster.main.version
+  value = module.eks.cluster_version
 }
 
 output "eks_node_group_small_id" {
-  value = aws_eks_node_group.small.id
-}
-
-output "eks_node_group_medium_id" {
-  value = aws_eks_node_group.medium.id
+  value = module.eks.eks_managed_node_groups["small"].node_group_id
 }
 
 output "vpc_id" {

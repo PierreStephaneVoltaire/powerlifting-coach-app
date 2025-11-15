@@ -154,14 +154,14 @@ resource "kubernetes_manifest" "eniconfig" {
     }
     spec = {
       securityGroups = [
-        aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+        module.eks.cluster_security_group_id
       ]
       subnet = aws_subnet.secondary[count.index].id
     }
   }
 
   depends_on = [
-    aws_eks_addon.vpc_cni,
+    module.eks,
     aws_subnet.secondary
   ]
 }

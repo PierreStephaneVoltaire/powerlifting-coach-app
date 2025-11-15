@@ -17,91 +17,6 @@ resource "random_password" "grafana_admin_password" {
   special = true
 }
 
-resource "helm_release" "kube_prometheus_stack" {
-  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
-
-  name             = "kube-prometheus-stack"
-  repository       = "https://prometheus-community.github.io/helm-charts"
-  chart            = "kube-prometheus-stack"
-  namespace        = kubernetes_namespace.monitoring[0].metadata[0].name
-  create_namespace = false
-  version          = "56.6.2"
-
-  values = [
-    yamlencode({
-      prometheus = {
-        prometheusSpec = {
-          retention = "15d"
-          resources = {
-            requests = {
-              cpu    = "200m"
-              memory = "512Mi"
-            }
-            limits = {
-              cpu    = "500m"
-              memory = "2Gi"
-            }
-          }
-          storageSpec = {
-            volumeClaimTemplate = {
-              spec = {
-                storageClassName = "ebs-sc"
-                accessModes      = ["ReadWriteOnce"]
-                resources = {
-                  requests = {
-                    storage = "50Gi"
-                  }
-                }
-              }
-            }
-          }
-        }
-        service = {
-          type = "ClusterIP"
-          port = 9090
-        }
-      }
-      grafana = {
-        enabled = true
-        adminPassword = random_password.grafana_admin_password[0].result
-        persistence = {
-          enabled          = true
-          storageClassName = "ebs-sc"
-          size             = "10Gi"
-        }
-        resources = {
-          requests = {
-            cpu    = "100m"
-            memory = "256Mi"
-          }
-          limits = {
-            cpu    = "200m"
-            memory = "512Mi"
-          }
-        }
-        service = {
-          type = "ClusterIP"
-          port = 3000
-        }
-      }
-      alertmanager = {
-        enabled = false
-      }
-      kubeStateMetrics = {
-        enabled = true
-      }
-      nodeExporter = {
-        enabled = true
-      }
-    })
-  ]
-
-  depends_on = [
-    helm_release.ebs_csi_driver,
-    kubernetes_namespace.monitoring
-  ]
-}
-
 resource "helm_release" "loki" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
@@ -126,9 +41,9 @@ resource "helm_release" "loki" {
       singleBinary = {
         replicas = 1
         persistence = {
-          enabled          = true
-          storageClass     = "ebs-sc"
-          size             = "30Gi"
+          enabled      = true
+          storageClass = "gp3"
+          size         = "30Gi"
         }
         resources = {
           requests = {
@@ -156,7 +71,7 @@ resource "helm_release" "loki" {
   ]
 
   depends_on = [
-    helm_release.ebs_csi_driver,
+    module.eks_blueprints_addons,
     kubernetes_namespace.monitoring
   ]
 }
@@ -193,9 +108,7 @@ resource "helm_release" "promtail" {
     })
   ]
 
-  depends_on = [
-    helm_release.loki
-  ]
+  depends_on = [helm_release.loki]
 }
 
 resource "kubernetes_ingress_v1" "grafana" {
@@ -203,7 +116,7 @@ resource "kubernetes_ingress_v1" "grafana" {
 
   metadata {
     name      = "grafana-ingress"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+    namespace = "kube-prometheus-stack"
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
@@ -238,7 +151,7 @@ resource "kubernetes_ingress_v1" "grafana" {
   }
 
   depends_on = [
-    helm_release.kube_prometheus_stack,
+    module.eks_blueprints_addons,
     helm_release.nginx_ingress
   ]
 }
@@ -248,7 +161,7 @@ resource "kubernetes_ingress_v1" "prometheus" {
 
   metadata {
     name      = "prometheus-ingress"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+    namespace = "kube-prometheus-stack"
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
@@ -283,7 +196,7 @@ resource "kubernetes_ingress_v1" "prometheus" {
   }
 
   depends_on = [
-    helm_release.kube_prometheus_stack,
+    module.eks_blueprints_addons,
     helm_release.nginx_ingress
   ]
 }
