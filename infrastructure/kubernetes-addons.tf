@@ -57,6 +57,9 @@ resource "helm_release" "ebs_csi_driver" {
         serviceAccount = {
           create = true
           name   = "ebs-csi-controller-sa"
+          annotations = {
+            "eks.amazonaws.com/role-arn" = aws_iam_role.ebs_csi_driver.arn
+          }
         }
         region = var.aws_region
         resources = {
@@ -88,7 +91,11 @@ resource "helm_release" "ebs_csi_driver" {
     })
   ]
 
-  depends_on = [helm_release.nginx_ingress]
+  depends_on = [
+    helm_release.nginx_ingress,
+    aws_iam_role.ebs_csi_driver,
+    aws_iam_role_policy_attachment.ebs_csi_driver
+  ]
 }
 
 resource "helm_release" "metrics_server" {
