@@ -43,6 +43,20 @@ provider "aws" {
   }
 }
 
+# Provider for us-east-1 (required for ECR Public authentication)
+provider "aws" {
+  alias  = "virginia"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Environment = var.environment
+      Project     = var.project_name
+      ManagedBy   = "Terraform"
+    }
+  }
+}
+
 data "aws_partition" "current" {}
 
 # EKS cluster authentication
