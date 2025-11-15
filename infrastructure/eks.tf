@@ -1,16 +1,105 @@
-# EKS Cluster Configuration
+# EKS Cluster Configuration using terraform-aws-modules
 
-# EKS Cluster
-resource "aws_eks_cluster" "main" {
-  name     = local.cluster_name
-  role_arn = aws_iam_role.eks_cluster.arn
-  version  = var.kubernetes_version
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 21.8.0"
 
-  vpc_config {
-    subnet_ids              = aws_subnet.public[*].id
-    endpoint_public_access  = true
-    endpoint_private_access = false
-    public_access_cidrs     = ["0.0.0.0/0"]
+  cluster_name    = local.cluster_name
+  cluster_version = var.kubernetes_version
+
+  # Network configuration
+  vpc_id     = aws_vpc.main.id
+  subnet_ids = aws_subnet.public[*].id
+
+  # Cluster endpoint access
+  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = false
+
+  # OIDC Provider for IRSA
+  enable_irsa = true
+
+  # Cluster addons
+  cluster_addons = {
+    vpc-cni = {
+      most_recent = true
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION       = "true"
+          WARM_PREFIX_TARGET             = "1"
+          WARM_IP_TARGET                 = "5"
+          AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"
+          ENI_CONFIG_LABEL_DEF           = "topology.kubernetes.io/zone"
+        }
+      })
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    coredns = {
+      most_recent = true
+    }
+  }
+
+  # EKS Managed Node Groups
+  eks_managed_node_groups = {
+    # Small node group for system components
+    small = {
+      name            = "${local.cluster_name}-spot-small"
+      use_name_prefix = false
+
+      instance_types = ["t3a.small", "t3.small", "t2.small"]
+      capacity_type  = "SPOT"
+
+      min_size     = var.stopped ? 0 : var.worker_min_size
+      max_size     = var.worker_max_size
+      desired_size = var.stopped ? 0 : var.worker_desired_capacity
+
+      update_config = {
+        max_unavailable = 1
+      }
+
+      # IAM role for nodes
+      iam_role_additional_policies = {
+        AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+      }
+
+      tags = {
+        NodeSize = "small"
+      }
+    }
+  }
+
+  # Node security group rules
+  node_security_group_additional_rules = {
+    ingress_self_all = {
+      description = "Node to node all ports/protocols"
+      protocol    = "-1"
+      from_port   = 0
+      to_port     = 0
+      type        = "ingress"
+      self        = true
+    }
+    egress_all = {
+      description      = "Node all egress"
+      protocol         = "-1"
+      from_port        = 0
+      to_port          = 0
+      type             = "egress"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
+    }
+  }
+
+  # Cluster security group rules
+  cluster_security_group_additional_rules = {
+    ingress_workstation_https = {
+      description = "Allow workstation to communicate with the cluster API Server"
+      protocol    = "tcp"
+      from_port   = 443
+      to_port     = 443
+      type        = "ingress"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
 
   tags = {
@@ -18,133 +107,12 @@ resource "aws_eks_cluster" "main" {
     Environment = var.environment
     Project     = var.project_name
   }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_policy,
-    aws_iam_role_policy_attachment.eks_vpc_resource_controller,
-  ]
 }
 
-# EKS Node Group - Small instances
-resource "aws_eks_node_group" "small" {
-  cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${local.cluster_name}-spot-small"
-  node_role_arn   = aws_iam_role.eks_node.arn
-  subnet_ids      = aws_subnet.public[*].id
-
-  scaling_config {
-    desired_size = var.stopped ? 0 : var.worker_desired_capacity
-    min_size     = var.stopped ? 0 : var.worker_min_size
-    max_size     = var.worker_max_size
-  }
-
-  capacity_type  = "SPOT"
-  instance_types = ["t3a.small", "t3.small", "t2.small"]
-
-  update_config {
-    max_unavailable = 1
-  }
-
-  tags = {
-    Name        = "${local.cluster_name}-spot-small"
-    Environment = var.environment
-    Project     = var.project_name
-    NodeSize    = "small"
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_worker_node_policy,
-    aws_iam_role_policy_attachment.eks_cni_policy,
-    aws_iam_role_policy_attachment.eks_container_registry_policy,
-    aws_iam_role_policy_attachment.eks_ebs_csi_driver_policy,
-  ]
-
-  lifecycle {
-    ignore_changes = [scaling_config[0].desired_size]
-  }
-}
-
-# Medium instances will be managed by Karpenter
-# See karpenter.tf for configuration
-
-# EKS Cluster IAM Role
-resource "aws_iam_role" "eks_cluster" {
-  name_prefix = "${local.cluster_name}-eks-cluster-"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "eks.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = {
-    Name        = "${local.cluster_name}-eks-cluster-role"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.eks_cluster.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-  role       = aws_iam_role.eks_cluster.name
-}
-
-# EKS Node IAM Role
-resource "aws_iam_role" "eks_node" {
-  name_prefix = "${local.cluster_name}-eks-node-"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = {
-    Name        = "${local.cluster_name}-eks-node-role"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.eks_node.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.eks_node.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_container_registry_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.eks_node.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_ebs_csi_driver_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-  role       = aws_iam_role.eks_node.name
-}
-
-# Additional policy for S3 access
+# Additional S3 access policy for managed node group
 resource "aws_iam_role_policy" "eks_node_s3" {
   name_prefix = "${local.cluster_name}-eks-node-s3-"
-  role        = aws_iam_role.eks_node.name
+  role        = module.eks.eks_managed_node_groups["small"].iam_role_name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -174,18 +142,18 @@ data "aws_iam_policy_document" "ebs_csi_driver_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.eks.arn]
+      identifiers = [module.eks.oidc_provider_arn]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub"
+      variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
       values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud"
+      variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:aud"
       values   = ["sts.amazonaws.com"]
     }
   }
@@ -194,66 +162,17 @@ data "aws_iam_policy_document" "ebs_csi_driver_assume_role" {
 resource "aws_iam_role" "ebs_csi_driver" {
   name_prefix        = "${local.cluster_name}-ebs-csi-driver-"
   assume_role_policy = data.aws_iam_policy_document.ebs_csi_driver_assume_role.json
+
+  tags = {
+    Name        = "${local.cluster_name}-ebs-csi-driver-role"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
   role       = aws_iam_role.ebs_csi_driver.name
-}
-
-# EKS Cluster Security Group Rules
-resource "aws_security_group_rule" "eks_cluster_ingress_workstation_https" {
-  description       = "Allow workstation to communicate with the cluster API Server"
-  type              = "ingress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
-}
-
-# EKS Addons
-resource "aws_eks_addon" "vpc_cni" {
-  cluster_name             = aws_eks_cluster.main.name
-  addon_name               = "vpc-cni"
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "OVERWRITE"
-
-  configuration_values = jsonencode({
-    env = {
-      ENABLE_PREFIX_DELEGATION = "true"
-      WARM_PREFIX_TARGET = "1"
-      WARM_IP_TARGET = "5"
-      AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"
-      ENI_CONFIG_LABEL_DEF = "topology.kubernetes.io/zone"
-    }
-  })
-
-  depends_on = [
-    aws_vpc_ipv4_cidr_block_association.secondary,
-    aws_subnet.secondary
-  ]
-}
-
-resource "aws_eks_addon" "kube_proxy" {
-  cluster_name             = aws_eks_cluster.main.name
-  addon_name               = "kube-proxy"
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "OVERWRITE"
-  
-}
-
-resource "aws_eks_addon" "coredns" {
-  cluster_name             = aws_eks_cluster.main.name
-  addon_name               = "coredns"
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "OVERWRITE"
-
-
-
-  depends_on = [
-    aws_eks_node_group.small
-  ]
 }
 
 # AWS Load Balancer Controller IAM Role
@@ -266,12 +185,12 @@ resource "aws_iam_role" "aws_load_balancer_controller" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Effect = "Allow"
       Principal = {
-        Federated = aws_iam_openid_connect_provider.eks.arn
+        Federated = module.eks.oidc_provider_arn
       }
       Condition = {
         StringEquals = {
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud" = "sts.amazonaws.com"
+          "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+          "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:aud" = "sts.amazonaws.com"
         }
       }
     }]
@@ -279,23 +198,6 @@ resource "aws_iam_role" "aws_load_balancer_controller" {
 
   tags = {
     Name        = "${local.cluster_name}-alb-controller-role"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-# OIDC Provider for EKS
-data "tls_certificate" "eks" {
-  url = aws_eks_cluster.main.identity[0].oidc[0].issuer
-}
-
-resource "aws_iam_openid_connect_provider" "eks" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
-
-  tags = {
-    Name        = "${local.cluster_name}-eks-oidc"
     Environment = var.environment
     Project     = var.project_name
   }
