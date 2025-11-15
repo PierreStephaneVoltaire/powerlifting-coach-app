@@ -18,8 +18,12 @@ output "eks_cluster_version" {
   value = aws_eks_cluster.main.version
 }
 
-output "eks_node_group_id" {
-  value = aws_eks_node_group.main.id
+output "eks_node_group_small_id" {
+  value = aws_eks_node_group.small.id
+}
+
+output "eks_node_group_medium_id" {
+  value = aws_eks_node_group.medium.id
 }
 
 output "vpc_id" {
