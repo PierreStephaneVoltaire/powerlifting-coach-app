@@ -16,10 +16,19 @@ interface E1RMChartProps {
   data: any[];
 }
 
+interface E1RMDataPoint {
+  date: string;
+  exercise_name: string;
+  lift_type: string;
+  estimated_1rm: number;
+  weight_used: number;
+  reps_achieved: number;
+}
+
 export const E1RMChart: React.FC<E1RMChartProps> = ({ data }) => {
   const { theme } = useTheme();
   // Group by exercise and date, taking the max e1RM for each day
-  const groupedData = data.reduce((acc: any, curr) => {
+  const groupedData = data.reduce((acc: Record<string, E1RMDataPoint>, curr) => {
     const dateStr = format(new Date(curr.date), 'MMM dd');
     const key = `${dateStr}_${curr.exercise_name}`;
 
@@ -37,20 +46,20 @@ export const E1RMChart: React.FC<E1RMChartProps> = ({ data }) => {
     return acc;
   }, {});
 
-  const chartData = Object.values(groupedData);
+  const chartData: E1RMDataPoint[] = Object.values(groupedData);
 
   // Separate by lift type
-  const squatData = chartData.filter((item: any) => item.lift_type === 'squat');
-  const benchData = chartData.filter((item: any) => item.lift_type === 'bench');
-  const deadliftData = chartData.filter((item: any) => item.lift_type === 'deadlift');
+  const squatData = chartData.filter((item) => item.lift_type === 'squat');
+  const benchData = chartData.filter((item) => item.lift_type === 'bench');
+  const deadliftData = chartData.filter((item) => item.lift_type === 'deadlift');
 
   // Combine all data with separate fields
   const combinedData = Array.from(
-    new Set([...squatData, ...benchData, ...deadliftData].map((item: any) => item.date))
+    new Set([...squatData, ...benchData, ...deadliftData].map((item) => item.date))
   ).map(date => {
-    const squatEntry = squatData.find((item: any) => item.date === date);
-    const benchEntry = benchData.find((item: any) => item.date === date);
-    const deadliftEntry = deadliftData.find((item: any) => item.date === date);
+    const squatEntry = squatData.find((item) => item.date === date);
+    const benchEntry = benchData.find((item) => item.date === date);
+    const deadliftEntry = deadliftData.find((item) => item.date === date);
 
     return {
       date,
@@ -99,9 +108,9 @@ export const E1RMChart: React.FC<E1RMChartProps> = ({ data }) => {
             border: `1px solid ${isDark ? '#374151' : '#ccc'}`,
             color: isDark ? '#fff' : '#000',
           }}
-          formatter={(value: number | undefined, name: string) => {
-            if (value === undefined) return ['N/A', name];
-            return [`${value.toFixed(1)} kg`, name];
+          formatter={(value: any) => {
+            if (value === undefined || value === null) return 'N/A';
+            return `${Number(value).toFixed(1)} kg`;
           }}
         />
         <Legend wrapperStyle={{ color: axisColor }} />

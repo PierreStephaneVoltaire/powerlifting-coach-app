@@ -77,6 +77,25 @@ export const WorkoutHistory: React.FC = () => {
     return session.exercises?.reduce((total, exercise) => total + (exercise.completed_sets?.length || 0), 0) || 0;
   };
 
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!window.confirm('Are you sure you want to delete this workout? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/sessions/${sessionId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      setSessions(sessions.filter(s => s.id !== sessionId));
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      alert('Failed to delete workout. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -205,6 +224,15 @@ export const WorkoutHistory: React.FC = () => {
                   className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   View Details
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteSession(session.id);
+                  }}
+                  className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Delete
                 </button>
               </div>
             </div>

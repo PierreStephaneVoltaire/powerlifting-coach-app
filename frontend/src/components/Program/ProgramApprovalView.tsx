@@ -26,7 +26,7 @@ export const ProgramApprovalView: React.FC<ProgramApprovalViewProps> = ({
   };
 
   const handleReject = async () => {
-    if (!confirm('Are you sure you want to reject this program? You will need to create a new one.')) {
+    if (!window.confirm('Are you sure you want to reject this program? You will need to create a new one.')) {
       return;
     }
 
