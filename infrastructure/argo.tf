@@ -73,8 +73,9 @@ resource "kubernetes_ingress_v1" "argocd" {
   ]
 }
 
-resource "kubernetes_manifest" "app" {
-  count = var.kubernetes_resources_enabled && var.argocd_resources_enabled ? 1 : 0
+# Frontend Application
+resource "kubernetes_manifest" "app_frontend" {
+  count = var.kubernetes_resources_enabled && var.argocd_resources_enabled && var.deploy_frontend ? 1 : 0
 
   field_manager {
     force_conflicts = true
@@ -84,28 +85,11 @@ resource "kubernetes_manifest" "app" {
     "apiVersion" = "argoproj.io/v1alpha1"
     "kind"       = "Application"
     "metadata" = {
-      "name"      = "${var.project_name}"
+      "name"      = "${var.project_name}-frontend"
       "namespace" = kubernetes_namespace.argocd[0].metadata[0].name
       "annotations" = {
-        # Configure ArgoCD Image Updater with Kubernetes API write-back
-        "argocd-image-updater.argoproj.io/image-list" = join(",", [
-          "auth-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/auth-service:latest",
-          "user-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/user-service:latest",
-          "video-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/video-service:latest",
-          "settings-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/settings-service:latest",
-          "program-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/program-service:latest",
-          "coach-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/coach-service:latest",
-          "notification-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/notification-service:latest",
-          "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend:latest"
-        ])
+        "argocd-image-updater.argoproj.io/image-list" = "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend:latest"
         "argocd-image-updater.argoproj.io/write-back-method" = "argocd"
-        "argocd-image-updater.argoproj.io/auth-service.update-strategy" = "latest"
-        "argocd-image-updater.argoproj.io/user-service.update-strategy" = "latest"
-        "argocd-image-updater.argoproj.io/video-service.update-strategy" = "latest"
-        "argocd-image-updater.argoproj.io/settings-service.update-strategy" = "latest"
-        "argocd-image-updater.argoproj.io/program-service.update-strategy" = "latest"
-        "argocd-image-updater.argoproj.io/coach-service.update-strategy" = "latest"
-        "argocd-image-updater.argoproj.io/notification-service.update-strategy" = "latest"
         "argocd-image-updater.argoproj.io/frontend.update-strategy" = "latest"
       }
     }
@@ -114,7 +98,7 @@ resource "kubernetes_manifest" "app" {
 
       "source" = {
         "repoURL"        = "https://github.com/PierreStephaneVoltaire/powerlifting-coach-app"
-        "path"           = "./k8s/overlays/production"
+        "path"           = "./k8s/overlays/production-frontend"
         "targetRevision" = "HEAD"
       }
 
@@ -123,6 +107,122 @@ resource "kubernetes_manifest" "app" {
         "namespace" = "app"
       }
 
+      "syncPolicy" = {
+        "automated" = {
+          "prune"    = true
+          "selfHeal" = true
+        }
+        "syncOptions" = [
+          "CreateNamespace=true"
+        ]
+      }
+    }
+  }
+  depends_on = [
+    helm_release.argocd
+  ]
+}
+
+# Datalayer Application (postgres, valkey, rabbitmq, keycloak)
+resource "kubernetes_manifest" "app_datalayer" {
+  count = var.kubernetes_resources_enabled && var.argocd_resources_enabled && var.deploy_datalayer ? 1 : 0
+
+  field_manager {
+    force_conflicts = true
+  }
+
+  manifest = {
+    "apiVersion" = "argoproj.io/v1alpha1"
+    "kind"       = "Application"
+    "metadata" = {
+      "name"      = "${var.project_name}-datalayer"
+      "namespace" = kubernetes_namespace.argocd[0].metadata[0].name
+    }
+    "spec" = {
+      "project" = "default"
+
+      "source" = {
+        "repoURL"        = "https://github.com/PierreStephaneVoltaire/powerlifting-coach-app"
+        "path"           = "./k8s/overlays/production-datalayer"
+        "targetRevision" = "HEAD"
+      }
+
+      "destination" = {
+        "server"    = "https://kubernetes.default.svc"
+        "namespace" = "app"
+      }
+
+      "syncPolicy" = {
+        "automated" = {
+          "prune"    = true
+          "selfHeal" = true
+        }
+        "syncOptions" = [
+          "CreateNamespace=true"
+        ]
+      }
+    }
+  }
+  depends_on = [
+    helm_release.argocd
+  ]
+}
+
+# Backend Services Application
+resource "kubernetes_manifest" "app_backend" {
+  count = var.kubernetes_resources_enabled && var.argocd_resources_enabled && var.deploy_backend ? 1 : 0
+
+  field_manager {
+    force_conflicts = true
+  }
+
+  manifest = {
+    "apiVersion" = "argoproj.io/v1alpha1"
+    "kind"       = "Application"
+    "metadata" = {
+      "name"      = "${var.project_name}-backend"
+      "namespace" = kubernetes_namespace.argocd[0].metadata[0].name
+      "annotations" = {
+        "argocd-image-updater.argoproj.io/image-list" = join(",", [
+          "auth-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/auth-service:latest",
+          "user-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/user-service:latest",
+          "video-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/video-service:latest",
+          "media-processor-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/media-processor-service:latest",
+          "settings-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/settings-service:latest",
+          "program-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/program-service:latest",
+          "coach-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/coach-service:latest",
+          "notification-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/notification-service:latest",
+          "dm-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/dm-service:latest",
+          "machine-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/machine-service:latest",
+          "reminder-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/reminder-service:latest"
+        ])
+        "argocd-image-updater.argoproj.io/write-back-method" = "argocd"
+        "argocd-image-updater.argoproj.io/auth-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/user-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/video-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/media-processor-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/settings-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/program-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/coach-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/notification-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/dm-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/machine-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/reminder-service.update-strategy" = "latest"
+      }
+    }
+    "spec" = {
+      "project" = "default"
+
+      "source" = {
+        "repoURL"        = "https://github.com/PierreStephaneVoltaire/powerlifting-coach-app"
+        "path"           = "./k8s/overlays/production-backend"
+        "targetRevision" = "HEAD"
+      }
+
+      "destination" = {
+        "server"    = "https://kubernetes.default.svc"
+        "namespace" = "app"
+      }
 
       "syncPolicy" = {
         "automated" = {
