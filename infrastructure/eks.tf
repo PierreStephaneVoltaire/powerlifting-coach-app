@@ -2,13 +2,13 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.8.0"
 name  = local.cluster_name
-  cluster_version = var.kubernetes_version
+  kubernetes_version = var.kubernetes_version
 
   vpc_id     = aws_vpc.main.id
   subnet_ids = aws_subnet.public[*].id
 
-  cluster_endpoint_public_access  = true
-  cluster_endpoint_private_access = false
+  endpoint_public_access  = true
+  endpoint_private_access = false
 
   enable_irsa = true
 
@@ -58,7 +58,7 @@ name  = local.cluster_name
     }
   }
 
-  cluster_security_group_additional_rules = {
+  security_group_additional_rules = {
     ingress_workstation_https = {
       description = "Allow workstation to communicate with the cluster API Server"
       protocol    = "tcp"
