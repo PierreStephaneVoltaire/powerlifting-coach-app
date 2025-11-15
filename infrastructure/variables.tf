@@ -17,6 +17,13 @@ variable "environment" {
   default     = "dev"
 }
 
+# EKS Configuration
+variable "kubernetes_version" {
+  description = "Kubernetes version for EKS cluster"
+  type        = string
+  default     = "1.34"
+}
+
 # EKS Node Configuration (all spot instances, smallest possible)
 
 variable "worker_desired_capacity" {
