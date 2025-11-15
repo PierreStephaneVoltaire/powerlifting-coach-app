@@ -218,8 +218,15 @@ resource "aws_eks_addon" "vpc_cni" {
       ENABLE_PREFIX_DELEGATION = "true"
       WARM_PREFIX_TARGET = "1"
       WARM_IP_TARGET = "5"
+      AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"
+      ENI_CONFIG_LABEL_DEF = "topology.kubernetes.io/zone"
     }
   })
+
+  depends_on = [
+    aws_vpc_ipv4_cidr_block_association.secondary,
+    aws_subnet.secondary
+  ]
 }
 
 resource "aws_eks_addon" "kube_proxy" {

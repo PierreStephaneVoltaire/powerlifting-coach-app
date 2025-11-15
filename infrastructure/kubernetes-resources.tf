@@ -142,3 +142,26 @@ resource "kubernetes_secret" "google_oauth_secret" {
 
   type = "Opaque"
 }
+
+resource "kubernetes_manifest" "eniconfig" {
+  count = var.kubernetes_resources_enabled ? 3 : 0
+
+  manifest = {
+    apiVersion = "crd.k8s.amazonaws.com/v1alpha1"
+    kind       = "ENIConfig"
+    metadata = {
+      name = data.aws_availability_zones.available.names[count.index]
+    }
+    spec = {
+      securityGroups = [
+        aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+      ]
+      subnet = aws_subnet.secondary[count.index].id
+    }
+  }
+
+  depends_on = [
+    aws_eks_addon.vpc_cni,
+    aws_subnet.secondary
+  ]
+}
