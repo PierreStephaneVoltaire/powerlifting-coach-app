@@ -120,3 +120,22 @@ variable "budget_notification_email" {
   default = "psvoltaire96@gmai.com"
 }
 
+# ArgoCD Deployment Toggles
+variable "deploy_frontend" {
+  description = "Deploy frontend application via ArgoCD"
+  type        = bool
+  default     = true
+}
+
+variable "deploy_datalayer" {
+  description = "Deploy datalayer (postgres, valkey, rabbitmq, keycloak) via ArgoCD"
+  type        = bool
+  default     = true
+}
+
+variable "deploy_backend" {
+  description = "Deploy backend services via ArgoCD"
+  type        = bool
+  default     = true
+}
+
