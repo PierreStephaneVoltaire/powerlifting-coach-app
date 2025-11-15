@@ -42,7 +42,7 @@ resource "aws_subnet" "public" {
     Environment                                   = var.environment
     Project                                       = var.project_name
     Type                                          = "public"
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
     "kubernetes.io/role/elb"                      = "1"
   }
 }

@@ -64,44 +64,8 @@ resource "aws_eks_node_group" "small" {
   }
 }
 
-# EKS Node Group - Medium instances
-resource "aws_eks_node_group" "medium" {
-  cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${local.cluster_name}-spot-medium"
-  node_role_arn   = aws_iam_role.eks_node.arn
-  subnet_ids      = aws_subnet.public[*].id
-
-  scaling_config {
-    desired_size = var.stopped ? 0 : 1
-    min_size     = var.stopped ? 0 : 1
-    max_size     = 3
-  }
-
-  capacity_type  = "SPOT"
-  instance_types = ["t3a.medium", "t3.medium", "t2.medium"]
-
-  update_config {
-    max_unavailable = 1
-  }
-
-  tags = {
-    Name        = "${local.cluster_name}-spot-medium"
-    Environment = var.environment
-    Project     = var.project_name
-    NodeSize    = "medium"
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_worker_node_policy,
-    aws_iam_role_policy_attachment.eks_cni_policy,
-    aws_iam_role_policy_attachment.eks_container_registry_policy,
-    aws_iam_role_policy_attachment.eks_ebs_csi_driver_policy,
-  ]
-
-  lifecycle {
-    ignore_changes = [scaling_config[0].desired_size]
-  }
-}
+# Medium instances will be managed by Karpenter
+# See karpenter.tf for configuration
 
 # EKS Cluster IAM Role
 resource "aws_iam_role" "eks_cluster" {
@@ -284,12 +248,11 @@ resource "aws_eks_addon" "coredns" {
   addon_name               = "coredns"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
-  
-  
+
+
 
   depends_on = [
-    aws_eks_node_group.small,
-    aws_eks_node_group.medium
+    aws_eks_node_group.small
   ]
 }
 
