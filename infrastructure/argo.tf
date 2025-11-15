@@ -69,8 +69,7 @@ resource "kubernetes_ingress_v1" "argocd" {
   }
 
   depends_on = [
-    helm_release.argocd,
-    data.kubernetes_service.nginx_ingress
+    helm_release.argocd
   ]
 }
 
