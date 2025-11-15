@@ -56,6 +56,7 @@ resource "aws_eks_node_group" "small" {
     aws_iam_role_policy_attachment.eks_worker_node_policy,
     aws_iam_role_policy_attachment.eks_cni_policy,
     aws_iam_role_policy_attachment.eks_container_registry_policy,
+    aws_iam_role_policy_attachment.eks_ebs_csi_driver_policy,
   ]
 
   lifecycle {
@@ -94,6 +95,7 @@ resource "aws_eks_node_group" "medium" {
     aws_iam_role_policy_attachment.eks_worker_node_policy,
     aws_iam_role_policy_attachment.eks_cni_policy,
     aws_iam_role_policy_attachment.eks_container_registry_policy,
+    aws_iam_role_policy_attachment.eks_ebs_csi_driver_policy,
   ]
 
   lifecycle {
@@ -167,6 +169,11 @@ resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
 
 resource "aws_iam_role_policy_attachment" "eks_container_registry_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.eks_node.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_ebs_csi_driver_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
   role       = aws_iam_role.eks_node.name
 }
 
