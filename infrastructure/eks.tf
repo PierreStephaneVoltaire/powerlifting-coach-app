@@ -25,10 +25,10 @@ resource "aws_eks_cluster" "main" {
   ]
 }
 
-# EKS Node Group with smallest spot instances
-resource "aws_eks_node_group" "main" {
+# EKS Node Group - Small instances
+resource "aws_eks_node_group" "small" {
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${local.cluster_name}-spot-nodes"
+  node_group_name = "${local.cluster_name}-spot-small"
   node_role_arn   = aws_iam_role.eks_node.arn
   subnet_ids      = aws_subnet.public[*].id
 
@@ -39,16 +39,55 @@ resource "aws_eks_node_group" "main" {
   }
 
   capacity_type  = "SPOT"
-  instance_types = ["t3a.micro", "t3.micro", "t2.micro"]
+  instance_types = ["t3a.small", "t3.small", "t2.small"]
 
   update_config {
     max_unavailable = 1
   }
 
   tags = {
-    Name        = "${local.cluster_name}-spot-nodes"
+    Name        = "${local.cluster_name}-spot-small"
     Environment = var.environment
     Project     = var.project_name
+    NodeSize    = "small"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_worker_node_policy,
+    aws_iam_role_policy_attachment.eks_cni_policy,
+    aws_iam_role_policy_attachment.eks_container_registry_policy,
+  ]
+
+  lifecycle {
+    ignore_changes = [scaling_config[0].desired_size]
+  }
+}
+
+# EKS Node Group - Medium instances
+resource "aws_eks_node_group" "medium" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "${local.cluster_name}-spot-medium"
+  node_role_arn   = aws_iam_role.eks_node.arn
+  subnet_ids      = aws_subnet.public[*].id
+
+  scaling_config {
+    desired_size = var.stopped ? 0 : 1
+    min_size     = var.stopped ? 0 : 1
+    max_size     = 3
+  }
+
+  capacity_type  = "SPOT"
+  instance_types = ["t3a.medium", "t3.medium", "t2.medium"]
+
+  update_config {
+    max_unavailable = 1
+  }
+
+  tags = {
+    Name        = "${local.cluster_name}-spot-medium"
+    Environment = var.environment
+    Project     = var.project_name
+    NodeSize    = "medium"
   }
 
   depends_on = [
@@ -173,7 +212,17 @@ resource "aws_eks_addon" "vpc_cni" {
   addon_name               = "vpc-cni"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
-  
+
+  configuration_values = jsonencode({
+    env = {
+      # Enable prefix delegation for higher pod density
+      ENABLE_PREFIX_DELEGATION = "true"
+      # Warm pool of prefixes
+      WARM_PREFIX_TARGET = "1"
+      # Maximum number of ENIs per node
+      WARM_IP_TARGET = "5"
+    }
+  })
 }
 
 resource "aws_eks_addon" "kube_proxy" {
@@ -192,7 +241,10 @@ resource "aws_eks_addon" "coredns" {
   
   
 
-  depends_on = [aws_eks_node_group.main]
+  depends_on = [
+    aws_eks_node_group.small,
+    aws_eks_node_group.medium
+  ]
 }
 
 # AWS Load Balancer Controller IAM Role
