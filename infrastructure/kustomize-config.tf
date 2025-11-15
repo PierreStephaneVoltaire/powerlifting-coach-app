@@ -1,7 +1,3 @@
-locals {
-  lb_ip = var.kubernetes_resources_enabled && !var.stopped ? data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : ""
-}
-
 resource "local_file" "kustomization_patches" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
@@ -74,8 +70,6 @@ replicas:
   - name: rabbitmq
     count: 1
 EOT
-
-  depends_on = [data.kubernetes_service.nginx_ingress]
 }
 
 resource "local_file" "frontend_patch" {
@@ -99,8 +93,6 @@ spec:
         - name: REACT_APP_AUTH_URL
           value: "https://api.${var.domain_name}/auth"
 EOT
-
-  depends_on = [data.kubernetes_service.nginx_ingress]
 }
 
 resource "local_file" "auth_service_patch" {
@@ -122,6 +114,4 @@ spec:
         - name: KEYCLOAK_URL
           value: "http://keycloak:8080"
 EOT
-
-  depends_on = [data.kubernetes_service.nginx_ingress]
 }
