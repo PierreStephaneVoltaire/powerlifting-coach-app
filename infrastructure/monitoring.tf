@@ -144,6 +144,9 @@ resource "helm_release" "loki" {
       gateway = {
         enabled = false
       }
+      test = {
+        enabled = false
+      }
       monitoring = {
         lokiCanary = {
           enabled = false
