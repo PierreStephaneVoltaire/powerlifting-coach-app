@@ -17,31 +17,7 @@ variable "environment" {
   default     = "dev"
 }
 
-# Control Plane Configuration
-variable "control_plane_instance_type" {
-  description = "EC2 instance type for control plane nodes (will use spot instances)"
-  type        = string
-  default     = "t3.small"
-}
-
-variable "control_plane_volume_size" {
-  description = "EBS volume size in GB for control plane nodes"
-  type        = number
-  default     = 30
-}
-
-# Worker Configuration
-variable "worker_instance_type" {
-  description = "EC2 instance type for worker nodes (will use spot instances)"
-  type        = string
-  default     = "t3.medium"
-}
-
-variable "worker_volume_size" {
-  description = "EBS volume size in GB for worker nodes"
-  type        = number
-  default     = 30
-}
+# EKS Node Configuration (all spot instances, smallest possible)
 
 variable "worker_desired_capacity" {
   description = "Desired number of worker nodes"
@@ -61,24 +37,6 @@ variable "worker_max_size" {
   default     = 5
 }
 
-variable "max_pods_per_node" {
-  description = "Maximum number of pods per node"
-  type        = number
-  default     = 110
-}
-
-# Network Configuration
-variable "pod_network_cidr" {
-  description = "CIDR block for pod network"
-  type        = string
-  default     = "10.42.0.0/16"
-}
-
-variable "nginx_lb_ssh_allowed_cidr" {
-  description = "CIDR block allowed to SSH into nginx load balancer (e.g., your IP: 1.2.3.4/32)"
-  type        = string
-  default     = "0.0.0.0/0"
-}
 
 # Kubernetes Configuration
 variable "kubernetes_resources_enabled" {
