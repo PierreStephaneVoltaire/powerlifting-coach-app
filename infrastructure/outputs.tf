@@ -22,8 +22,6 @@ output "eks_node_group_small_id" {
   value = module.eks.eks_managed_node_groups["small"].node_group_id
 }
 
-# Medium nodes are managed by Karpenter
-
 output "vpc_id" {
   value = aws_vpc.main.id
 }

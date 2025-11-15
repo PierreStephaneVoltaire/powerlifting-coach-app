@@ -1,5 +1,3 @@
-# EKS Blueprints Addons - Manages all cluster add-ons and integrations
-
 module "eks_blueprints_addons" {
   source  = "aws-ia/eks-blueprints-addons/aws"
   version = "~> 1.0"
@@ -9,10 +7,8 @@ module "eks_blueprints_addons" {
   cluster_version   = module.eks.cluster_version
   oidc_provider_arn = module.eks.oidc_provider_arn
 
-  # Only enable addons when kubernetes_resources_enabled is true
   create_delay_dependencies = [for group in module.eks.eks_managed_node_groups : group.node_group_arn]
 
-  # EKS Managed Add-ons
   eks_addons = {
     aws-ebs-csi-driver = {
       most_recent              = true
@@ -46,7 +42,6 @@ module "eks_blueprints_addons" {
     }
   }
 
-  # Enable Karpenter
   enable_karpenter = var.kubernetes_resources_enabled
   karpenter = {
     repository_username = data.aws_ecrpublic_authorization_token.token.user_name
@@ -63,7 +58,6 @@ module "eks_blueprints_addons" {
     }
   }
 
-  # Enable Metrics Server
   enable_metrics_server = var.kubernetes_resources_enabled
   metrics_server = {
     values = [
@@ -86,7 +80,6 @@ module "eks_blueprints_addons" {
     ]
   }
 
-  # Enable Cert Manager
   enable_cert_manager = var.kubernetes_resources_enabled
   cert_manager = {
     chart_version = "v1.14.2"
@@ -108,7 +101,6 @@ module "eks_blueprints_addons" {
   }
   cert_manager_route53_hosted_zone_arns = [aws_route53_zone.main.arn]
 
-  # Enable External DNS
   enable_external_dns = var.kubernetes_resources_enabled
   external_dns = {
     values = [
@@ -134,8 +126,65 @@ module "eks_blueprints_addons" {
   }
   external_dns_route53_zone_arns = [aws_route53_zone.main.arn]
 
-  # Enable AWS Load Balancer Controller
   enable_aws_load_balancer_controller = var.kubernetes_resources_enabled
+
+  enable_kube_prometheus_stack = var.kubernetes_resources_enabled && !var.stopped
+  kube_prometheus_stack = {
+    values = [
+      yamlencode({
+        prometheus = {
+          prometheusSpec = {
+            retention = "15d"
+            resources = {
+              requests = {
+                cpu    = "200m"
+                memory = "512Mi"
+              }
+              limits = {
+                cpu    = "500m"
+                memory = "2Gi"
+              }
+            }
+            storageSpec = {
+              volumeClaimTemplate = {
+                spec = {
+                  storageClassName = "gp3"
+                  accessModes      = ["ReadWriteOnce"]
+                  resources = {
+                    requests = {
+                      storage = "50Gi"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        grafana = {
+          enabled       = true
+          adminPassword = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : ""
+          persistence = {
+            enabled          = true
+            storageClassName = "gp3"
+            size             = "10Gi"
+          }
+          resources = {
+            requests = {
+              cpu    = "100m"
+              memory = "256Mi"
+            }
+            limits = {
+              cpu    = "200m"
+              memory = "512Mi"
+            }
+          }
+        }
+        alertmanager = {
+          enabled = false
+        }
+      })
+    ]
+  }
 
   tags = {
     Environment = var.environment
@@ -145,7 +194,6 @@ module "eks_blueprints_addons" {
   depends_on = [module.eks]
 }
 
-# IRSA for EBS CSI Driver (used by the addon)
 module "ebs_csi_driver_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
@@ -168,7 +216,6 @@ module "ebs_csi_driver_irsa" {
   }
 }
 
-# S3 access policy for Karpenter nodes (attached via blueprints addons)
 resource "aws_iam_role_policy" "karpenter_node_s3" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -195,12 +242,10 @@ resource "aws_iam_role_policy" "karpenter_node_s3" {
   })
 }
 
-# ECR Public authorization token for Karpenter
 data "aws_ecrpublic_authorization_token" "token" {
   provider = aws.virginia
 }
 
-# Karpenter EC2NodeClass - Spot instances only
 resource "kubectl_manifest" "karpenter_node_class" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -255,7 +300,6 @@ resource "kubectl_manifest" "karpenter_node_class" {
   depends_on = [module.eks_blueprints_addons]
 }
 
-# Karpenter NodePool - Medium spot instances only (no on-demand fallback)
 resource "kubectl_manifest" "karpenter_node_pool" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -323,12 +367,9 @@ resource "kubectl_manifest" "karpenter_node_pool" {
     }
   })
 
-  depends_on = [
-    kubectl_manifest.karpenter_node_class
-  ]
+  depends_on = [kubectl_manifest.karpenter_node_class]
 }
 
-# LetsEncrypt ClusterIssuer (custom configuration)
 resource "kubectl_manifest" "letsencrypt_prod" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -361,7 +402,6 @@ resource "kubectl_manifest" "letsencrypt_prod" {
   depends_on = [module.eks_blueprints_addons]
 }
 
-# Nginx Ingress (not in blueprints, keep manual)
 resource "helm_release" "nginx_ingress" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
@@ -406,3 +446,4 @@ resource "helm_release" "nginx_ingress" {
 
   depends_on = [module.eks_blueprints_addons]
 }
+

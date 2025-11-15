@@ -1,5 +1,3 @@
-# EKS Cluster Configuration using terraform-aws-modules
-
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.8.0"
@@ -7,22 +5,15 @@ module "eks" {
   cluster_name    = local.cluster_name
   cluster_version = var.kubernetes_version
 
-  # Network configuration
   vpc_id     = aws_vpc.main.id
   subnet_ids = aws_subnet.public[*].id
 
-  # Cluster endpoint access
   cluster_endpoint_public_access  = true
   cluster_endpoint_private_access = false
 
-  # OIDC Provider for IRSA
   enable_irsa = true
 
-  # Cluster addons are managed by eks-blueprints-addons module
-
-  # EKS Managed Node Groups
   eks_managed_node_groups = {
-    # Small node group for system components
     small = {
       name            = "${local.cluster_name}-spot-small"
       use_name_prefix = false
@@ -38,7 +29,6 @@ module "eks" {
         max_unavailable = 1
       }
 
-      # IAM role for nodes
       iam_role_additional_policies = {
         AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
       }
@@ -49,7 +39,6 @@ module "eks" {
     }
   }
 
-  # Node security group rules
   node_security_group_additional_rules = {
     ingress_self_all = {
       description = "Node to node all ports/protocols"
@@ -70,7 +59,6 @@ module "eks" {
     }
   }
 
-  # Cluster security group rules
   cluster_security_group_additional_rules = {
     ingress_workstation_https = {
       description = "Allow workstation to communicate with the cluster API Server"
@@ -89,7 +77,6 @@ module "eks" {
   }
 }
 
-# Additional S3 access policy for managed node group
 resource "aws_iam_role_policy" "eks_node_s3" {
   name_prefix = "${local.cluster_name}-eks-node-s3-"
   role        = module.eks.eks_managed_node_groups["small"].iam_role_name
@@ -113,5 +100,3 @@ resource "aws_iam_role_policy" "eks_node_s3" {
     ]
   })
 }
-
-# IAM roles for add-ons are now managed by eks-blueprints-addons module

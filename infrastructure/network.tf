@@ -1,5 +1,3 @@
-# VPC Configuration - All public subnets for EKS
-
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
@@ -13,7 +11,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway for public subnet access
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -24,12 +21,10 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Get availability zones in the region
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# Public subnets across 3 AZs for HA
 resource "aws_subnet" "public" {
   count                   = 3
   vpc_id                  = aws_vpc.main.id
@@ -47,7 +42,6 @@ resource "aws_subnet" "public" {
   }
 }
 
-# Route table for public subnets
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -63,7 +57,6 @@ resource "aws_route_table" "public" {
   }
 }
 
-# Associate route table with public subnets
 resource "aws_route_table_association" "public" {
   count          = 3
   subnet_id      = aws_subnet.public[count.index].id

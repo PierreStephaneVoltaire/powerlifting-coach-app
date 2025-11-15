@@ -43,7 +43,6 @@ provider "aws" {
   }
 }
 
-# Provider for us-east-1 (required for ECR Public authentication)
 provider "aws" {
   alias  = "virginia"
   region = "us-east-1"
@@ -59,7 +58,6 @@ provider "aws" {
 
 data "aws_partition" "current" {}
 
-# EKS cluster authentication
 data "aws_eks_cluster_auth" "main" {
   count = var.kubernetes_resources_enabled ? 1 : 0
   name  = module.eks.cluster_name
@@ -86,7 +84,6 @@ provider "kubectl" {
   load_config_file       = false
 }
 
-# Generate kubeconfig for EKS
 resource "local_file" "kubeconfig" {
   count    = var.kubernetes_resources_enabled ? 1 : 0
   filename = "${path.module}/kubeconfig.yaml"
