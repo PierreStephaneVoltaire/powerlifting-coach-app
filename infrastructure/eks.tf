@@ -215,11 +215,8 @@ resource "aws_eks_addon" "vpc_cni" {
 
   configuration_values = jsonencode({
     env = {
-      # Enable prefix delegation for higher pod density
       ENABLE_PREFIX_DELEGATION = "true"
-      # Warm pool of prefixes
       WARM_PREFIX_TARGET = "1"
-      # Maximum number of ENIs per node
       WARM_IP_TARGET = "5"
     }
   })
