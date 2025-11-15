@@ -207,7 +207,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
   };
 
   const handleCompleteWorkout = async () => {
-    if (!confirm('Are you sure you want to complete this workout?')) return;
+    if (!window.confirm('Are you sure you want to complete this workout?')) return;
 
     try {
       const workoutData = {
@@ -235,6 +235,40 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
       };
 
       await api.post('/programs/log-workout', workoutData);
+
+      try {
+        const privacyResponse = await api.get('/feed/privacy-settings', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+
+        if (privacyResponse.data?.auto_post_workouts) {
+          const totalVolume = exercises.reduce((total, ex) => {
+            const exId = ex.id || `ex-${ex.order}`;
+            const sets = exerciseLogs.get(exId) || [];
+            return total + sets.reduce((sum, s) => sum + (s.weight_kg * s.reps_completed), 0);
+          }, 0);
+
+          const totalSets = exercises.reduce((total, ex) => {
+            const exId = ex.id || `ex-${ex.order}`;
+            const sets = exerciseLogs.get(exId) || [];
+            return total + sets.length;
+          }, 0);
+
+          const postContent = `Completed ${session.session_name}\n\n` +
+            `📊 ${exercises.length} exercises • ${totalSets} sets • ${totalVolume.toFixed(0)}kg total volume` +
+            (rpeRating ? `\n💪 RPE: ${rpeRating}/10` : '') +
+            (workoutNotes ? `\n\n${workoutNotes}` : '');
+
+          await api.post('/feed/posts', {
+            content: postContent,
+            workout_data: workoutData,
+          }, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+        }
+      } catch (autoPostError) {
+        console.error('Failed to auto-post workout:', autoPostError);
+      }
 
       localStorage.removeItem(`workout-progress-${session.id}`);
       onComplete();

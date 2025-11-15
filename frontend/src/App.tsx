@@ -25,6 +25,7 @@ import { CoachProfilePage } from '@/pages/CoachProfilePage';
 import { RelationshipManagerPage } from '@/pages/RelationshipManagerPage';
 import { AthleteProfilePage } from '@/pages/AthleteProfilePage';
 import { PrivacySettingsPage } from '@/pages/PrivacySettingsPage';
+import { WorkoutTemplatesPage } from '@/pages/WorkoutTemplatesPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ function App() {
               <Route path="/relationships" element={<RelationshipManagerPage />} />
               <Route path="/athletes/:athleteId" element={<AthleteProfilePage />} />
               <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
+              <Route path="/templates" element={<WorkoutTemplatesPage />} />
               <Route path="/dm/*" element={<DMPage />} />
               <Route path="/tools" element={<ToolsPage />} />
               <Route path="/" element={<Navigate to="/feed" replace />} />

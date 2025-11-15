@@ -462,6 +462,26 @@ class ApiClient {
     });
     return response.data;
   }
+
+  async get(url: string, config?: any) {
+    return this.client.get(`/api/v1${url}`, config);
+  }
+
+  async post(url: string, data?: any, config?: any) {
+    return this.client.post(`/api/v1${url}`, data, config);
+  }
+
+  async put(url: string, data?: any, config?: any) {
+    return this.client.put(`/api/v1${url}`, data, config);
+  }
+
+  async delete(url: string, config?: any) {
+    return this.client.delete(`/api/v1${url}`, config);
+  }
+
+  async patch(url: string, data?: any, config?: any) {
+    return this.client.patch(`/api/v1${url}`, data, config);
+  }
 }
 
 export const apiClient = new ApiClient();

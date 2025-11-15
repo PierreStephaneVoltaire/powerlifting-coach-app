@@ -19,6 +19,7 @@ export const MainLayout: React.FC = () => {
     { to: '/analytics', label: 'Analytics' },
     { to: '/exercises', label: 'Exercises' },
     { to: '/history', label: 'History' },
+    { to: '/templates', label: 'Templates' },
     { to: '/comp-prep', label: 'Comp Prep' },
     { to: '/coaches', label: 'Coaches' },
     { to: '/relationships', label: 'My Coaches' },
