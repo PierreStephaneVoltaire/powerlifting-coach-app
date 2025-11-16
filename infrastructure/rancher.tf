@@ -1,23 +1,7 @@
-# RKE2 Cluster on AWS using official Rancher Federal module
-# Replaces EKS with RKE2 for cost optimization
+# Rancher Server and Cluster Setup using rancher2 provider
+# This deploys Rancher Server, then uses it to create a k3s cluster
 
-# Get latest RHEL 8 AMI (recommended for RKE2)
-data "aws_ami" "rhel8" {
-  most_recent = true
-  owners      = ["309956199498"] # Red Hat
-
-  filter {
-    name   = "name"
-    values = ["RHEL-8*_HVM-*-x86_64-*-Hourly2-GP3"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
-# Or use Amazon Linux 2 (cheaper)
+# Get latest Amazon Linux 2 AMI for Rancher Server
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["amazon"]
@@ -33,81 +17,87 @@ data "aws_ami" "amazon_linux_2" {
   }
 }
 
-# SSH Key Pair for EC2 access (for debugging)
-resource "tls_private_key" "rke2" {
+# SSH Key Pair
+resource "tls_private_key" "rancher" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-resource "aws_key_pair" "rke2" {
-  key_name   = "${local.cluster_name}-rke2-key"
-  public_key = tls_private_key.rke2.public_key_openssh
+resource "aws_key_pair" "rancher" {
+  key_name   = "${local.cluster_name}-rancher-key"
+  public_key = tls_private_key.rancher.public_key_openssh
 
   tags = {
-    Name        = "${local.cluster_name}-rke2-key"
+    Name        = "${local.cluster_name}-rancher-key"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-resource "local_file" "rke2_private_key" {
-  filename        = "${path.module}/rke2-key.pem"
-  content         = tls_private_key.rke2.private_key_pem
+resource "local_file" "rancher_private_key" {
+  filename        = "${path.module}/rancher-key.pem"
+  content         = tls_private_key.rancher.private_key_pem
   file_permission = "0400"
 }
 
-# RKE2 Cluster using official Rancher Federal module
-module "rke2" {
-  source = "git::https://github.com/rancherfederal/rke2-aws-tf.git?ref=v2.7.0"
+# Elastic IP for Rancher Server
+resource "aws_eip" "rancher" {
+  domain = "vpc"
 
-  cluster_name = local.cluster_name
-  vpc_id       = aws_vpc.main.id
-  subnets      = aws_subnet.public[*].id
-  ami          = data.aws_ami.amazon_linux_2.id
-
-  # Single server node (cost optimization)
-  servers = 1
-
-  # Instance configuration
-  instance_type = "t3a.medium"
-  block_device_mappings = {
-    size      = 30
-    encrypted = true
-    type      = "gp3"
-  }
-
-  # SSH key for debugging
-  ssh_authorized_keys = [tls_private_key.rke2.public_key_openssh]
-
-  # RKE2 configuration
-  rke2_version = "v1.28.4+rke2r1"
-
-  # Disable built-in ingress controller (we'll use NGINX)
-  rke2_config = <<-EOT
-    disable:
-      - rke2-ingress-nginx
-    tls-san:
-      - ${local.cluster_name}.${var.domain_name}
-  EOT
-
-  # Enable public access
-  controlplane_internal = false
-
-  # IAM configuration - permissive as requested
-  iam_permissions_boundary = null
-  iam_instance_profile     = aws_iam_instance_profile.rke2.name
-
-  # Tagging
   tags = {
-    Environment                                   = var.environment
-    Project                                       = var.project_name
-    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+    Name        = "${local.cluster_name}-rancher-eip"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
-# Permissive IAM Role for RKE2 nodes
-resource "aws_iam_role" "rke2" {
-  name = "${local.cluster_name}-rke2-role"
+# Security Group for Rancher Server
+resource "aws_security_group" "rancher_server" {
+  name        = "${local.cluster_name}-rancher-server-sg"
+  description = "Security group for Rancher Server"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${local.cluster_name}-rancher-server-sg"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# IAM Role for Rancher Server (permissive)
+resource "aws_iam_role" "rancher_server" {
+  name = "${local.cluster_name}-rancher-server-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -121,124 +111,125 @@ resource "aws_iam_role" "rke2" {
   })
 
   tags = {
-    Name        = "${local.cluster_name}-rke2-role"
+    Name        = "${local.cluster_name}-rancher-server-role"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-resource "aws_iam_role_policy" "rke2_permissive" {
-  name = "${local.cluster_name}-rke2-permissive"
-  role = aws_iam_role.rke2.id
+resource "aws_iam_role_policy" "rancher_server_permissive" {
+  name = "${local.cluster_name}-rancher-server-policy"
+  role = aws_iam_role.rancher_server.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = [
-          "ec2:*",
-          "elasticloadbalancing:*",
-          "ecr:*",
-          "iam:CreateServiceLinkedRole",
-          "iam:PassRole",
-          "kms:DescribeKey",
-          "kms:CreateGrant"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:*"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "route53:*"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ssm:GetParameter",
-          "ssm:GetParameters",
-          "ssm:GetParametersByPath"
-        ]
+        Effect   = "Allow"
+        Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*"]
         Resource = "*"
       }
     ]
   })
 }
 
-resource "aws_iam_instance_profile" "rke2" {
-  name = "${local.cluster_name}-rke2-profile"
-  role = aws_iam_role.rke2.name
+resource "aws_iam_instance_profile" "rancher_server" {
+  name = "${local.cluster_name}-rancher-server-profile"
+  role = aws_iam_role.rancher_server.name
+}
+
+# Random password for Rancher admin
+resource "random_password" "rancher_admin" {
+  length  = 16
+  special = false
+}
+
+# Rancher Server EC2 Instance
+resource "aws_instance" "rancher_server" {
+  ami                    = data.aws_ami.amazon_linux_2.id
+  instance_type          = "t3a.medium"
+  key_name               = aws_key_pair.rancher.key_name
+  vpc_security_group_ids = [aws_security_group.rancher_server.id]
+  subnet_id              = aws_subnet.public[0].id
+  iam_instance_profile   = aws_iam_instance_profile.rancher_server.name
+
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = 30
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  user_data = <<-EOF
+#!/bin/bash
+set -e
+exec > >(tee /var/log/user-data.log) 2>&1
+
+# Install Docker
+yum update -y
+amazon-linux-extras install docker -y
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ec2-user
+
+# Install Rancher Server via Docker
+docker run -d --restart=unless-stopped \
+  -p 80:80 -p 443:443 \
+  --privileged \
+  -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
+  rancher/rancher:latest
+
+echo "Rancher Server started. Bootstrap password: ${random_password.rancher_admin.result}"
+EOF
 
   tags = {
-    Name        = "${local.cluster_name}-rke2-profile"
+    Name        = "${local.cluster_name}-rancher-server"
     Environment = var.environment
     Project     = var.project_name
   }
+
+  lifecycle {
+    ignore_changes = [user_data]
+  }
 }
 
-# DNS record for the control plane
-resource "aws_route53_record" "rke2_api" {
+resource "aws_eip_association" "rancher_server" {
+  instance_id   = aws_instance.rancher_server.id
+  allocation_id = aws_eip.rancher.id
+}
+
+# DNS for Rancher Server
+resource "aws_route53_record" "rancher_server" {
   zone_id = aws_route53_zone.main.zone_id
-  name    = "api.${var.domain_name}"
-  type    = "CNAME"
+  name    = "rancher.${var.domain_name}"
+  type    = "A"
   ttl     = 300
-  records = [module.rke2.server_url]
+  records = [aws_eip.rancher.public_ip]
 }
 
-# Wildcard DNS for services (pointing to NLB)
-resource "aws_route53_record" "rke2_wildcard" {
-  zone_id = aws_route53_zone.main.zone_id
-  name    = "*.${var.domain_name}"
-  type    = "CNAME"
-  ttl     = 300
-  records = [module.rke2.server_url]
+# Outputs for Rancher Server
+output "rancher_server_url" {
+  description = "URL of the Rancher Server"
+  value       = "https://rancher.${var.domain_name}"
 }
 
-# Save kubeconfig to local file
-resource "local_file" "kubeconfig" {
-  count           = 1
-  filename        = "${path.module}/kubeconfig.yaml"
-  content         = module.rke2.kubeconfig
-  file_permission = "0600"
+output "rancher_server_ip" {
+  description = "Public IP of Rancher Server"
+  value       = aws_eip.rancher.public_ip
 }
 
-# Outputs
-output "rke2_cluster_name" {
-  description = "Name of the RKE2 cluster"
-  value       = module.rke2.cluster_name
-}
-
-output "rke2_server_url" {
-  description = "RKE2 server URL (NLB endpoint)"
-  value       = module.rke2.server_url
-}
-
-output "rke2_cluster_data" {
-  description = "Cluster data for adding agent nodes"
-  value       = module.rke2.cluster_data
+output "rancher_admin_password" {
+  description = "Initial admin password for Rancher"
+  value       = random_password.rancher_admin.result
   sensitive   = true
 }
 
-output "rke2_kubeconfig_path" {
-  description = "Path to the kubeconfig file"
-  value       = local_file.kubeconfig[0].filename
+output "rancher_ssh_command" {
+  description = "SSH command to connect to Rancher Server"
+  value       = "ssh -i ${path.module}/rancher-key.pem ec2-user@${aws_eip.rancher.public_ip}"
 }
 
-output "rke2_ssh_command" {
-  description = "SSH command to connect to RKE2 server"
-  value       = "ssh -i ${path.module}/rke2-key.pem ec2-user@<instance-ip>"
-}
-
-output "rke2_private_key_path" {
-  description = "Path to private key for SSH access"
-  value       = local_file.rke2_private_key.filename
+output "rancher_private_key_path" {
+  description = "Path to SSH private key"
+  value       = local_file.rancher_private_key.filename
 }

@@ -16,6 +16,10 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = "~> 1.14"
     }
+    rancher2 = {
+      source  = "rancher/rancher2"
+      version = "~> 4.0"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"

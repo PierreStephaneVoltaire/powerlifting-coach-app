@@ -19,10 +19,12 @@ output "cluster_name" {
 #   value = aws_eks_cluster.main.version
 # }
 
-# Rancher k3s cluster endpoint
+# Rancher-managed cluster endpoint
+# Note: Actual cluster API endpoint is available via rancher2_cluster_v2.main[0].kube_config
+# after rancher_cluster_enabled = true
 output "cluster_endpoint" {
-  description = "Kubernetes API endpoint (EIP)"
-  value       = "https://${aws_eip.rancher.public_ip}:6443"
+  description = "Kubernetes API endpoint (from Rancher kubeconfig)"
+  value       = var.rancher_cluster_enabled ? "See cluster_kubeconfig output" : "Rancher Server: https://${aws_eip.rancher.public_ip}"
 }
 
 

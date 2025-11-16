@@ -139,3 +139,9 @@ variable "deploy_backend" {
   default     = true
 }
 
+variable "rancher_cluster_enabled" {
+  description = "Enable Rancher cluster creation. Set to false for initial Rancher Server deployment, then true after Rancher Server is running."
+  type        = bool
+  default     = false
+}
+
