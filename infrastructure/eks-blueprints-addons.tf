@@ -14,32 +14,6 @@ module "eks_blueprints_addons" {
       most_recent              = true
       service_account_role_arn = module.ebs_csi_driver_irsa.iam_role_arn
     }
-    coredns = {
-      most_recent = true
-      configuration_values = jsonencode({
-        tolerations = [
-          {
-            key      = "CriticalAddonsOnly"
-            operator = "Exists"
-          }
-        ]
-      })
-    }
-    vpc-cni = {
-      most_recent = true
-      configuration_values = jsonencode({
-        env = {
-          ENABLE_PREFIX_DELEGATION           = "true"
-          WARM_PREFIX_TARGET                 = "1"
-          WARM_IP_TARGET                     = "5"
-          AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"
-          ENI_CONFIG_LABEL_DEF               = "topology.kubernetes.io/zone"
-        }
-      })
-    }
-    kube-proxy = {
-      most_recent = true
-    }
   }
 
   enable_karpenter = var.kubernetes_resources_enabled

@@ -12,6 +12,33 @@ name  = local.cluster_name
 
   enable_irsa = true
 
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+      configuration_values = jsonencode({
+        tolerations = [
+          {
+            key      = "CriticalAddonsOnly"
+            operator = "Exists"
+          }
+        ]
+      })
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION = "true"
+          WARM_PREFIX_TARGET       = "1"
+          WARM_IP_TARGET           = "5"
+        }
+      })
+    }
+  }
+
   eks_managed_node_groups = {
     medium = {
       name            = "${local.cluster_name}-spot-medium"
