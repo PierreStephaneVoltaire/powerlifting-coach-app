@@ -18,9 +18,6 @@ output "eks_cluster_version" {
   value = module.eks.cluster_version
 }
 
-output "eks_node_group_small_id" {
-  value = module.eks.eks_managed_node_groups["small"].node_group_id
-}
 
 output "vpc_id" {
   value = aws_vpc.main.id
