@@ -1,12 +1,8 @@
-# EKS Cluster on AWS with Spot Instances
-# Main configuration file
-
 locals {
   cluster_name      = "${var.project_name}-${var.environment}"
   ses_smtp_endpoint = "email-smtp.${var.aws_region}.amazonaws.com"
 }
 
-# S3 bucket for video storage (replaces Azure Blob Storage)
 resource "aws_s3_bucket" "videos" {
   bucket_prefix = "${local.cluster_name}-videos-"
 
@@ -17,7 +13,6 @@ resource "aws_s3_bucket" "videos" {
   }
 }
 
-# Enable versioning for video bucket
 resource "aws_s3_bucket_versioning" "videos" {
   bucket = aws_s3_bucket.videos.id
 
@@ -26,7 +21,6 @@ resource "aws_s3_bucket_versioning" "videos" {
   }
 }
 
-# CORS configuration for video bucket
 resource "aws_s3_bucket_cors_configuration" "videos" {
   bucket = aws_s3_bucket.videos.id
 
@@ -39,7 +33,6 @@ resource "aws_s3_bucket_cors_configuration" "videos" {
   }
 }
 
-# Public access block for video bucket (allow public read)
 resource "aws_s3_bucket_public_access_block" "videos" {
   bucket = aws_s3_bucket.videos.id
 
@@ -49,7 +42,6 @@ resource "aws_s3_bucket_public_access_block" "videos" {
   restrict_public_buckets = false
 }
 
-# Bucket policy for public read access
 resource "aws_s3_bucket_policy" "videos" {
   bucket = aws_s3_bucket.videos.id
 
@@ -69,7 +61,6 @@ resource "aws_s3_bucket_policy" "videos" {
   depends_on = [aws_s3_bucket_public_access_block.videos]
 }
 
-# Lifecycle policy for video bucket (delete after 120 days)
 resource "aws_s3_bucket_lifecycle_configuration" "videos" {
   bucket = aws_s3_bucket.videos.id
 
@@ -127,4 +118,3 @@ resource "aws_iam_user_policy" "s3_videos" {
     ]
   })
 }
-

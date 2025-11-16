@@ -1,16 +1,10 @@
-# Rancher2 Provider Configuration and Cluster Creation
-# This file uses the rancher2 provider to create a k3s cluster on AWS
-
-# Configure the rancher2 provider
-# Note: Requires Rancher Server to be running first (rancher.tf)
 provider "rancher2" {
   api_url   = var.rancher_cluster_enabled ? "https://rancher.${var.domain_name}" : "https://localhost"
   bootstrap = false
-  insecure  = true # For self-signed certs, set to false in production with proper certs
+  insecure  = true
   token_key = var.rancher_cluster_enabled ? rancher2_bootstrap.admin[0].token : ""
 }
 
-# Bootstrap Rancher and get admin token
 resource "rancher2_bootstrap" "admin" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -23,7 +17,6 @@ resource "rancher2_bootstrap" "admin" {
   ]
 }
 
-# Create AWS cloud credentials in Rancher
 resource "rancher2_cloud_credential" "aws" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -32,14 +25,11 @@ resource "rancher2_cloud_credential" "aws" {
   amazonec2_credential_config {
     access_key = var.rancher_cluster_enabled ? data.aws_caller_identity.current.account_id : ""
     secret_key = ""
-    # Using IAM instance profile, so leave these empty
-    # Rancher will use the instance's IAM role
   }
 
   depends_on = [rancher2_bootstrap.admin]
 }
 
-# Create machine config for EC2 nodes
 resource "rancher2_machine_config_v2" "nodes" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -61,7 +51,6 @@ resource "rancher2_machine_config_v2" "nodes" {
   depends_on = [rancher2_bootstrap.admin]
 }
 
-# Security Group for cluster nodes
 resource "aws_security_group" "rancher_node" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -69,7 +58,6 @@ resource "aws_security_group" "rancher_node" {
   description = "Security group for Rancher managed cluster nodes"
   vpc_id      = aws_vpc.main.id
 
-  # All traffic within the security group
   ingress {
     from_port = 0
     to_port   = 0
@@ -77,7 +65,6 @@ resource "aws_security_group" "rancher_node" {
     self      = true
   }
 
-  # SSH from Rancher Server
   ingress {
     from_port       = 22
     to_port         = 22
@@ -85,7 +72,6 @@ resource "aws_security_group" "rancher_node" {
     security_groups = [aws_security_group.rancher_server.id]
   }
 
-  # Kubernetes API
   ingress {
     from_port   = 6443
     to_port     = 6443
@@ -93,7 +79,6 @@ resource "aws_security_group" "rancher_node" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # NodePort range
   ingress {
     from_port   = 30000
     to_port     = 32767
@@ -101,7 +86,6 @@ resource "aws_security_group" "rancher_node" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # HTTP/HTTPS for ingress
   ingress {
     from_port   = 80
     to_port     = 80
@@ -131,7 +115,6 @@ resource "aws_security_group" "rancher_node" {
   }
 }
 
-# IAM Role for cluster nodes (permissive)
 resource "aws_iam_role" "rancher_node" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -180,7 +163,6 @@ resource "aws_iam_instance_profile" "rancher_node" {
   role = aws_iam_role.rancher_node[0].name
 }
 
-# Create k3s cluster using Rancher
 resource "rancher2_cluster_v2" "main" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -217,7 +199,6 @@ resource "rancher2_cluster_v2" "main" {
   ]
 }
 
-# Get kubeconfig from Rancher
 resource "local_file" "kubeconfig_rancher" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -228,8 +209,6 @@ resource "local_file" "kubeconfig_rancher" {
   depends_on = [rancher2_cluster_v2.main]
 }
 
-# DNS wildcard pointing to the cluster node
-# Note: After cluster is up, update this to point to the actual node IP or LoadBalancer
 resource "aws_route53_record" "cluster_wildcard" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -237,12 +216,9 @@ resource "aws_route53_record" "cluster_wildcard" {
   name    = "*.${var.domain_name}"
   type    = "CNAME"
   ttl     = 300
-  # This will need to be updated once the cluster node is created
-  # For now, point to the Rancher server
   records = [aws_route53_record.rancher_server.fqdn]
 }
 
-# Outputs for the cluster
 output "rancher_cluster_id" {
   description = "ID of the Rancher-managed cluster"
   value       = var.rancher_cluster_enabled ? rancher2_cluster_v2.main[0].id : null

@@ -1,11 +1,7 @@
-# Kubernetes addons - direct Helm chart installations for k3s
-# Replaces EKS Blueprints Addons module with standard Helm releases
-
 data "aws_ecrpublic_authorization_token" "token" {
   provider = aws.virginia
 }
 
-# Metrics Server
 resource "helm_release" "metrics_server" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -35,7 +31,6 @@ resource "helm_release" "metrics_server" {
   ]
 }
 
-# Cert-Manager
 resource "helm_release" "cert_manager" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -63,7 +58,6 @@ resource "helm_release" "cert_manager" {
   ]
 }
 
-# External DNS for Route53
 resource "helm_release" "external_dns" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -94,7 +88,6 @@ resource "helm_release" "external_dns" {
       serviceAccount = {
         create = true
         annotations = {
-          # Note: For k3s, AWS credentials are provided via instance IAM role
         }
       }
     })
@@ -103,7 +96,6 @@ resource "helm_release" "external_dns" {
   depends_on = [helm_release.cert_manager]
 }
 
-# Prometheus Stack (includes Grafana)
 resource "helm_release" "kube_prometheus_stack" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
@@ -172,7 +164,6 @@ resource "helm_release" "kube_prometheus_stack" {
   depends_on = [helm_release.cert_manager]
 }
 
-# Let's Encrypt ClusterIssuer
 resource "kubectl_manifest" "letsencrypt_prod" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -205,7 +196,6 @@ resource "kubectl_manifest" "letsencrypt_prod" {
   depends_on = [helm_release.cert_manager]
 }
 
-# NGINX Ingress Controller
 resource "helm_release" "nginx_ingress" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
@@ -250,7 +240,6 @@ resource "helm_release" "nginx_ingress" {
   ]
 }
 
-# Loki for log aggregation
 resource "helm_release" "loki" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
@@ -289,7 +278,6 @@ resource "helm_release" "loki" {
   depends_on = [helm_release.kube_prometheus_stack]
 }
 
-# Promtail for log shipping
 resource "helm_release" "promtail" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 

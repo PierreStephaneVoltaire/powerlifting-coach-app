@@ -73,7 +73,6 @@ resource "kubernetes_ingress_v1" "argocd" {
   ]
 }
 
-# Frontend Application
 resource "kubernetes_manifest" "app_frontend" {
   count = var.kubernetes_resources_enabled && var.argocd_resources_enabled && var.deploy_frontend ? 1 : 0
 
@@ -123,7 +122,6 @@ resource "kubernetes_manifest" "app_frontend" {
   ]
 }
 
-# Datalayer Application (postgres, valkey, rabbitmq, keycloak)
 resource "kubernetes_manifest" "app_datalayer" {
   count = var.kubernetes_resources_enabled && var.argocd_resources_enabled && var.deploy_datalayer ? 1 : 0
 
@@ -168,7 +166,6 @@ resource "kubernetes_manifest" "app_datalayer" {
   ]
 }
 
-# Backend Services Application
 resource "kubernetes_manifest" "app_backend" {
   count = var.kubernetes_resources_enabled && var.argocd_resources_enabled && var.deploy_backend ? 1 : 0
 

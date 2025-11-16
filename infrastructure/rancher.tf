@@ -1,7 +1,3 @@
-# Rancher Server and Cluster Setup using rancher2 provider
-# This deploys Rancher Server, then uses it to create a k3s cluster
-
-# Get latest Amazon Linux 2 AMI for Rancher Server
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["amazon"]
@@ -17,7 +13,6 @@ data "aws_ami" "amazon_linux_2" {
   }
 }
 
-# SSH Key Pair
 resource "tls_private_key" "rancher" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -40,7 +35,6 @@ resource "local_file" "rancher_private_key" {
   file_permission = "0400"
 }
 
-# Elastic IP for Rancher Server
 resource "aws_eip" "rancher" {
   domain = "vpc"
 
@@ -51,7 +45,6 @@ resource "aws_eip" "rancher" {
   }
 }
 
-# Security Group for Rancher Server
 resource "aws_security_group" "rancher_server" {
   name        = "${local.cluster_name}-rancher-server-sg"
   description = "Security group for Rancher Server"
@@ -95,7 +88,6 @@ resource "aws_security_group" "rancher_server" {
   }
 }
 
-# IAM Role for Rancher Server (permissive)
 resource "aws_iam_role" "rancher_server" {
   name = "${local.cluster_name}-rancher-server-role"
 
@@ -138,13 +130,11 @@ resource "aws_iam_instance_profile" "rancher_server" {
   role = aws_iam_role.rancher_server.name
 }
 
-# Random password for Rancher admin
 resource "random_password" "rancher_admin" {
   length  = 16
   special = false
 }
 
-# Rancher Server EC2 Instance
 resource "aws_instance" "rancher_server" {
   ami                    = data.aws_ami.amazon_linux_2.id
   instance_type          = "t3a.medium"
@@ -165,14 +155,12 @@ resource "aws_instance" "rancher_server" {
 set -e
 exec > >(tee /var/log/user-data.log) 2>&1
 
-# Install Docker
 yum update -y
 amazon-linux-extras install docker -y
 systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
-# Install Rancher Server via Docker
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
@@ -198,7 +186,6 @@ resource "aws_eip_association" "rancher_server" {
   allocation_id = aws_eip.rancher.id
 }
 
-# DNS for Rancher Server
 resource "aws_route53_record" "rancher_server" {
   zone_id = aws_route53_zone.main.zone_id
   name    = "rancher.${var.domain_name}"
@@ -207,7 +194,6 @@ resource "aws_route53_record" "rancher_server" {
   records = [aws_eip.rancher.public_ip]
 }
 
-# Outputs for Rancher Server
 output "rancher_server_url" {
   description = "URL of the Rancher Server"
   value       = "https://rancher.${var.domain_name}"

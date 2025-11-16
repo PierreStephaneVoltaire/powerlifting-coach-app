@@ -1,4 +1,3 @@
-# AWS Configuration
 variable "aws_region" {
   description = "AWS region"
   type        = string
@@ -17,14 +16,11 @@ variable "environment" {
   default     = "dev"
 }
 
-# EKS Configuration
 variable "kubernetes_version" {
   description = "Kubernetes version for EKS cluster"
   type        = string
   default     = "1.34"
 }
-
-# EKS Node Configuration (all spot instances, smallest possible)
 
 variable "worker_desired_capacity" {
   description = "Desired number of worker nodes"
@@ -44,8 +40,6 @@ variable "worker_max_size" {
   default     = 5
 }
 
-
-# Kubernetes Configuration
 variable "kubernetes_resources_enabled" {
   description = "Enable Kubernetes resources (namespaces, secrets, ArgoCD). Set to false for initial cluster creation, then true for second apply"
   type        = bool
@@ -120,7 +114,6 @@ variable "budget_notification_email" {
   default = "psvoltaire96@gmai.com"
 }
 
-# ArgoCD Deployment Toggles
 variable "deploy_frontend" {
   description = "Deploy frontend application via ArgoCD"
   type        = bool
@@ -144,4 +137,3 @@ variable "rancher_cluster_enabled" {
   type        = bool
   default     = false
 }
-
