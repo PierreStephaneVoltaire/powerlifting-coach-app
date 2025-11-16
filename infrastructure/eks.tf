@@ -11,8 +11,7 @@ name  = local.cluster_name
   endpoint_private_access = false
 
   enable_irsa = true
-
-  cluster_addons = {
+addons  = {
     coredns = {
       most_recent = true
       configuration_values = jsonencode({
@@ -41,7 +40,7 @@ name  = local.cluster_name
 
   eks_managed_node_groups = {
     medium = {
-      name            = "${local.cluster_name}-spot-medium"
+      name            = "${local.cluster_name}-spot"
       use_name_prefix = false
 
       instance_types = ["t3a.medium", "t3.medium", "t2.medium"]
