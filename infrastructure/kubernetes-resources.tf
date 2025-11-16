@@ -38,6 +38,13 @@ resource "random_password" "keycloak_admin_password" {
   special = true
 }
 
+resource "random_password" "grafana_admin_password" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  length  = 32
+  special = true
+}
+
 resource "kubernetes_secret" "postgres_secret" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -141,27 +148,4 @@ resource "kubernetes_secret" "google_oauth_secret" {
   }
 
   type = "Opaque"
-}
-
-resource "kubernetes_manifest" "eniconfig" {
-  count = var.kubernetes_resources_enabled ? 3 : 0
-
-  manifest = {
-    apiVersion = "crd.k8s.amazonaws.com/v1alpha1"
-    kind       = "ENIConfig"
-    metadata = {
-      name = data.aws_availability_zones.available.names[count.index]
-    }
-    spec = {
-      securityGroups = [
-        aws_security_group.eks_node.id
-      ]
-      subnet = aws_subnet.secondary[count.index].id
-    }
-  }
-
-  depends_on = [
-    aws_eks_cluster.main,
-    aws_subnet.secondary
-  ]
 }

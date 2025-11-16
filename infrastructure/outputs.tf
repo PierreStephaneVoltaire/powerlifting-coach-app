@@ -3,21 +3,9 @@ output "cluster_name" {
 }
 
 output "cluster_endpoint" {
-  value = aws_eks_cluster.main.endpoint
+  description = "Kubernetes API endpoint (from Rancher kubeconfig)"
+  value       = var.rancher_cluster_enabled ? "See cluster_kubeconfig output" : "Rancher Server: https://${aws_eip.rancher.public_ip}"
 }
-
-output "eks_cluster_id" {
-  value = aws_eks_cluster.main.id
-}
-
-output "eks_cluster_arn" {
-  value = aws_eks_cluster.main.arn
-}
-
-output "eks_cluster_version" {
-  value = aws_eks_cluster.main.version
-}
-
 
 output "vpc_id" {
   value = aws_vpc.main.id
