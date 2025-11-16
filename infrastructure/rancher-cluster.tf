@@ -36,16 +36,18 @@ resource "rancher2_machine_config_v2" "nodes" {
   generate_name = "${local.cluster_name}-node"
 
   amazonec2_config {
-    ami                  = data.aws_ami.amazon_linux_2.id
-    region               = var.aws_region
-    security_group       = [aws_security_group.rancher_node[0].name]
-    subnet_id            = aws_subnet.public[0].id
-    vpc_id               = aws_vpc.main.id
-    zone                 = data.aws_availability_zones.available.names[0]
-    instance_type        = "t3a.medium"
-    root_size            = "30"
-    iam_instance_profile = aws_iam_instance_profile.rancher_node[0].name
-    ssh_user             = "ec2-user"
+    ami                   = data.aws_ami.amazon_linux_2.id
+    region                = var.aws_region
+    security_group        = [aws_security_group.rancher_node[0].name]
+    subnet_id             = aws_subnet.public[0].id
+    vpc_id                = aws_vpc.main.id
+    zone                  = data.aws_availability_zones.available.names[0]
+    instance_type         = "t3a.medium"
+    root_size             = "30"
+    iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
+    ssh_user              = "ec2-user"
+    request_spot_instance = true
+    spot_price            = "0.05"
   }
 
   depends_on = [rancher2_bootstrap.admin]
@@ -176,7 +178,7 @@ resource "rancher2_cluster_v2" "main" {
       control_plane_role           = true
       etcd_role                    = true
       worker_role                  = true
-      quantity                     = 1
+      quantity                     = var.stopped ? 0 : var.worker_desired_capacity
 
       machine_config {
         kind = rancher2_machine_config_v2.nodes[0].kind
