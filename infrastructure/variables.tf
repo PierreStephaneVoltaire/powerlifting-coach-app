@@ -25,7 +25,7 @@ variable "kubernetes_version" {
 variable "worker_desired_capacity" {
   description = "Desired number of worker nodes"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "worker_min_size" {
