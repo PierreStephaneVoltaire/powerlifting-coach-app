@@ -1,122 +1,9 @@
-resource "kubernetes_namespace" "monitoring" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-
-  metadata {
-    name = "monitoring"
-    labels = {
-      name        = "monitoring"
-      environment = var.environment
-    }
-  }
-}
-
-resource "random_password" "grafana_admin_password" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-
-  length  = 32
-  special = true
-}
-
-resource "helm_release" "loki" {
-  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
-
-  name             = "loki"
-  repository       = "https://grafana.github.io/helm-charts"
-  chart            = "loki"
-  namespace        = kubernetes_namespace.monitoring[0].metadata[0].name
-  create_namespace = false
-  version          = "5.43.3"
-
-  values = [
-    yamlencode({
-      loki = {
-        auth_enabled = false
-        commonConfig = {
-          replication_factor = 1
-        }
-        storage = {
-          type = "filesystem"
-        }
-      }
-      singleBinary = {
-        replicas = 1
-        persistence = {
-          enabled      = true
-          storageClass = "gp3"
-          size         = "30Gi"
-        }
-        resources = {
-          requests = {
-            cpu    = "100m"
-            memory = "256Mi"
-          }
-          limits = {
-            cpu    = "200m"
-            memory = "512Mi"
-          }
-        }
-      }
-      gateway = {
-        enabled = false
-      }
-      test = {
-        enabled = false
-      }
-      monitoring = {
-        lokiCanary = {
-          enabled = false
-        }
-      }
-    })
-  ]
-
-  depends_on = [
-    module.eks_blueprints_addons,
-    kubernetes_namespace.monitoring
-  ]
-}
-
-resource "helm_release" "promtail" {
-  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
-
-  name             = "promtail"
-  repository       = "https://grafana.github.io/helm-charts"
-  chart            = "promtail"
-  namespace        = kubernetes_namespace.monitoring[0].metadata[0].name
-  create_namespace = false
-  version          = "6.15.5"
-
-  values = [
-    yamlencode({
-      config = {
-        clients = [
-          {
-            url = "http://loki:3100/loki/api/v1/push"
-          }
-        ]
-      }
-      resources = {
-        requests = {
-          cpu    = "50m"
-          memory = "64Mi"
-        }
-        limits = {
-          cpu    = "100m"
-          memory = "128Mi"
-        }
-      }
-    })
-  ]
-
-  depends_on = [helm_release.loki]
-}
-
 resource "kubernetes_ingress_v1" "grafana" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
   metadata {
     name      = "grafana-ingress"
-    namespace = "kube-prometheus-stack"
+    namespace = "monitoring"
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
@@ -139,7 +26,7 @@ resource "kubernetes_ingress_v1" "grafana" {
           path_type = "Prefix"
           backend {
             service {
-              name = "kube-prometheus-stack-grafana"
+              name = "prometheus-grafana"
               port {
                 number = 80
               }
@@ -151,7 +38,7 @@ resource "kubernetes_ingress_v1" "grafana" {
   }
 
   depends_on = [
-    module.eks_blueprints_addons,
+    helm_release.kube_prometheus_stack,
     helm_release.nginx_ingress
   ]
 }
@@ -161,7 +48,7 @@ resource "kubernetes_ingress_v1" "prometheus" {
 
   metadata {
     name      = "prometheus-ingress"
-    namespace = "kube-prometheus-stack"
+    namespace = "monitoring"
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
@@ -184,7 +71,7 @@ resource "kubernetes_ingress_v1" "prometheus" {
           path_type = "Prefix"
           backend {
             service {
-              name = "kube-prometheus-stack-prometheus"
+              name = "prometheus-kube-prometheus-prometheus"
               port {
                 number = 9090
               }
@@ -196,7 +83,7 @@ resource "kubernetes_ingress_v1" "prometheus" {
   }
 
   depends_on = [
-    module.eks_blueprints_addons,
+    helm_release.kube_prometheus_stack,
     helm_release.nginx_ingress
   ]
 }
@@ -206,7 +93,7 @@ resource "kubernetes_ingress_v1" "loki" {
 
   metadata {
     name      = "loki-ingress"
-    namespace = kubernetes_namespace.monitoring[0].metadata[0].name
+    namespace = "monitoring"
     annotations = {
       "kubernetes.io/ingress.class"                    = "nginx"
       "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
