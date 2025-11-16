@@ -58,28 +58,35 @@ provider "aws" {
 
 data "aws_partition" "current" {}
 
+# Use data sources for provider configuration to avoid circular dependencies
+# Data sources depend only on the cluster name (a string), not the entire module
+data "aws_eks_cluster" "main" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+  name  = module.eks.cluster_name
+}
+
 data "aws_eks_cluster_auth" "main" {
   count = var.kubernetes_resources_enabled ? 1 : 0
   name  = module.eks.cluster_name
 }
 
 provider "kubernetes" {
-  host                   = var.kubernetes_resources_enabled ? module.eks.cluster_endpoint : null
-  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(module.eks.cluster_certificate_authority_data) : null
+  host                   = var.kubernetes_resources_enabled ? data.aws_eks_cluster.main[0].endpoint : null
+  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_eks_cluster.main[0].certificate_authority[0].data) : null
   token                  = var.kubernetes_resources_enabled ? data.aws_eks_cluster_auth.main[0].token : null
 }
 
 provider "helm" {
   kubernetes {
-    host                   = var.kubernetes_resources_enabled ? module.eks.cluster_endpoint : null
-    cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(module.eks.cluster_certificate_authority_data) : null
+    host                   = var.kubernetes_resources_enabled ? data.aws_eks_cluster.main[0].endpoint : null
+    cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_eks_cluster.main[0].certificate_authority[0].data) : null
     token                  = var.kubernetes_resources_enabled ? data.aws_eks_cluster_auth.main[0].token : null
   }
 }
 
 provider "kubectl" {
-  host                   = var.kubernetes_resources_enabled ? module.eks.cluster_endpoint : null
-  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(module.eks.cluster_certificate_authority_data) : null
+  host                   = var.kubernetes_resources_enabled ? data.aws_eks_cluster.main[0].endpoint : null
+  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(data.aws_eks_cluster.main[0].certificate_authority[0].data) : null
   token                  = var.kubernetes_resources_enabled ? data.aws_eks_cluster_auth.main[0].token : null
   load_config_file       = false
 }
@@ -88,9 +95,9 @@ resource "local_file" "kubeconfig" {
   count    = var.kubernetes_resources_enabled ? 1 : 0
   filename = "${path.module}/kubeconfig.yaml"
   content = templatefile("${path.module}/kubeconfig-template.yaml", {
-    cluster_name = module.eks.cluster_name
-    endpoint     = module.eks.cluster_endpoint
-    ca_data      = module.eks.cluster_certificate_authority_data
+    cluster_name = data.aws_eks_cluster.main[0].name
+    endpoint     = data.aws_eks_cluster.main[0].endpoint
+    ca_data      = data.aws_eks_cluster.main[0].certificate_authority[0].data
     region       = var.aws_region
   })
 }
