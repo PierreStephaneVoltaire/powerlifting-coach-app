@@ -13,11 +13,11 @@ name  = local.cluster_name
   enable_irsa = true
 
   eks_managed_node_groups = {
-    small = {
-      name            = "${local.cluster_name}-spot-small"
+    medium = {
+      name            = "${local.cluster_name}-spot-medium"
       use_name_prefix = false
 
-      instance_types = ["t3a.small", "t3.small", "t2.small"]
+      instance_types = ["t3a.medium", "t3.medium", "t2.medium"]
       capacity_type  = "SPOT"
 
       min_size     = var.stopped ? 0 : var.worker_min_size
@@ -33,7 +33,7 @@ name  = local.cluster_name
       }
 
       tags = {
-        NodeSize = "small"
+        NodeSize = "medium"
       }
     }
   }
@@ -78,7 +78,7 @@ name  = local.cluster_name
 
 resource "aws_iam_role_policy" "eks_node_s3" {
   name_prefix = "${local.cluster_name}-eks-node-s3-"
-  role        = module.eks.eks_managed_node_groups["small"].iam_role_name
+  role        = module.eks.eks_managed_node_groups["medium"].iam_role_name
 
   policy = jsonencode({
     Version = "2012-10-17"
