@@ -2,12 +2,12 @@ module "eks_blueprints_addons" {
   source  = "aws-ia/eks-blueprints-addons/aws"
   version = "~> 1.0"
 
-  cluster_name      = module.eks.cluster_name
-  cluster_endpoint  = module.eks.cluster_endpoint
-  cluster_version   = module.eks.cluster_version
-  oidc_provider_arn = module.eks.oidc_provider_arn
+  cluster_name      = aws_eks_cluster.main.name
+  cluster_endpoint  = aws_eks_cluster.main.endpoint
+  cluster_version   = aws_eks_cluster.main.version
+  oidc_provider_arn = aws_iam_openid_connect_provider.eks.arn
 
-  create_delay_dependencies = [for group in module.eks.eks_managed_node_groups : group.node_group_arn]
+  create_delay_dependencies = [aws_eks_node_group.main.arn]
 
   eks_addons = {
     aws-ebs-csi-driver = {
@@ -164,7 +164,7 @@ module "eks_blueprints_addons" {
     Project     = var.project_name
   }
 
-  depends_on = [module.eks]
+  depends_on = [aws_eks_cluster.main]
 }
 
 module "ebs_csi_driver_irsa" {
@@ -177,7 +177,7 @@ module "ebs_csi_driver_irsa" {
 
   oidc_providers = {
     main = {
-      provider_arn               = module.eks.oidc_provider_arn
+      provider_arn               = aws_iam_openid_connect_provider.eks.arn
       namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
     }
   }
@@ -257,7 +257,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
       ]
       userData = <<-EOT
         #!/bin/bash
-        /etc/eks/bootstrap.sh ${module.eks.cluster_name}
+        /etc/eks/bootstrap.sh ${aws_eks_cluster.main.name}
       EOT
     }
   })
@@ -411,4 +411,3 @@ resource "helm_release" "nginx_ingress" {
 
   depends_on = [module.eks_blueprints_addons]
 }
-
