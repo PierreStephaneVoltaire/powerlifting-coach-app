@@ -3,19 +3,19 @@ output "cluster_name" {
 }
 
 output "cluster_endpoint" {
-  value = module.eks.cluster_endpoint
+  value = aws_eks_cluster.main.endpoint
 }
 
 output "eks_cluster_id" {
-  value = module.eks.cluster_id
+  value = aws_eks_cluster.main.id
 }
 
 output "eks_cluster_arn" {
-  value = module.eks.cluster_arn
+  value = aws_eks_cluster.main.arn
 }
 
 output "eks_cluster_version" {
-  value = module.eks.cluster_version
+  value = aws_eks_cluster.main.version
 }
 
 
