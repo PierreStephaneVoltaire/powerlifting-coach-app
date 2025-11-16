@@ -58,43 +58,31 @@ provider "aws" {
 
 data "aws_partition" "current" {}
 
+# Kubernetes providers configured to use k3s kubeconfig
+# After first apply, download kubeconfig from S3:
+# aws s3 cp s3://${bucket}/kubeconfig.yaml ${path.module}/kubeconfig.yaml
+# Then set kubernetes_resources_enabled = true and apply again
+
 provider "kubernetes" {
-  host                   = var.kubernetes_resources_enabled ? aws_eks_cluster.main.endpoint : null
-  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(aws_eks_cluster.main.certificate_authority[0].data) : null
-  token                  = var.kubernetes_resources_enabled ? data.aws_eks_cluster_auth.main[0].token : null
+  config_path = var.kubernetes_resources_enabled ? "${path.module}/kubeconfig.yaml" : null
 }
 
 provider "helm" {
   kubernetes {
-    host                   = var.kubernetes_resources_enabled ? aws_eks_cluster.main.endpoint : null
-    cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(aws_eks_cluster.main.certificate_authority[0].data) : null
-    token                  = var.kubernetes_resources_enabled ? data.aws_eks_cluster_auth.main[0].token : null
+    config_path = var.kubernetes_resources_enabled ? "${path.module}/kubeconfig.yaml" : null
   }
 }
 
 provider "kubectl" {
-  host                   = var.kubernetes_resources_enabled ? aws_eks_cluster.main.endpoint : null
-  cluster_ca_certificate = var.kubernetes_resources_enabled ? base64decode(aws_eks_cluster.main.certificate_authority[0].data) : null
-  token                  = var.kubernetes_resources_enabled ? data.aws_eks_cluster_auth.main[0].token : null
-  load_config_file       = false
-}
-
-data "aws_eks_cluster_auth" "main" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-  name  = aws_eks_cluster.main.name
-}
-
-resource "local_file" "kubeconfig" {
-  count    = var.kubernetes_resources_enabled ? 1 : 0
-  filename = "${path.module}/kubeconfig.yaml"
-  content = templatefile("${path.module}/kubeconfig-template.yaml", {
-    cluster_name = aws_eks_cluster.main.name
-    endpoint     = aws_eks_cluster.main.endpoint
-    ca_data      = aws_eks_cluster.main.certificate_authority[0].data
-    region       = var.aws_region
-  })
+  config_path    = var.kubernetes_resources_enabled ? "${path.module}/kubeconfig.yaml" : null
+  load_config_file = var.kubernetes_resources_enabled
 }
 
 output "kubeconfig_path" {
-  value = var.kubernetes_resources_enabled ? local_file.kubeconfig[0].filename : null
+  value = "${path.module}/kubeconfig.yaml"
+}
+
+output "kubeconfig_download_command" {
+  description = "Command to download kubeconfig from S3 after instance is ready"
+  value       = "aws s3 cp s3://${aws_s3_bucket.videos.id}/kubeconfig.yaml ${path.module}/kubeconfig.yaml"
 }

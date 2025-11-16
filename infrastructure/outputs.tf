@@ -2,20 +2,27 @@ output "cluster_name" {
   value = local.cluster_name
 }
 
+# EKS-specific outputs - commented out for Rancher k3s setup
+# output "cluster_endpoint" {
+#   value = aws_eks_cluster.main.endpoint
+# }
+
+# output "eks_cluster_id" {
+#   value = aws_eks_cluster.main.id
+# }
+
+# output "eks_cluster_arn" {
+#   value = aws_eks_cluster.main.arn
+# }
+
+# output "eks_cluster_version" {
+#   value = aws_eks_cluster.main.version
+# }
+
+# Rancher k3s cluster endpoint
 output "cluster_endpoint" {
-  value = aws_eks_cluster.main.endpoint
-}
-
-output "eks_cluster_id" {
-  value = aws_eks_cluster.main.id
-}
-
-output "eks_cluster_arn" {
-  value = aws_eks_cluster.main.arn
-}
-
-output "eks_cluster_version" {
-  value = aws_eks_cluster.main.version
+  description = "Kubernetes API endpoint (EIP)"
+  value       = "https://${aws_eip.rancher.public_ip}:6443"
 }
 
 

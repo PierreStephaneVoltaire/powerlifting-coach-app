@@ -1,340 +1,178 @@
-module "eks_blueprints_addons" {
-  source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.0"
+# Kubernetes addons - direct Helm chart installations for k3s
+# Replaces EKS Blueprints Addons module with standard Helm releases
 
-  cluster_name      = aws_eks_cluster.main.name
-  cluster_endpoint  = aws_eks_cluster.main.endpoint
-  cluster_version   = aws_eks_cluster.main.version
-  oidc_provider_arn = aws_iam_openid_connect_provider.eks.arn
+data "aws_ecrpublic_authorization_token" "token" {
+  provider = aws.virginia
+}
 
-  create_delay_dependencies = [aws_eks_node_group.main.arn]
+# Metrics Server
+resource "helm_release" "metrics_server" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
 
-  eks_addons = {
-    aws-ebs-csi-driver = {
-      most_recent              = true
-      service_account_role_arn = module.ebs_csi_driver_irsa.iam_role_arn
-    }
-  }
+  name             = "metrics-server"
+  repository       = "https://kubernetes-sigs.github.io/metrics-server/"
+  chart            = "metrics-server"
+  namespace        = "kube-system"
+  version          = "3.11.0"
 
-  enable_karpenter = var.kubernetes_resources_enabled
-  karpenter = {
-    repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-    repository_password = data.aws_ecrpublic_authorization_token.token.password
-    chart_version       = "1.1.1"
-    namespace           = "karpenter"
-  }
-  karpenter_enable_spot_termination          = true
-  karpenter_enable_instance_profile_creation = true
-  karpenter_node = {
-    iam_role_additional_policies = {
-      AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-    }
-  }
-
-  enable_metrics_server = var.kubernetes_resources_enabled
-  metrics_server = {
-    values = [
-      yamlencode({
-        args = [
-          "--kubelet-insecure-tls",
-          "--kubelet-preferred-address-types=InternalIP"
-        ]
-        resources = {
-          requests = {
-            cpu    = "50m"
-            memory = "128Mi"
-          }
-          limits = {
-            cpu    = "100m"
-            memory = "256Mi"
-          }
+  values = [
+    yamlencode({
+      args = [
+        "--kubelet-insecure-tls",
+        "--kubelet-preferred-address-types=InternalIP"
+      ]
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "128Mi"
         }
-      })
-    ]
-  }
-
-  enable_cert_manager = var.kubernetes_resources_enabled
-  cert_manager = {
-    chart_version = "v1.14.2"
-    values = [
-      yamlencode({
-        installCRDs = true
-        resources = {
-          requests = {
-            cpu    = "50m"
-            memory = "128Mi"
-          }
-          limits = {
-            cpu    = "100m"
-            memory = "256Mi"
-          }
+        limits = {
+          cpu    = "100m"
+          memory = "256Mi"
         }
-      })
-    ]
-  }
-  cert_manager_route53_hosted_zone_arns = [aws_route53_zone.main.arn]
+      }
+    })
+  ]
+}
 
-  enable_external_dns = var.kubernetes_resources_enabled
-  external_dns = {
-    values = [
-      yamlencode({
-        provider      = "aws"
-        domainFilters = [var.domain_name]
-        policy        = "sync"
-        registry      = "txt"
-        txtOwnerId    = local.cluster_name
-        interval      = "1m"
-        resources = {
-          requests = {
-            cpu    = "50m"
-            memory = "64Mi"
-          }
-          limits = {
-            cpu    = "100m"
-            memory = "128Mi"
-          }
+# Cert-Manager
+resource "helm_release" "cert_manager" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  name             = "cert-manager"
+  repository       = "https://charts.jetstack.io"
+  chart            = "cert-manager"
+  namespace        = "cert-manager"
+  create_namespace = true
+  version          = "v1.14.2"
+
+  values = [
+    yamlencode({
+      installCRDs = true
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "128Mi"
         }
-      })
-    ]
-  }
-  external_dns_route53_zone_arns = [aws_route53_zone.main.arn]
+        limits = {
+          cpu    = "100m"
+          memory = "256Mi"
+        }
+      }
+    })
+  ]
+}
 
-  enable_aws_load_balancer_controller = var.kubernetes_resources_enabled
+# External DNS for Route53
+resource "helm_release" "external_dns" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
 
-  enable_kube_prometheus_stack = var.kubernetes_resources_enabled && !var.stopped
-  kube_prometheus_stack = {
-    values = [
-      yamlencode({
-        prometheus = {
-          prometheusSpec = {
-            retention = "15d"
-            resources = {
-              requests = {
-                cpu    = "200m"
-                memory = "512Mi"
-              }
-              limits = {
-                cpu    = "500m"
-                memory = "2Gi"
-              }
+  name             = "external-dns"
+  repository       = "https://kubernetes-sigs.github.io/external-dns/"
+  chart            = "external-dns"
+  namespace        = "kube-system"
+  version          = "1.14.3"
+
+  values = [
+    yamlencode({
+      provider      = "aws"
+      domainFilters = [var.domain_name]
+      policy        = "sync"
+      registry      = "txt"
+      txtOwnerId    = local.cluster_name
+      interval      = "1m"
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "64Mi"
+        }
+        limits = {
+          cpu    = "100m"
+          memory = "128Mi"
+        }
+      }
+      serviceAccount = {
+        create = true
+        annotations = {
+          # Note: For k3s, AWS credentials are provided via instance IAM role
+        }
+      }
+    })
+  ]
+
+  depends_on = [helm_release.cert_manager]
+}
+
+# Prometheus Stack (includes Grafana)
+resource "helm_release" "kube_prometheus_stack" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  name             = "prometheus"
+  repository       = "https://prometheus-community.github.io/helm-charts"
+  chart            = "kube-prometheus-stack"
+  namespace        = "monitoring"
+  create_namespace = true
+  version          = "55.5.0"
+
+  values = [
+    yamlencode({
+      prometheus = {
+        prometheusSpec = {
+          retention = "15d"
+          resources = {
+            requests = {
+              cpu    = "200m"
+              memory = "512Mi"
             }
-            storageSpec = {
-              volumeClaimTemplate = {
-                spec = {
-                  storageClassName = "gp3"
-                  accessModes      = ["ReadWriteOnce"]
-                  resources = {
-                    requests = {
-                      storage = "50Gi"
-                    }
+            limits = {
+              cpu    = "500m"
+              memory = "2Gi"
+            }
+          }
+          storageSpec = {
+            volumeClaimTemplate = {
+              spec = {
+                storageClassName = "local-path"
+                accessModes      = ["ReadWriteOnce"]
+                resources = {
+                  requests = {
+                    storage = "50Gi"
                   }
                 }
               }
             }
           }
         }
-        grafana = {
-          enabled       = true
-          adminPassword = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : ""
-          persistence = {
-            enabled          = true
-            storageClassName = "gp3"
-            size             = "10Gi"
-          }
-          resources = {
-            requests = {
-              cpu    = "100m"
-              memory = "256Mi"
-            }
-            limits = {
-              cpu    = "200m"
-              memory = "512Mi"
-            }
-          }
-        }
-        alertmanager = {
-          enabled = false
-        }
-      })
-    ]
-  }
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
-
-  depends_on = [aws_eks_cluster.main]
-}
-
-module "ebs_csi_driver_irsa" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5.0"
-
-  role_name_prefix = "${local.cluster_name}-ebs-csi-"
-
-  attach_ebs_csi_policy = true
-
-  oidc_providers = {
-    main = {
-      provider_arn               = aws_iam_openid_connect_provider.eks.arn
-      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
-    }
-  }
-
-  tags = {
-    Name        = "${local.cluster_name}-ebs-csi-driver-role"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-resource "aws_iam_role_policy" "karpenter_node_s3" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-
-  name_prefix = "${local.cluster_name}-karpenter-node-s3-"
-  role        = module.eks_blueprints_addons.karpenter.node_iam_role_name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "s3:*"
-        Resource = "*"
       }
-    ]
-  })
-}
-
-data "aws_ecrpublic_authorization_token" "token" {
-  provider = aws.virginia
-}
-
-resource "kubectl_manifest" "karpenter_node_class" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-
-  yaml_body = yamlencode({
-    apiVersion = "karpenter.k8s.aws/v1"
-    kind       = "EC2NodeClass"
-    metadata = {
-      name = "default"
-    }
-    spec = {
-      amiFamily = "AL2"
-      role      = module.eks_blueprints_addons.karpenter.node_iam_role_name
-      subnetSelectorTerms = [
-        {
-          tags = {
-            "kubernetes.io/cluster/${local.cluster_name}" = "owned"
-          }
+      grafana = {
+        enabled       = true
+        adminPassword = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : ""
+        persistence = {
+          enabled          = true
+          storageClassName = "local-path"
+          size             = "10Gi"
         }
-      ]
-      securityGroupSelectorTerms = [
-        {
-          tags = {
-            "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "256Mi"
           }
-        }
-      ]
-      tags = {
-        Name                                           = "${local.cluster_name}-karpenter-node"
-        Environment                                    = var.environment
-        Project                                        = var.project_name
-        "kubernetes.io/cluster/${local.cluster_name}" = "owned"
-        "karpenter.sh/discovery"                       = local.cluster_name
-      }
-      blockDeviceMappings = [
-        {
-          deviceName = "/dev/xvda"
-          ebs = {
-            volumeSize          = "20Gi"
-            volumeType          = "gp3"
-            encrypted           = true
-            deleteOnTermination = true
+          limits = {
+            cpu    = "200m"
+            memory = "512Mi"
           }
-        }
-      ]
-      userData = <<-EOT
-        #!/bin/bash
-        /etc/eks/bootstrap.sh ${aws_eks_cluster.main.name}
-      EOT
-    }
-  })
-
-  depends_on = [module.eks_blueprints_addons]
-}
-
-resource "kubectl_manifest" "karpenter_node_pool" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-
-  yaml_body = yamlencode({
-    apiVersion = "karpenter.sh/v1"
-    kind       = "NodePool"
-    metadata = {
-      name = "medium-spot"
-    }
-    spec = {
-      template = {
-        spec = {
-          nodeClassRef = {
-            group = "karpenter.k8s.aws"
-            kind  = "EC2NodeClass"
-            name  = "default"
-          }
-          requirements = [
-            {
-              key      = "kubernetes.io/arch"
-              operator = "In"
-              values   = ["amd64"]
-            },
-            {
-              key      = "kubernetes.io/os"
-              operator = "In"
-              values   = ["linux"]
-            },
-            {
-              key      = "karpenter.sh/capacity-type"
-              operator = "In"
-              values   = ["spot"]
-            },
-            {
-              key      = "karpenter.k8s.aws/instance-category"
-              operator = "In"
-              values   = ["t"]
-            },
-            {
-              key      = "karpenter.k8s.aws/instance-generation"
-              operator = "Gt"
-              values   = ["2"]
-            },
-            {
-              key      = "node.kubernetes.io/instance-type"
-              operator = "In"
-              values = [
-                "t3.medium",
-                "t3a.medium",
-                "t2.medium"
-              ]
-            }
-          ]
-          taints = []
         }
       }
-      limits = {
-        cpu    = "100"
-        memory = "100Gi"
+      alertmanager = {
+        enabled = false
       }
-      disruption = {
-        consolidationPolicy = "WhenEmptyOrUnderutilized"
-        consolidateAfter    = "1m"
-      }
-    }
-  })
+    })
+  ]
 
-  depends_on = [kubectl_manifest.karpenter_node_class]
+  depends_on = [helm_release.cert_manager]
 }
 
+# Let's Encrypt ClusterIssuer
 resource "kubectl_manifest" "letsencrypt_prod" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
@@ -364,9 +202,10 @@ resource "kubectl_manifest" "letsencrypt_prod" {
     }
   })
 
-  depends_on = [module.eks_blueprints_addons]
+  depends_on = [helm_release.cert_manager]
 }
 
+# NGINX Ingress Controller
 resource "helm_release" "nginx_ingress" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
@@ -381,12 +220,13 @@ resource "helm_release" "nginx_ingress" {
     yamlencode({
       controller = {
         service = {
-          type = "LoadBalancer"
-          annotations = {
-            "service.beta.kubernetes.io/aws-load-balancer-type"                              = "nlb"
-            "service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled" = "true"
-            "service.beta.kubernetes.io/aws-load-balancer-backend-protocol"                  = "tcp"
-            "external-dns.alpha.kubernetes.io/hostname"                                      = "*.${var.domain_name}"
+          type = "NodePort"
+        }
+        hostPort = {
+          enabled = true
+          ports = {
+            http  = 80
+            https = 443
           }
         }
         ingressClassResource = {
@@ -408,6 +248,74 @@ resource "helm_release" "nginx_ingress" {
       }
     })
   ]
+}
 
-  depends_on = [module.eks_blueprints_addons]
+# Loki for log aggregation
+resource "helm_release" "loki" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  name             = "loki"
+  repository       = "https://grafana.github.io/helm-charts"
+  chart            = "loki"
+  namespace        = "monitoring"
+  create_namespace = true
+  version          = "5.43.3"
+
+  values = [
+    yamlencode({
+      loki = {
+        auth_enabled = false
+      }
+      singleBinary = {
+        replicas = 1
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "256Mi"
+          }
+          limits = {
+            cpu    = "200m"
+            memory = "512Mi"
+          }
+        }
+        persistence = {
+          storageClass = "local-path"
+          size         = "30Gi"
+        }
+      }
+    })
+  ]
+
+  depends_on = [helm_release.kube_prometheus_stack]
+}
+
+# Promtail for log shipping
+resource "helm_release" "promtail" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  name       = "promtail"
+  repository = "https://grafana.github.io/helm-charts"
+  chart      = "promtail"
+  namespace  = "monitoring"
+  version    = "6.15.5"
+
+  values = [
+    yamlencode({
+      config = {
+        lokiAddress = "http://loki:3100/loki/api/v1/push"
+      }
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "64Mi"
+        }
+        limits = {
+          cpu    = "100m"
+          memory = "128Mi"
+        }
+      }
+    })
+  ]
+
+  depends_on = [helm_release.loki]
 }
