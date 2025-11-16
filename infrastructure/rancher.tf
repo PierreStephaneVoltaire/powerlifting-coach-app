@@ -1,7 +1,23 @@
-# Rancher k3s Single Node Setup
-# Cost-effective alternative to EKS with single on-demand instance
+# RKE2 Cluster on AWS using official Rancher Federal module
+# Replaces EKS with RKE2 for cost optimization
 
-# Get latest Amazon Linux 2 AMI
+# Get latest RHEL 8 AMI (recommended for RKE2)
+data "aws_ami" "rhel8" {
+  most_recent = true
+  owners      = ["309956199498"] # Red Hat
+
+  filter {
+    name   = "name"
+    values = ["RHEL-8*_HVM-*-x86_64-*-Hourly2-GP3"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# Or use Amazon Linux 2 (cheaper)
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["amazon"]
@@ -17,33 +33,81 @@ data "aws_ami" "amazon_linux_2" {
   }
 }
 
-# SSH Key Pair for EC2 access
-resource "tls_private_key" "rancher" {
+# SSH Key Pair for EC2 access (for debugging)
+resource "tls_private_key" "rke2" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-resource "aws_key_pair" "rancher" {
-  key_name   = "${local.cluster_name}-rancher-key"
-  public_key = tls_private_key.rancher.public_key_openssh
+resource "aws_key_pair" "rke2" {
+  key_name   = "${local.cluster_name}-rke2-key"
+  public_key = tls_private_key.rke2.public_key_openssh
 
   tags = {
-    Name        = "${local.cluster_name}-rancher-key"
+    Name        = "${local.cluster_name}-rke2-key"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-# Store private key locally for SSH access
-resource "local_file" "rancher_private_key" {
-  filename        = "${path.module}/rancher-key.pem"
-  content         = tls_private_key.rancher.private_key_pem
+resource "local_file" "rke2_private_key" {
+  filename        = "${path.module}/rke2-key.pem"
+  content         = tls_private_key.rke2.private_key_pem
   file_permission = "0400"
 }
 
-# IAM Role for Rancher EC2 Instance (permissive as requested)
-resource "aws_iam_role" "rancher" {
-  name = "${local.cluster_name}-rancher-role"
+# RKE2 Cluster using official Rancher Federal module
+module "rke2" {
+  source = "git::https://github.com/rancherfederal/rke2-aws-tf.git?ref=v2.7.0"
+
+  cluster_name = local.cluster_name
+  vpc_id       = aws_vpc.main.id
+  subnets      = aws_subnet.public[*].id
+  ami          = data.aws_ami.amazon_linux_2.id
+
+  # Single server node (cost optimization)
+  servers = 1
+
+  # Instance configuration
+  instance_type = "t3a.medium"
+  block_device_mappings = {
+    size      = 30
+    encrypted = true
+    type      = "gp3"
+  }
+
+  # SSH key for debugging
+  ssh_authorized_keys = [tls_private_key.rke2.public_key_openssh]
+
+  # RKE2 configuration
+  rke2_version = "v1.28.4+rke2r1"
+
+  # Disable built-in ingress controller (we'll use NGINX)
+  rke2_config = <<-EOT
+    disable:
+      - rke2-ingress-nginx
+    tls-san:
+      - ${local.cluster_name}.${var.domain_name}
+  EOT
+
+  # Enable public access
+  controlplane_internal = false
+
+  # IAM configuration - permissive as requested
+  iam_permissions_boundary = null
+  iam_instance_profile     = aws_iam_instance_profile.rke2.name
+
+  # Tagging
+  tags = {
+    Environment                                   = var.environment
+    Project                                       = var.project_name
+    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+  }
+}
+
+# Permissive IAM Role for RKE2 nodes
+resource "aws_iam_role" "rke2" {
+  name = "${local.cluster_name}-rke2-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -57,16 +121,15 @@ resource "aws_iam_role" "rancher" {
   })
 
   tags = {
-    Name        = "${local.cluster_name}-rancher-role"
+    Name        = "${local.cluster_name}-rke2-role"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-# Permissive IAM Policy for Rancher node
-resource "aws_iam_role_policy" "rancher_permissive" {
-  name = "${local.cluster_name}-rancher-permissive"
-  role = aws_iam_role.rancher.id
+resource "aws_iam_role_policy" "rke2_permissive" {
+  name = "${local.cluster_name}-rke2-permissive"
+  role = aws_iam_role.rke2.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -89,26 +152,6 @@ resource "aws_iam_role_policy" "rancher_permissive" {
         Action = [
           "s3:*"
         ]
-        Resource = [
-          aws_s3_bucket.videos.arn,
-          "${aws_s3_bucket.videos.arn}/*",
-          "arn:aws:s3:::*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ebs:*"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ssm:GetParameter",
-          "ssm:GetParameters",
-          "ssm:GetParametersByPath"
-        ]
         Resource = "*"
       },
       {
@@ -121,7 +164,9 @@ resource "aws_iam_role_policy" "rancher_permissive" {
       {
         Effect = "Allow"
         Action = [
-          "acm:*"
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath"
         ]
         Resource = "*"
       }
@@ -129,265 +174,71 @@ resource "aws_iam_role_policy" "rancher_permissive" {
   })
 }
 
-# Instance Profile for EC2
-resource "aws_iam_instance_profile" "rancher" {
-  name = "${local.cluster_name}-rancher-profile"
-  role = aws_iam_role.rancher.name
+resource "aws_iam_instance_profile" "rke2" {
+  name = "${local.cluster_name}-rke2-profile"
+  role = aws_iam_role.rke2.name
 
   tags = {
-    Name        = "${local.cluster_name}-rancher-profile"
+    Name        = "${local.cluster_name}-rke2-profile"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-# Security Group for Rancher/k3s
-resource "aws_security_group" "rancher" {
-  name        = "${local.cluster_name}-rancher-sg"
-  description = "Security group for Rancher k3s node"
-  vpc_id      = aws_vpc.main.id
-
-  # SSH access
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Kubernetes API Server
-  ingress {
-    description = "Kubernetes API"
-    from_port   = 6443
-    to_port     = 6443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTP for ingress
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTPS for ingress and Rancher UI
-  ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Rancher Webhook
-  ingress {
-    description = "Rancher Webhook"
-    from_port   = 8443
-    to_port     = 8443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # NodePort range
-  ingress {
-    description = "NodePort Services"
-    from_port   = 30000
-    to_port     = 32767
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow all outbound traffic
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name                                          = "${local.cluster_name}-rancher-sg"
-    Environment                                   = var.environment
-    Project                                       = var.project_name
-    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
-  }
-}
-
-# Elastic IP for stable access
-resource "aws_eip" "rancher" {
-  domain = "vpc"
-
-  tags = {
-    Name        = "${local.cluster_name}-rancher-eip"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-# Associate EIP with instance after creation
-resource "aws_eip_association" "rancher" {
-  instance_id   = aws_instance.rancher.id
-  allocation_id = aws_eip.rancher.id
-}
-
-# User data script for k3s installation only
-# Monitoring and other addons are installed via Terraform Helm releases
-locals {
-  rancher_user_data = <<-EOF
-#!/bin/bash
-set -e
-
-# Log output to file for debugging
-exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-
-echo "Starting k3s installation..."
-
-# Update system
-yum update -y
-yum install -y jq curl wget
-
-# Install Docker (for pulling images)
-amazon-linux-extras install docker -y
-systemctl start docker
-systemctl enable docker
-usermod -aG docker ec2-user
-
-# Set hostname
-hostnamectl set-hostname ${local.cluster_name}-rancher
-
-# Install k3s with traefik and servicelb disabled (using NGINX ingress instead)
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
-  --disable traefik \
-  --disable servicelb \
-  --write-kubeconfig-mode 644 \
-  --tls-san ${aws_eip.rancher.public_ip} \
-  --node-name ${local.cluster_name}-rancher \
-  --kube-apiserver-arg default-not-ready-toleration-seconds=30 \
-  --kube-apiserver-arg default-unreachable-toleration-seconds=30" sh -
-
-# Wait for k3s to be ready
-echo "Waiting for k3s to be ready..."
-until kubectl get nodes 2>/dev/null | grep -q "Ready"; do
-  echo "Waiting for k3s to be ready..."
-  sleep 10
-done
-
-echo "k3s is ready!"
-
-# Make local-path storage class the default
-kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-
-# Copy kubeconfig to ec2-user home
-mkdir -p /home/ec2-user/.kube
-cp /etc/rancher/k3s/k3s.yaml /home/ec2-user/.kube/config
-chown -R ec2-user:ec2-user /home/ec2-user/.kube
-chmod 600 /home/ec2-user/.kube/config
-
-# Update kubeconfig with external IP
-sed -i "s/127.0.0.1/${aws_eip.rancher.public_ip}/g" /home/ec2-user/.kube/config
-
-# Save kubeconfig to S3 for Terraform to use
-aws s3 cp /home/ec2-user/.kube/config s3://${aws_s3_bucket.videos.id}/kubeconfig.yaml
-
-echo "============================================"
-echo "k3s installation complete!"
-echo "============================================"
-echo "Kubernetes API: https://${aws_eip.rancher.public_ip}:6443"
-echo "Kubeconfig uploaded to S3"
-echo "============================================"
-echo "Next steps:"
-echo "1. Download kubeconfig: aws s3 cp s3://${aws_s3_bucket.videos.id}/kubeconfig.yaml infrastructure/kubeconfig.yaml"
-echo "2. Set kubernetes_resources_enabled = true"
-echo "3. Run terraform apply to install monitoring, ArgoCD, etc."
-echo "============================================"
-EOF
-}
-
-# EC2 Instance for Rancher/k3s
-resource "aws_instance" "rancher" {
-  ami                    = data.aws_ami.amazon_linux_2.id
-  instance_type          = "t3a.medium"  # On-demand, cost effective
-  key_name               = aws_key_pair.rancher.key_name
-  vpc_security_group_ids = [aws_security_group.rancher.id]
-  subnet_id              = aws_subnet.public[0].id
-  iam_instance_profile   = aws_iam_instance_profile.rancher.name
-
-  # Root volume - 30GB gp3
-  root_block_device {
-    volume_type           = "gp3"
-    volume_size           = 30
-    encrypted             = true
-    delete_on_termination = true
-  }
-
-  user_data = local.rancher_user_data
-
-  tags = {
-    Name                                          = "${local.cluster_name}-rancher"
-    Environment                                   = var.environment
-    Project                                       = var.project_name
-    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
-  }
-
-  lifecycle {
-    ignore_changes = [user_data]
-  }
-}
-
-# Route53 DNS records for Rancher
-resource "aws_route53_record" "rancher" {
+# DNS record for the control plane
+resource "aws_route53_record" "rke2_api" {
   zone_id = aws_route53_zone.main.zone_id
-  name    = "rancher.${var.domain_name}"
-  type    = "A"
+  name    = "api.${var.domain_name}"
+  type    = "CNAME"
   ttl     = 300
-  records = [aws_eip.rancher.public_ip]
+  records = [module.rke2.server_url]
 }
 
-# Wildcard DNS for all services pointing to EIP
-resource "aws_route53_record" "rancher_wildcard" {
+# Wildcard DNS for services (pointing to NLB)
+resource "aws_route53_record" "rke2_wildcard" {
   zone_id = aws_route53_zone.main.zone_id
   name    = "*.${var.domain_name}"
-  type    = "A"
+  type    = "CNAME"
   ttl     = 300
-  records = [aws_eip.rancher.public_ip]
+  records = [module.rke2.server_url]
 }
 
-# Outputs for Rancher
-output "rancher_public_ip" {
-  description = "Public IP of the Rancher k3s node"
-  value       = aws_eip.rancher.public_ip
+# Save kubeconfig to local file
+resource "local_file" "kubeconfig" {
+  count           = 1
+  filename        = "${path.module}/kubeconfig.yaml"
+  content         = module.rke2.kubeconfig
+  file_permission = "0600"
 }
 
-output "rancher_instance_id" {
-  description = "Instance ID of the Rancher k3s node"
-  value       = aws_instance.rancher.id
+# Outputs
+output "rke2_cluster_name" {
+  description = "Name of the RKE2 cluster"
+  value       = module.rke2.cluster_name
 }
 
-output "rancher_ssh_command" {
-  description = "SSH command to connect to Rancher node"
-  value       = "ssh -i ${path.module}/rancher-key.pem ec2-user@${aws_eip.rancher.public_ip}"
+output "rke2_server_url" {
+  description = "RKE2 server URL (NLB endpoint)"
+  value       = module.rke2.server_url
 }
 
-output "rancher_ui_url" {
-  description = "Rancher UI URL"
-  value       = "https://rancher.${var.domain_name}"
+output "rke2_cluster_data" {
+  description = "Cluster data for adding agent nodes"
+  value       = module.rke2.cluster_data
+  sensitive   = true
 }
 
-output "rancher_bootstrap_password" {
-  description = "Initial bootstrap password for Rancher (change after first login)"
-  value       = "admin"
+output "rke2_kubeconfig_path" {
+  description = "Path to the kubeconfig file"
+  value       = local_file.kubeconfig[0].filename
 }
 
-output "k3s_kubeconfig_s3_path" {
-  description = "S3 path to download kubeconfig"
-  value       = "s3://${aws_s3_bucket.videos.id}/kubeconfig.yaml"
+output "rke2_ssh_command" {
+  description = "SSH command to connect to RKE2 server"
+  value       = "ssh -i ${path.module}/rke2-key.pem ec2-user@<instance-ip>"
 }
 
-output "rancher_private_key_path" {
+output "rke2_private_key_path" {
   description = "Path to private key for SSH access"
-  value       = local_file.rancher_private_key.filename
+  value       = local_file.rke2_private_key.filename
 }
