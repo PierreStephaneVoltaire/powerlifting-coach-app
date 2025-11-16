@@ -1,12 +1,13 @@
 provider "rancher2" {
-  api_url   = var.rancher_cluster_enabled ? "https://rancher.${var.domain_name}" : "https://localhost"
-  bootstrap = false
+  alias     = "bootstrap"
+  api_url   = "https://rancher.${var.domain_name}"
+  bootstrap = true
   insecure  = true
-  token_key = var.rancher_cluster_enabled ? rancher2_bootstrap.admin[0].token : ""
 }
 
 resource "rancher2_bootstrap" "admin" {
-  count = var.rancher_cluster_enabled ? 1 : 0
+  provider = rancher2.bootstrap
+  count    = var.rancher_cluster_enabled ? 1 : 0
 
   password  = random_password.rancher_admin.result
   telemetry = false
@@ -15,6 +16,13 @@ resource "rancher2_bootstrap" "admin" {
     aws_instance.rancher_server,
     aws_eip_association.rancher_server
   ]
+}
+
+provider "rancher2" {
+  api_url   = "https://rancher.${var.domain_name}"
+  bootstrap = false
+  insecure  = true
+  token_key = try(rancher2_bootstrap.admin[0].token, "")
 }
 
 resource "rancher2_cloud_credential" "aws" {
