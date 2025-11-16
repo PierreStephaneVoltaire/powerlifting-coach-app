@@ -62,10 +62,6 @@ provider "aws" {
 
 data "aws_partition" "current" {}
 
-# Kubernetes providers configured to use kubeconfig from Rancher
-# Kubeconfig is automatically written to ${path.module}/kubeconfig.yaml by rancher-cluster.tf
-# after rancher_cluster_enabled = true and the cluster is provisioned
-
 provider "kubernetes" {
   config_path = var.kubernetes_resources_enabled ? "${path.module}/kubeconfig.yaml" : null
 }

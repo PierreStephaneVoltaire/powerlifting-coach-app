@@ -149,5 +149,3 @@ resource "kubernetes_secret" "google_oauth_secret" {
 
   type = "Opaque"
 }
-
-# ENIConfig removed - EKS-specific custom networking not needed for k3s
