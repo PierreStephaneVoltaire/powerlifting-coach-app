@@ -54,7 +54,6 @@ module "eks_blueprints_addons" {
   karpenter_node = {
     iam_role_additional_policies = {
       AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-      S3VideoAccess                = aws_iam_role_policy.karpenter_node_s3[0].id
     }
   }
 
@@ -226,17 +225,9 @@ resource "aws_iam_role_policy" "karpenter_node_s3" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          aws_s3_bucket.videos.arn,
-          "${aws_s3_bucket.videos.arn}/*"
-        ]
+        Effect   = "Allow"
+        Action   = "s3:*"
+        Resource = "*"
       }
     ]
   })
