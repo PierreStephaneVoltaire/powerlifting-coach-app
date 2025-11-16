@@ -9,38 +9,53 @@ name  = local.cluster_name
 
   endpoint_public_access  = true
   endpoint_private_access = false
+  authentication_mode   = "API_AND_CONFIG_MAP"
+  upgrade_policy = {
+    support_type = "STANDARD"
+  }
 
-  enable_irsa = true
-addons  = {
+  zonal_shift_config = {
+    enabled = true
+  }
+  dataplane_wait_duration = "240s"
+  addons = {
+    vpc-cni = {
+      addon_version  = "v1.20.3-eksbuild.1"
+      most_recent       = false
+      before_compute    = true
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+      configuration_values = jsonencode({env={
+        AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"
+        ENI_CONFIG_LABEL_DEF               = "topology.kubernetes.io/zone"
+        WARM_IP_TARGET ="5"
+        MINIMUM_IP_TARGET="2"
+        ENABLE_PREFIX_DELEGATION = "true"
+        WARM_PREFIX_TARGET       = "1"
+      }}
+      )
+    }
     coredns = {
       most_recent = true
-      configuration_values = jsonencode({
-        tolerations = [
-          {
-            key      = "CriticalAddonsOnly"
-            operator = "Exists"
-          }
-        ]
-      })
+      before_compute    = false
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+    }
+    eks-node-monitoring-agent = {
+      most_recent = true
+            resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
     }
     kube-proxy = {
       most_recent = true
+            resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
     }
-    vpc-cni = {
-      most_recent = true
-      configuration_values = jsonencode({
-        env = {
-          ENABLE_PREFIX_DELEGATION = "true"
-          WARM_PREFIX_TARGET       = "1"
-          WARM_IP_TARGET           = "5"
-        }
-      })
-    }
-  }
+}
 
   eks_managed_node_groups = {
     medium = {
-      name            = "${local.cluster_name}-spot"
+      name            = "${local.cluster_name}-default"
       use_name_prefix = false
 
       instance_types = ["t3a.medium", "t3.medium", "t2.medium"]
