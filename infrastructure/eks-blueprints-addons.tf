@@ -2,34 +2,7 @@ data "aws_ecrpublic_authorization_token" "token" {
   provider = aws.virginia
 }
 
-resource "helm_release" "metrics_server" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
 
-  name             = "metrics-server"
-  repository       = "https://kubernetes-sigs.github.io/metrics-server/"
-  chart            = "metrics-server"
-  namespace        = "kube-system"
-  version          = "3.11.0"
-
-  values = [
-    yamlencode({
-      args = [
-        "--kubelet-insecure-tls",
-        "--kubelet-preferred-address-types=InternalIP"
-      ]
-      resources = {
-        requests = {
-          cpu    = "50m"
-          memory = "128Mi"
-        }
-        limits = {
-          cpu    = "100m"
-          memory = "256Mi"
-        }
-      }
-    })
-  ]
-}
 
 resource "helm_release" "cert_manager" {
   count = var.kubernetes_resources_enabled ? 1 : 0

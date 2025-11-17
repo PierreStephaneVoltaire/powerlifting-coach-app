@@ -109,7 +109,12 @@ resource "aws_security_group" "rancher_node" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = var.admin_ips
+  }
   egress {
     from_port   = 0
     to_port     = 0
@@ -177,7 +182,7 @@ resource "rancher2_cluster_v2" "main" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
   name               = local.cluster_name
-  kubernetes_version = "v1.28.4+k3s1"
+  kubernetes_version = "v1.31.13-k3s1"
 
   rke_config {
     machine_pools {

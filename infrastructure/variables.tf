@@ -137,3 +137,9 @@ variable "rancher_cluster_enabled" {
   type        = bool
   default     = false
 }
+
+variable "admin_ips" {
+  type = list(string)
+  default = [ "0.0.0.0/0" ]
+  
+}
