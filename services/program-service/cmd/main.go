@@ -74,8 +74,9 @@ func main() {
 	excelExporter := excel.NewExcelExporter()
 	workoutGenerator := services.NewWorkoutGenerator(programRepo)
 	settingsClient := clients.NewSettingsClient(cfg.SettingsService)
+	coachClient := clients.NewCoachClient(cfg.CoachService)
 
-	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator, settingsClient)
+	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator, settingsClient, coachClient)
 
 	router := gin.Default()
 

@@ -182,7 +182,7 @@ resource "rancher2_cluster_v2" "main" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
   name               = local.cluster_name
-  kubernetes_version = "v1.31.13-k3s1"
+  kubernetes_version = var.kubernetes_version
 
   rke_config {
     machine_pools {
@@ -192,10 +192,16 @@ resource "rancher2_cluster_v2" "main" {
       etcd_role                    = true
       worker_role                  = true
       quantity                     = var.stopped ? 0 : var.worker_desired_capacity
+      max_unhealthy                = "100%"
 
       machine_config {
         kind = rancher2_machine_config_v2.nodes[0].kind
         name = rancher2_machine_config_v2.nodes[0].name
+      }
+
+      rolling_update {
+        max_unavailable = "1"
+        max_surge       = "1"
       }
     }
 

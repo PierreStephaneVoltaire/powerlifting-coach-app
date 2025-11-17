@@ -22,7 +22,7 @@ export const MainLayout: React.FC = () => {
     { to: '/templates', label: 'Templates' },
     { to: '/comp-prep', label: 'Comp Prep' },
     { to: '/coaches', label: 'Coaches' },
-    { to: '/relationships', label: 'My Coaches' },
+    { to: '/coaching', label: 'My Coaches' },
     { to: '/dm', label: 'Messages' },
     { to: '/tools', label: 'Tools' },
   ];

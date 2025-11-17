@@ -77,7 +77,7 @@ export const CoachProfile: React.FC = () => {
 
   const checkExistingRelationship = async () => {
     try {
-      const response = await fetch('/api/v1/relationships', {
+      const response = await fetch('/api/v1/coaches/assignments', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
@@ -85,22 +85,22 @@ export const CoachProfile: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const existing = data.relationships?.find(
-          (rel: any) => rel.coach_id === coachId
+        const existing = data.assignments?.find(
+          (assignment: any) => assignment.coach_id === coachId
         );
         if (existing) {
           setRelationship(existing);
         }
       }
     } catch (err) {
-      console.error('Failed to check existing relationship:', err);
+      console.error('Failed to check existing coaching assignment:', err);
     }
   };
 
   const sendRelationshipRequest = async () => {
     try {
       setSending(true);
-      const response = await fetch('/api/v1/relationships', {
+      const response = await fetch('/api/v1/coaches/assignments', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -113,7 +113,7 @@ export const CoachProfile: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send relationship request');
+        throw new Error('Failed to send coaching request');
       }
 
       const data = await response.json();

@@ -5,6 +5,7 @@ import { apiClient } from '@/utils/api';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { DevModeProvider } from '@/context/DevModeContext';
 import { DevModeToggle } from '@/components/DevMode/DevModeToggle';
+import { ToastProvider } from '@/components/UI/Toast';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import { OnboardingCheck } from '@/components/Auth/OnboardingCheck';
 import { MainLayout } from '@/components/Layout/MainLayout';
@@ -22,7 +23,7 @@ import { WorkoutHistoryPage } from '@/pages/WorkoutHistoryPage';
 import { CompPrepPage } from '@/pages/CompPrepPage';
 import { CoachDirectoryPage } from '@/pages/CoachDirectoryPage';
 import { CoachProfilePage } from '@/pages/CoachProfilePage';
-import { RelationshipManagerPage } from '@/pages/RelationshipManagerPage';
+import { CoachingAssignmentsPage } from '@/pages/CoachingAssignmentsPage';
 import { AthleteProfilePage } from '@/pages/AthleteProfilePage';
 import { PrivacySettingsPage } from '@/pages/PrivacySettingsPage';
 import { WorkoutTemplatesPage } from '@/pages/WorkoutTemplatesPage';
@@ -39,9 +40,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <DevModeProvider>
         <ThemeProvider>
-          <DevModeToggle />
-          <Router>
-            <Routes>
+          <ToastProvider>
+            <DevModeToggle />
+            <Router>
+              <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/onboarding" element={
@@ -69,7 +71,7 @@ function App() {
               <Route path="/comp-prep" element={<CompPrepPage />} />
               <Route path="/coaches" element={<CoachDirectoryPage />} />
               <Route path="/coaches/:coachId" element={<CoachProfilePage />} />
-              <Route path="/relationships" element={<RelationshipManagerPage />} />
+              <Route path="/coaching" element={<CoachingAssignmentsPage />} />
               <Route path="/athletes/:athleteId" element={<AthleteProfilePage />} />
               <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
               <Route path="/templates" element={<WorkoutTemplatesPage />} />
@@ -78,8 +80,9 @@ function App() {
               <Route path="/" element={<Navigate to="/feed" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/feed" replace />} />
-            </Routes>
-          </Router>
+              </Routes>
+            </Router>
+          </ToastProvider>
         </ThemeProvider>
       </DevModeProvider>
     </QueryClientProvider>

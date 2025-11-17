@@ -1,7 +1,8 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { AuthTokens } from '@/types';
 import { offlineQueue } from './offlineQueue';
+import { toast } from '@/components/UI/Toast';
 
 import { generateUUID } from '@/utils/uuid';
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -10,6 +11,7 @@ const WRITE_TIMEOUT = 60000;
 
 class ApiClient {
   private client: AxiosInstance;
+  private serviceErrorShown: Set<string> = new Set();
 
   constructor() {
     this.client = axios.create({
@@ -21,6 +23,43 @@ class ApiClient {
     });
 
     this.setupInterceptors();
+  }
+
+  private getServiceName(url: string): string {
+    if (url.includes('/auth')) return 'Authentication';
+    if (url.includes('/programs')) return 'Program';
+    if (url.includes('/settings')) return 'Settings';
+    if (url.includes('/coaches')) return 'Coach';
+    if (url.includes('/feed')) return 'Feed';
+    if (url.includes('/users')) return 'User';
+    if (url.includes('/exercises')) return 'Exercise';
+    if (url.includes('/sessions')) return 'Session';
+    return 'API';
+  }
+
+  private handleServiceError(error: AxiosError) {
+    const url = error.config?.url || '';
+    const serviceName = this.getServiceName(url);
+
+    if (!error.response) {
+      if (!this.serviceErrorShown.has(serviceName)) {
+        this.serviceErrorShown.add(serviceName);
+        toast.error(`${serviceName} service is unavailable. Please try again later.`, 8000);
+
+        setTimeout(() => {
+          this.serviceErrorShown.delete(serviceName);
+        }, 30000);
+      }
+    } else if (error.response.status >= 500) {
+      if (!this.serviceErrorShown.has(serviceName)) {
+        this.serviceErrorShown.add(serviceName);
+        toast.error(`${serviceName} service encountered an error. Please try again.`, 8000);
+
+        setTimeout(() => {
+          this.serviceErrorShown.delete(serviceName);
+        }, 30000);
+      }
+    }
   }
 
   private setupInterceptors() {
@@ -37,14 +76,16 @@ class ApiClient {
 
     this.client.interceptors.response.use(
       (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
+      async (error: AxiosError) => {
+        const originalRequest = error.config as any;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        this.handleServiceError(error);
+
+        if (error.response?.status === 401 && !originalRequest?._retry) {
           originalRequest._retry = true;
 
           try {
-            const { tokens, refreshTokens, logout } = useAuthStore.getState();
+            const { tokens, refreshTokens } = useAuthStore.getState();
 
             if (tokens?.refresh_token) {
               const newTokens = await this.refreshToken(tokens.refresh_token);

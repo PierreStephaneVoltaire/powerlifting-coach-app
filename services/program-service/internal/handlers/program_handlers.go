@@ -28,6 +28,7 @@ type ProgramHandlers struct {
 	excelExporter    *excel.ExcelExporter
 	workoutGenerator *services.WorkoutGenerator
 	settingsClient   *clients.SettingsClient
+	coachClient      *clients.CoachClient
 }
 
 func NewProgramHandlers(
@@ -36,6 +37,7 @@ func NewProgramHandlers(
 	excelExporter *excel.ExcelExporter,
 	workoutGenerator *services.WorkoutGenerator,
 	settingsClient *clients.SettingsClient,
+	coachClient *clients.CoachClient,
 ) *ProgramHandlers {
 	return &ProgramHandlers{
 		programRepo:      programRepo,
@@ -43,6 +45,7 @@ func NewProgramHandlers(
 		excelExporter:    excelExporter,
 		workoutGenerator: workoutGenerator,
 		settingsClient:   settingsClient,
+		coachClient:      coachClient,
 	}
 }
 
@@ -107,16 +110,13 @@ func (h *ProgramHandlers) GenerateProgram(c *gin.Context) {
 
 	userUUID, _ := uuid.Parse(userID)
 
-	// Get athlete profile for context
 	athleteProfile := h.getAthleteProfileString(c.Request.Context(), authToken)
 
-	// Get coach feedback if enabled
 	var coachFeedback string
 	if req.CoachContextEnable {
-		coachFeedback = h.getCoachFeedbackString(userUUID)
+		coachFeedback = h.getCoachFeedbackString(c.Request.Context(), authToken)
 	}
 
-	// Generate program using AI
 	programJSON, err := h.aiClient.GenerateProgram(c.Request.Context(), req, athleteProfile, coachFeedback)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to generate program with AI")
@@ -228,7 +228,7 @@ func (h *ProgramHandlers) GetProgram(c *gin.Context) {
 	}
 
 	// Check access permissions
-	if !h.hasAccessToProgram(userID, program) {
+	if !h.hasAccessToProgram(c, userID, program) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -292,14 +292,12 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 		}
 	}
 
-	// Get context - fetch athlete profile from settings service
 	athleteProfile := h.getAthleteProfileString(c.Request.Context(), authToken)
 	var coachFeedback string
 	if req.CoachContextEnable {
-		coachFeedback = h.getCoachFeedbackString(userUUID)
+		coachFeedback = h.getCoachFeedbackString(c.Request.Context(), authToken)
 	}
 
-	// Get AI response
 	aiResponse, err := h.aiClient.ChatWithAI(c.Request.Context(), conversation, req.Message, athleteProfile, coachFeedback)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get AI response")
@@ -475,7 +473,7 @@ func (h *ProgramHandlers) ExportProgram(c *gin.Context) {
 	}
 
 	// Check access permissions
-	if !h.hasAccessToProgram(userID, program) {
+	if !h.hasAccessToProgram(c, userID, program) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -595,7 +593,7 @@ func (h *ProgramHandlers) ApproveProgram(c *gin.Context) {
 		return
 	}
 
-	if !h.hasAccessToProgram(userID, program) {
+	if !h.hasAccessToProgram(c, userID, program) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -654,7 +652,7 @@ func (h *ProgramHandlers) RejectProgram(c *gin.Context) {
 		return
 	}
 
-	if !h.hasAccessToProgram(userID, program) {
+	if !h.hasAccessToProgram(c, userID, program) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -761,20 +759,30 @@ func (h *ProgramHandlers) CreateProgramFromChat(c *gin.Context) {
 }
 
 // Helper functions
-func (h *ProgramHandlers) hasAccessToProgram(userID string, program *models.Program) bool {
-	userUUID, _ := uuid.Parse(userID)
-	
-	// Athlete can access their own programs
+func (h *ProgramHandlers) hasAccessToProgram(c *gin.Context, userID string, program *models.Program) bool {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return false
+	}
+
 	if program.AthleteID == userUUID {
 		return true
 	}
 
-	// Coach can access if they're assigned to the program
 	if program.CoachID != nil && *program.CoachID == userUUID {
 		return true
 	}
 
-	// TODO: Check if user is a coach with access to this athlete
+	if h.coachClient != nil {
+		authToken := c.GetHeader("Authorization")
+		if authToken != "" {
+			hasAccess, err := h.coachClient.HasCoachAccess(c.Request.Context(), authToken, userUUID, program.AthleteID)
+			if err == nil && hasAccess {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 
@@ -794,9 +802,28 @@ func (h *ProgramHandlers) getAthleteProfileString(ctx context.Context, authToken
 	return settings.FormatAthleteProfile()
 }
 
-func (h *ProgramHandlers) getCoachFeedbackString(athleteID uuid.UUID) string {
-	// TODO: Fetch recent coach feedback from coach service
-	return ""
+func (h *ProgramHandlers) getCoachFeedbackString(ctx context.Context, authToken string) string {
+	if h.coachClient == nil {
+		return ""
+	}
+
+	userIDStr := ctx.Value("user_id")
+	if userIDStr == nil {
+		return ""
+	}
+
+	athleteID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		return ""
+	}
+
+	feedback, err := h.coachClient.GetAthleteFeedback(ctx, authToken, athleteID)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to fetch coach feedback")
+		return ""
+	}
+
+	return clients.FormatCoachFeedback(feedback)
 }
 
 func (h *ProgramHandlers) determineProgramPhase(competitionDate *time.Time) models.ProgramPhase {
