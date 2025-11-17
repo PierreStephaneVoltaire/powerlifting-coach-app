@@ -17,7 +17,6 @@ resources:
   - ../../base/dm-service.yaml
   - ../../base/machine-service.yaml
   - ../../base/reminder-service.yaml
-  - ../../base/litellm.yaml
   - ../../base/ingress.yaml
 
 patchesJson6902:
