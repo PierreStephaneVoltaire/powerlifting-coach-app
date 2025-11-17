@@ -35,6 +35,16 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        // Clear persisted auth storage immediately
+        localStorage.removeItem('auth-storage');
+        // Clear any other auth-related items
+        localStorage.removeItem('token');
+        // Clear cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
         set({
           user: null,
           tokens: null,
