@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 // GetPreviousSets retrieves historical sets for autofill
-func (h *ProgramHandler) GetPreviousSets(c *gin.Context) {
+func (h *ProgramHandlers) GetPreviousSets(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -29,7 +30,7 @@ func (h *ProgramHandler) GetPreviousSets(c *gin.Context) {
 		fmt.Sscanf(l, "%d", &limit)
 	}
 
-	previousSets, err := h.repo.GetPreviousSetsForExercise(athleteID.(uuid.UUID), exerciseName, limit)
+	previousSets, err := h.programRepo.GetPreviousSetsForExercise(athleteID.(uuid.UUID), exerciseName, limit)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get previous sets")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get previous sets"})
@@ -40,21 +41,21 @@ func (h *ProgramHandler) GetPreviousSets(c *gin.Context) {
 }
 
 // GenerateWarmups calculates warm-up sets based on working weight
-func (h *ProgramHandler) GenerateWarmups(c *gin.Context) {
+func (h *ProgramHandlers) GenerateWarmups(c *gin.Context) {
 	var req models.GenerateWarmupsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	warmups := h.repo.GenerateWarmupSets(req.WorkingWeightKg, req.LiftType)
+	warmups := h.programRepo.GenerateWarmupSets(req.WorkingWeightKg, req.LiftType)
 
 	c.JSON(http.StatusOK, gin.H{"warmup_sets": warmups})
 }
 
 // Exercise Library Handlers
 
-func (h *ProgramHandler) CreateExerciseLibrary(c *gin.Context) {
+func (h *ProgramHandlers) CreateExerciseLibrary(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -84,7 +85,7 @@ func (h *ProgramHandler) CreateExerciseLibrary(c *gin.Context) {
 		IsPublic:         false, // custom exercises are private by default
 	}
 
-	if err := h.repo.CreateExerciseLibrary(exercise); err != nil {
+	if err := h.programRepo.CreateExerciseLibrary(exercise); err != nil {
 		log.Error().Err(err).Msg("Failed to create exercise library entry")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create exercise"})
 		return
@@ -93,7 +94,7 @@ func (h *ProgramHandler) CreateExerciseLibrary(c *gin.Context) {
 	c.JSON(http.StatusCreated, exercise)
 }
 
-func (h *ProgramHandler) GetExerciseLibrary(c *gin.Context) {
+func (h *ProgramHandlers) GetExerciseLibrary(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -107,7 +108,7 @@ func (h *ProgramHandler) GetExerciseLibrary(c *gin.Context) {
 	}
 
 	userID := athleteID.(uuid.UUID)
-	exercises, err := h.repo.GetExerciseLibrary(&userID, liftType)
+	exercises, err := h.programRepo.GetExerciseLibrary(&userID, liftType)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get exercise library")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get exercises"})
@@ -119,7 +120,7 @@ func (h *ProgramHandler) GetExerciseLibrary(c *gin.Context) {
 
 // Workout Template Handlers
 
-func (h *ProgramHandler) CreateWorkoutTemplate(c *gin.Context) {
+func (h *ProgramHandlers) CreateWorkoutTemplate(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -140,7 +141,7 @@ func (h *ProgramHandler) CreateWorkoutTemplate(c *gin.Context) {
 		IsPublic:     req.IsPublic,
 	}
 
-	if err := h.repo.CreateWorkoutTemplate(template); err != nil {
+	if err := h.programRepo.CreateWorkoutTemplate(template); err != nil {
 		log.Error().Err(err).Msg("Failed to create workout template")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create template"})
 		return
@@ -149,14 +150,14 @@ func (h *ProgramHandler) CreateWorkoutTemplate(c *gin.Context) {
 	c.JSON(http.StatusCreated, template)
 }
 
-func (h *ProgramHandler) GetWorkoutTemplates(c *gin.Context) {
+func (h *ProgramHandlers) GetWorkoutTemplates(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	templates, err := h.repo.GetWorkoutTemplates(athleteID.(uuid.UUID))
+	templates, err := h.programRepo.GetWorkoutTemplates(athleteID.(uuid.UUID))
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get workout templates")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get templates"})
@@ -168,7 +169,7 @@ func (h *ProgramHandler) GetWorkoutTemplates(c *gin.Context) {
 
 // Analytics Handlers
 
-func (h *ProgramHandler) GetVolumeData(c *gin.Context) {
+func (h *ProgramHandlers) GetVolumeData(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -189,7 +190,7 @@ func (h *ProgramHandler) GetVolumeData(c *gin.Context) {
 		req.EndDate = time.Now()
 	}
 
-	volumeData, err := h.repo.GetVolumeData(athleteID.(uuid.UUID), req.StartDate, req.EndDate, req.ExerciseName)
+	volumeData, err := h.programRepo.GetVolumeData(athleteID.(uuid.UUID), req.StartDate, req.EndDate, req.ExerciseName)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get volume data")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get volume data"})
@@ -199,7 +200,7 @@ func (h *ProgramHandler) GetVolumeData(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"volume_data": volumeData})
 }
 
-func (h *ProgramHandler) GetE1RMData(c *gin.Context) {
+func (h *ProgramHandlers) GetE1RMData(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -220,7 +221,7 @@ func (h *ProgramHandler) GetE1RMData(c *gin.Context) {
 		req.EndDate = time.Now()
 	}
 
-	e1rmData, err := h.repo.GetE1RMData(athleteID.(uuid.UUID), req.StartDate, req.EndDate, req.LiftType)
+	e1rmData, err := h.programRepo.GetE1RMData(athleteID.(uuid.UUID), req.StartDate, req.EndDate, req.LiftType)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get e1RM data")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get e1RM data"})
@@ -232,7 +233,7 @@ func (h *ProgramHandler) GetE1RMData(c *gin.Context) {
 
 // Program Change Management Handlers
 
-func (h *ProgramHandler) ProposeChange(c *gin.Context) {
+func (h *ProgramHandlers) ProposeChange(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -246,7 +247,7 @@ func (h *ProgramHandler) ProposeChange(c *gin.Context) {
 	}
 
 	// Verify the program belongs to the athlete
-	program, err := h.repo.GetProgramByID(req.ProgramID)
+	program, err := h.programRepo.GetProgramByID(req.ProgramID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Program not found"})
 		return
@@ -266,7 +267,7 @@ func (h *ProgramHandler) ProposeChange(c *gin.Context) {
 		Status:            "pending",
 	}
 
-	if err := h.repo.ProposeChange(change); err != nil {
+	if err := h.programRepo.ProposeChange(change); err != nil {
 		log.Error().Err(err).Msg("Failed to propose change")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to propose change"})
 		return
@@ -275,14 +276,14 @@ func (h *ProgramHandler) ProposeChange(c *gin.Context) {
 	c.JSON(http.StatusCreated, change)
 }
 
-func (h *ProgramHandler) GetPendingChanges(c *gin.Context) {
+func (h *ProgramHandlers) GetPendingChanges(c *gin.Context) {
 	programID, err := uuid.Parse(c.Param("programId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid program ID"})
 		return
 	}
 
-	changes, err := h.repo.GetPendingChanges(programID)
+	changes, err := h.programRepo.GetPendingChanges(programID)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get pending changes")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get pending changes"})
@@ -292,8 +293,8 @@ func (h *ProgramHandler) GetPendingChanges(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"changes": changes})
 }
 
-func (h *ProgramHandler) ApplyChange(c *gin.Context) {
-	athleteID, exists := c.Get("user_id")
+func (h *ProgramHandlers) ApplyChange(c *gin.Context) {
+	_, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -308,7 +309,7 @@ func (h *ProgramHandler) ApplyChange(c *gin.Context) {
 	// TODO: Verify ownership before applying
 	// This would require joining with program table
 
-	if err := h.repo.ApplyChange(changeID); err != nil {
+	if err := h.programRepo.ApplyChange(changeID); err != nil {
 		log.Error().Err(err).Msg("Failed to apply change")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to apply change"})
 		return
@@ -317,8 +318,8 @@ func (h *ProgramHandler) ApplyChange(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Change applied successfully"})
 }
 
-func (h *ProgramHandler) RejectChange(c *gin.Context) {
-	athleteID, exists := c.Get("user_id")
+func (h *ProgramHandlers) RejectChange(c *gin.Context) {
+	_, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -330,7 +331,7 @@ func (h *ProgramHandler) RejectChange(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.RejectChange(changeID); err != nil {
+	if err := h.programRepo.RejectChange(changeID); err != nil {
 		log.Error().Err(err).Msg("Failed to reject change")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject change"})
 		return
@@ -341,7 +342,7 @@ func (h *ProgramHandler) RejectChange(c *gin.Context) {
 
 // Historical Workout Management
 
-func (h *ProgramHandler) GetSessionHistory(c *gin.Context) {
+func (h *ProgramHandlers) GetSessionHistory(c *gin.Context) {
 	athleteID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -363,7 +364,7 @@ func (h *ProgramHandler) GetSessionHistory(c *gin.Context) {
 		fmt.Sscanf(l, "%d", &limit)
 	}
 
-	sessions, err := h.repo.GetSessionHistory(athleteID.(uuid.UUID), startDate, endDate, limit)
+	sessions, err := h.programRepo.GetSessionHistory(athleteID.(uuid.UUID), startDate, endDate, limit)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get session history")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get session history"})
@@ -372,7 +373,7 @@ func (h *ProgramHandler) GetSessionHistory(c *gin.Context) {
 
 	// Get exercises for each session
 	for i := range sessions {
-		exercises, err := h.repo.GetExercisesBySessionID(sessions[i].ID)
+		exercises, err := h.programRepo.GetExercisesBySessionID(sessions[i].ID)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to get exercises for session")
 			continue
@@ -380,7 +381,7 @@ func (h *ProgramHandler) GetSessionHistory(c *gin.Context) {
 
 		// Get completed sets for each exercise
 		for j := range exercises {
-			sets, err := h.repo.GetCompletedSetsByExerciseID(exercises[j].ID)
+			sets, err := h.programRepo.GetCompletedSetsByExerciseID(exercises[j].ID)
 			if err != nil {
 				log.Error().Err(err).Msg("Failed to get completed sets")
 				continue
@@ -394,8 +395,8 @@ func (h *ProgramHandler) GetSessionHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"sessions": sessions, "total": len(sessions)})
 }
 
-func (h *ProgramHandler) DeleteSession(c *gin.Context) {
-	athleteID, exists := c.Get("user_id")
+func (h *ProgramHandlers) DeleteSession(c *gin.Context) {
+	_, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -415,7 +416,7 @@ func (h *ProgramHandler) DeleteSession(c *gin.Context) {
 
 	// TODO: Verify ownership before deleting
 
-	if err := h.repo.SoftDeleteSession(sessionID, req.Reason); err != nil {
+	if err := h.programRepo.SoftDeleteSession(sessionID, req.Reason); err != nil {
 		log.Error().Err(err).Msg("Failed to delete session")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete session"})
 		return

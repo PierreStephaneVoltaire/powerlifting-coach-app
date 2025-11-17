@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/powerlifting-coach-app/program-service/internal/ai"
+	"github.com/powerlifting-coach-app/program-service/internal/clients"
 	"github.com/powerlifting-coach-app/program-service/internal/config"
 	"github.com/powerlifting-coach-app/program-service/internal/database"
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
@@ -72,8 +73,9 @@ func main() {
 	aiClient := ai.NewLiteLLMClient(cfg)
 	excelExporter := excel.NewExcelExporter()
 	workoutGenerator := services.NewWorkoutGenerator(programRepo)
+	settingsClient := clients.NewSettingsClient(cfg.SettingsService)
 
-	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator)
+	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator, settingsClient)
 
 	router := gin.Default()
 

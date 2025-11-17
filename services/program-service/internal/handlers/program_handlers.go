@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/powerlifting-coach-app/program-service/internal/ai"
+	"github.com/powerlifting-coach-app/program-service/internal/clients"
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/models"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
@@ -19,10 +21,11 @@ import (
 )
 
 type ProgramHandlers struct {
-	programRepo       *repository.ProgramRepository
-	aiClient          *ai.LiteLLMClient
-	excelExporter     *excel.ExcelExporter
-	workoutGenerator  *services.WorkoutGenerator
+	programRepo      *repository.ProgramRepository
+	aiClient         *ai.LiteLLMClient
+	excelExporter    *excel.ExcelExporter
+	workoutGenerator *services.WorkoutGenerator
+	settingsClient   *clients.SettingsClient
 }
 
 func NewProgramHandlers(
@@ -30,12 +33,14 @@ func NewProgramHandlers(
 	aiClient *ai.LiteLLMClient,
 	excelExporter *excel.ExcelExporter,
 	workoutGenerator *services.WorkoutGenerator,
+	settingsClient *clients.SettingsClient,
 ) *ProgramHandlers {
 	return &ProgramHandlers{
 		programRepo:      programRepo,
 		aiClient:         aiClient,
 		excelExporter:    excelExporter,
 		workoutGenerator: workoutGenerator,
+		settingsClient:   settingsClient,
 	}
 }
 
@@ -85,6 +90,13 @@ func (h *ProgramHandlers) GenerateProgram(c *gin.Context) {
 		return
 	}
 
+	// Get the auth token from the request header
+	authToken := c.GetHeader("Authorization")
+	if authToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		return
+	}
+
 	var req models.GenerateProgramRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -94,8 +106,8 @@ func (h *ProgramHandlers) GenerateProgram(c *gin.Context) {
 	userUUID, _ := uuid.Parse(userID)
 
 	// Get athlete profile for context
-	athleteProfile := h.getAthleteProfileString(userUUID)
-	
+	athleteProfile := h.getAthleteProfileString(c.Request.Context(), authToken)
+
 	// Get coach feedback if enabled
 	var coachFeedback string
 	if req.CoachContextEnable {
@@ -241,6 +253,13 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 		return
 	}
 
+	// Get the auth token from the request header
+	authToken := c.GetHeader("Authorization")
+	if authToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		return
+	}
+
 	var req models.ChatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -271,8 +290,8 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 		}
 	}
 
-	// Get context
-	athleteProfile := h.getAthleteProfileString(userUUID)
+	// Get context - fetch athlete profile from settings service
+	athleteProfile := h.getAthleteProfileString(c.Request.Context(), authToken)
 	var coachFeedback string
 	if req.CoachContextEnable {
 		coachFeedback = h.getCoachFeedbackString(userUUID)
@@ -687,9 +706,20 @@ func (h *ProgramHandlers) hasAccessToProgram(userID string, program *models.Prog
 	return false
 }
 
-func (h *ProgramHandlers) getAthleteProfileString(athleteID uuid.UUID) string {
-	// TODO: Fetch athlete profile from user service
-	return fmt.Sprintf("Athlete ID: %s", athleteID.String())
+func (h *ProgramHandlers) getAthleteProfileString(ctx context.Context, authToken string) string {
+	// Fetch athlete profile from settings service
+	if h.settingsClient == nil {
+		log.Warn().Msg("Settings client not configured, using minimal profile")
+		return "Athlete profile not available"
+	}
+
+	settings, err := h.settingsClient.GetUserSettings(ctx, authToken)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to fetch athlete profile from settings service")
+		return "Athlete profile could not be retrieved"
+	}
+
+	return settings.FormatAthleteProfile()
 }
 
 func (h *ProgramHandlers) getCoachFeedbackString(athleteID uuid.UUID) string {
