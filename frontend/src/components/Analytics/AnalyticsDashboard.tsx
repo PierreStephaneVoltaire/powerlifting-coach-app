@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VolumeChart } from './VolumeChart';
 import { E1RMChart } from './E1RMChart';
-import { api } from '../../utils/api';
+import { api } from '../../utils/apiWrapper';
 
 export const AnalyticsDashboard: React.FC = () => {
   const [volumeData, setVolumeData] = useState<any[]>([]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
-import { api } from '../../utils/api';
+import { api } from '../../utils/apiWrapper';
 import { format } from 'date-fns';
 import 'react-calendar/dist/Calendar.css';
 
