@@ -39,6 +39,7 @@ type UserSettingsSubmittedEvent struct {
 		Age                      int                                   `json:"age"`
 		TargetWeightClass        *string                               `json:"target_weight_class"`
 		WeeksUntilComp           *int                                  `json:"weeks_until_comp"`
+		CompetitionDate          *string                               `json:"competition_date"`
 		SquatGoal                *struct{ Value float64; Unit string } `json:"squat_goal"`
 		BenchGoal                *struct{ Value float64; Unit string } `json:"bench_goal"`
 		DeadGoal                 *struct{ Value float64; Unit string } `json:"dead_goal"`
@@ -57,6 +58,7 @@ type UserSettingsSubmittedEvent struct {
 		KneeSleeve               *string                               `json:"knee_sleeve"`
 		DeadliftStyle            *string                               `json:"deadlift_style"`
 		SquatStance              *string                               `json:"squat_stance"`
+		SquatBarPosition         *string                               `json:"squat_bar_position"`
 		AddPerMonth              *string                               `json:"add_per_month"`
 		VolumePreference         *string                               `json:"volume_preference"`
 		RecoversFromHeavyDeads   *bool                                 `json:"recovers_from_heavy_deads"`
@@ -64,6 +66,13 @@ type UserSettingsSubmittedEvent struct {
 		PastCompetitions         []map[string]interface{}              `json:"past_competitions"`
 		FeedVisibility           *string                               `json:"feed_visibility"`
 		Passcode                 *string                               `json:"passcode"`
+		HasCompeted              *bool                                 `json:"has_competed"`
+		BestSquatKg              *float64                              `json:"best_squat_kg"`
+		BestBenchKg              *float64                              `json:"best_bench_kg"`
+		BestDeadKg               *float64                              `json:"best_dead_kg"`
+		BestTotalKg              *float64                              `json:"best_total_kg"`
+		CompPrDate               *string                               `json:"comp_pr_date"`
+		CompFederation           *string                               `json:"comp_federation"`
 	} `json:"data"`
 }
 
@@ -109,18 +118,19 @@ func (h *SettingsEventHandler) HandleUserSettingsSubmitted(ctx context.Context, 
 	query := `
 		INSERT INTO user_settings (
 			user_id, weight_value, weight_unit, age, target_weight_class, weeks_until_comp,
-			squat_goal_value, squat_goal_unit, bench_goal_value, bench_goal_unit,
+			competition_date, squat_goal_value, squat_goal_unit, bench_goal_value, bench_goal_unit,
 			dead_goal_value, dead_goal_unit, most_important_lift, least_important_lift,
 			recovery_rating_squat, recovery_rating_bench, recovery_rating_dead,
 			training_days_per_week, session_length_minutes, weight_plan,
 			form_issues, injuries, evaluate_feasibility, federation, knee_sleeve,
-			deadlift_style, squat_stance, add_per_month, volume_preference,
+			deadlift_style, squat_stance, squat_bar_position, add_per_month, volume_preference,
 			recovers_from_heavy_deads, height_value, height_unit, past_competitions,
-			feed_visibility, passcode_hash
+			feed_visibility, passcode_hash, has_competed, best_squat_kg, best_bench_kg,
+			best_dead_kg, best_total_kg, comp_pr_date, comp_federation
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
 			$17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-			$31, $32, $33, $34, $35
+			$31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43
 		)
 		ON CONFLICT (user_id) DO UPDATE SET
 			weight_value = EXCLUDED.weight_value,
@@ -128,6 +138,7 @@ func (h *SettingsEventHandler) HandleUserSettingsSubmitted(ctx context.Context, 
 			age = EXCLUDED.age,
 			target_weight_class = EXCLUDED.target_weight_class,
 			weeks_until_comp = EXCLUDED.weeks_until_comp,
+			competition_date = EXCLUDED.competition_date,
 			squat_goal_value = EXCLUDED.squat_goal_value,
 			squat_goal_unit = EXCLUDED.squat_goal_unit,
 			bench_goal_value = EXCLUDED.bench_goal_value,
@@ -149,6 +160,7 @@ func (h *SettingsEventHandler) HandleUserSettingsSubmitted(ctx context.Context, 
 			knee_sleeve = EXCLUDED.knee_sleeve,
 			deadlift_style = EXCLUDED.deadlift_style,
 			squat_stance = EXCLUDED.squat_stance,
+			squat_bar_position = EXCLUDED.squat_bar_position,
 			add_per_month = EXCLUDED.add_per_month,
 			volume_preference = EXCLUDED.volume_preference,
 			recovers_from_heavy_deads = EXCLUDED.recovers_from_heavy_deads,
@@ -157,6 +169,13 @@ func (h *SettingsEventHandler) HandleUserSettingsSubmitted(ctx context.Context, 
 			past_competitions = EXCLUDED.past_competitions,
 			feed_visibility = EXCLUDED.feed_visibility,
 			passcode_hash = EXCLUDED.passcode_hash,
+			has_competed = EXCLUDED.has_competed,
+			best_squat_kg = EXCLUDED.best_squat_kg,
+			best_bench_kg = EXCLUDED.best_bench_kg,
+			best_dead_kg = EXCLUDED.best_dead_kg,
+			best_total_kg = EXCLUDED.best_total_kg,
+			comp_pr_date = EXCLUDED.comp_pr_date,
+			comp_federation = EXCLUDED.comp_federation,
 			updated_at = NOW()
 		RETURNING id`
 
@@ -193,14 +212,16 @@ func (h *SettingsEventHandler) HandleUserSettingsSubmitted(ctx context.Context, 
 	var settingsID uuid.UUID
 	err = h.db.QueryRowContext(ctx, query,
 		userID, weightValue, weightUnit, event.Data.Age, event.Data.TargetWeightClass,
-		event.Data.WeeksUntilComp, squatGoalValue, squatGoalUnit, benchGoalValue, benchGoalUnit,
+		event.Data.WeeksUntilComp, event.Data.CompetitionDate, squatGoalValue, squatGoalUnit, benchGoalValue, benchGoalUnit,
 		deadGoalValue, deadGoalUnit, event.Data.MostImportantLift, event.Data.LeastImportantLift,
 		event.Data.RecoveryRatingSquat, event.Data.RecoveryRatingBench, event.Data.RecoveryRatingDead,
 		event.Data.TrainingDaysPerWeek, event.Data.SessionLengthMinutes, event.Data.WeightPlan,
 		formIssuesJSON, event.Data.Injuries, event.Data.EvaluateFeasibility, event.Data.Federation,
-		event.Data.KneeSleeve, event.Data.DeadliftStyle, event.Data.SquatStance, event.Data.AddPerMonth,
-		event.Data.VolumePreference, event.Data.RecoversFromHeavyDeads, heightValue, heightUnit,
-		pastCompsJSON, event.Data.FeedVisibility, passcodeHash,
+		event.Data.KneeSleeve, event.Data.DeadliftStyle, event.Data.SquatStance, event.Data.SquatBarPosition,
+		event.Data.AddPerMonth, event.Data.VolumePreference, event.Data.RecoversFromHeavyDeads, heightValue, heightUnit,
+		pastCompsJSON, event.Data.FeedVisibility, passcodeHash, event.Data.HasCompeted,
+		event.Data.BestSquatKg, event.Data.BestBenchKg, event.Data.BestDeadKg, event.Data.BestTotalKg,
+		event.Data.CompPrDate, event.Data.CompFederation,
 	).Scan(&settingsID)
 
 	if err != nil {
@@ -270,6 +291,56 @@ func (h *SettingsEventHandler) validateSettings(event *UserSettingsSubmittedEven
 			"field":   "passcode",
 			"message": "Passcode must be at least 4 characters when feed visibility is passcode-protected",
 		})
+	}
+
+	// Validate squat bar position
+	if event.Data.SquatBarPosition != nil {
+		validPositions := map[string]bool{"high": true, "medium": true, "low": true, "french": true}
+		if !validPositions[*event.Data.SquatBarPosition] {
+			errors = append(errors, map[string]string{
+				"field":   "squat_bar_position",
+				"message": "Squat bar position must be one of: high, medium, low, french",
+			})
+		}
+	}
+
+	// Validate best lift values
+	if event.Data.BestSquatKg != nil && *event.Data.BestSquatKg < 0 {
+		errors = append(errors, map[string]string{
+			"field":   "best_squat_kg",
+			"message": "Best squat must be a positive number",
+		})
+	}
+
+	if event.Data.BestBenchKg != nil && *event.Data.BestBenchKg < 0 {
+		errors = append(errors, map[string]string{
+			"field":   "best_bench_kg",
+			"message": "Best bench must be a positive number",
+		})
+	}
+
+	if event.Data.BestDeadKg != nil && *event.Data.BestDeadKg < 0 {
+		errors = append(errors, map[string]string{
+			"field":   "best_dead_kg",
+			"message": "Best deadlift must be a positive number",
+		})
+	}
+
+	if event.Data.BestTotalKg != nil && *event.Data.BestTotalKg < 0 {
+		errors = append(errors, map[string]string{
+			"field":   "best_total_kg",
+			"message": "Best total must be a positive number",
+		})
+	}
+
+	// If has_competed is true, validate competition-related fields
+	if event.Data.HasCompeted != nil && *event.Data.HasCompeted {
+		if event.Data.BestTotalKg == nil || *event.Data.BestTotalKg == 0 {
+			errors = append(errors, map[string]string{
+				"field":   "best_total_kg",
+				"message": "Best total is required for users who have competed",
+			})
+		}
 	}
 
 	return errors

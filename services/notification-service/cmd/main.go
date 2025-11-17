@@ -37,7 +37,13 @@ func main() {
 	zlog.Info().Msg("Starting notification service")
 
 	// Initialize notification sender
-	sender := notification.NewSender(cfg.SendGridAPIKey, cfg.SendGridFromEmail)
+	sender := notification.NewSender(
+		cfg.SMTPHost,
+		cfg.SMTPPort,
+		cfg.SMTPUsername,
+		cfg.SMTPPassword,
+		cfg.EmailFromAddress,
+	)
 
 	// Initialize queue consumer
 	consumer, err := queue.NewConsumer(cfg.RabbitMQURL, sender)

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/powerlifting-coach-app/auth-service/internal/auth"
@@ -28,6 +29,14 @@ func (h *AuthHandlers) Register(c *gin.Context) {
 	response, err := h.authService.Register(c.Request.Context(), req)
 	if err != nil {
 		log.Error().Err(err).Msg("Registration failed")
+
+		// Check if error is due to user already existing
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "409") || strings.Contains(errMsg, "User exists") || strings.Contains(errMsg, "already exists") {
+			c.JSON(http.StatusConflict, gin.H{"error": "User with this email already exists"})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Registration failed"})
 		return
 	}

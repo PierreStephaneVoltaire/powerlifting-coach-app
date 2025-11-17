@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { offlineQueue } from '@/utils/offlineQueue';
 
+import { generateUUID } from '@/utils/uuid';
 interface PasscodePromptProps {
   targetUserId: string;
   onAccessGranted: (token: string) => void;
@@ -33,7 +34,7 @@ const PasscodePrompt: React.FC<PasscodePromptProps> = ({
     const feedAccessAttemptEvent = {
       schema_version: '1.0.0',
       event_type: 'feed.access.attempt',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: user.id,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',

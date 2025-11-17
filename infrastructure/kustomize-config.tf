@@ -1,9 +1,5 @@
-locals {
-  lb_ip = var.kubernetes_resources_enabled ? data.kubernetes_service.nginx_ingress[0].status[0].load_balancer[0].ingress[0].ip : ""
-}
-
 resource "local_file" "kustomization_patches" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   filename = "${path.module}/../k8s/overlays/production/kustomization.yaml"
   content  = <<-EOT
@@ -19,23 +15,52 @@ patchesStrategicMerge:
   - production-patches.yaml
   - frontend-patch.yaml
   - auth-service-patch.yaml
+  - video-service-patch.yaml
+  - media-processor-service-patch.yaml
 
 patchesJson6902:
   - target:
-      group: networking.k8s.io
+      group: gateway.networking.k8s.io
       version: v1
-      kind: Ingress
-      name: powerlifting-coach-ingress
+      kind: HTTPRoute
+      name: frontend-route
     patch: |-
       - op: replace
-        path: /spec/rules/0/host
-        value: app.${local.lb_ip}.nip.io
+        path: /spec/hostnames/0
+        value: app.${var.domain_name}
+  - target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: HTTPRoute
+      name: api-route
+    patch: |-
       - op: replace
-        path: /spec/rules/1/host
-        value: api.${local.lb_ip}.nip.io
+        path: /spec/hostnames/0
+        value: api.${var.domain_name}
+  - target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: HTTPRoute
+      name: auth-route
+    patch: |-
       - op: replace
-        path: /spec/rules/2/host
-        value: auth.${local.lb_ip}.nip.io
+        path: /spec/hostnames/0
+        value: auth.${var.domain_name}
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: app-tls
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: app.${var.domain_name}
+      - op: replace
+        path: /spec/dnsNames/1
+        value: api.${var.domain_name}
+      - op: replace
+        path: /spec/dnsNames/2
+        value: auth.${var.domain_name}
 
 images:
   - name: auth-service
@@ -74,12 +99,10 @@ replicas:
   - name: rabbitmq
     count: 1
 EOT
-
-  depends_on = [data.kubernetes_service.nginx_ingress]
 }
 
 resource "local_file" "frontend_patch" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   filename = "${path.module}/../k8s/overlays/production/frontend-patch.yaml"
   content  = <<-EOT
@@ -93,18 +116,18 @@ spec:
     spec:
       containers:
       - name: frontend
-        env:
-        - name: REACT_APP_API_URL
-          value: "http://api.${local.lb_ip}.nip.io"
-        - name: REACT_APP_AUTH_URL
-          value: "http://api.${local.lb_ip}.nip.io/auth"
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
 EOT
-
-  depends_on = [data.kubernetes_service.nginx_ingress]
 }
 
 resource "local_file" "auth_service_patch" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
   filename = "${path.module}/../k8s/overlays/production/auth-service-patch.yaml"
   content  = <<-EOT
@@ -120,8 +143,56 @@ spec:
       - name: auth-service
         env:
         - name: KEYCLOAK_URL
-          value: "http://auth.${local.lb_ip}.nip.io"
+          value: "http://keycloak:8080"
 EOT
+}
 
-  depends_on = [data.kubernetes_service.nginx_ingress]
+resource "local_file" "video_service_patch" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  filename = "${path.module}/../k8s/overlays/production/video-service-patch.yaml"
+  content  = <<-EOT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-service
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+      - name: video-service
+        env:
+        - name: SPACES_ENDPOINT
+          value: "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
+        - name: SPACES_BUCKET
+          value: "${aws_s3_bucket.videos.id}"
+        - name: SPACES_REGION
+          value: "${var.aws_region}"
+EOT
+}
+
+resource "local_file" "media_processor_service_patch" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  filename = "${path.module}/../k8s/overlays/production/media-processor-service-patch.yaml"
+  content  = <<-EOT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-processor-service
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+      - name: media-processor
+        env:
+        - name: SPACES_ENDPOINT
+          value: "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
+        - name: SPACES_BUCKET
+          value: "${aws_s3_bucket.videos.id}"
+        - name: SPACES_REGION
+          value: "${var.aws_region}"
+EOT
 }

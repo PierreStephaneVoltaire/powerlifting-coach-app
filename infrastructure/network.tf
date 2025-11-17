@@ -1,0 +1,93 @@
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name                                          = "${local.cluster_name}-vpc"
+    Environment                                   = var.environment
+    Project                                       = var.project_name
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+  }
+}
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name        = "${local.cluster_name}-igw"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+resource "aws_subnet" "public" {
+  count                   = 3
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.${count.index}.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name                                          = "${local.cluster_name}-public-${count.index + 1}"
+    Environment                                   = var.environment
+    Project                                       = var.project_name
+    Type                                          = "public"
+    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+    "kubernetes.io/role/elb"                      = "1"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name        = "${local.cluster_name}-public-rt"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  count          = 3
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "100.64.0.0/16"
+}
+
+resource "aws_subnet" "secondary" {
+  count                   = 3
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "100.64.${count.index}.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name                                          = "${local.cluster_name}-secondary-${count.index + 1}"
+    Environment                                   = var.environment
+    Project                                       = var.project_name
+    Type                                          = "secondary"
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+  }
+
+  depends_on = [aws_vpc_ipv4_cidr_block_association.secondary]
+}
+
+resource "aws_route_table_association" "secondary" {
+  count          = 3
+  subnet_id      = aws_subnet.secondary[count.index].id
+  route_table_id = aws_route_table.public.id
+}

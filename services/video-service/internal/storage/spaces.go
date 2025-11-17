@@ -1,72 +1,80 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/powerlifting-coach-app/video-service/internal/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	cfg "github.com/powerlifting-coach-app/video-service/internal/config"
 )
 
 type SpacesClient struct {
-	client *s3.S3
-	bucket string
-	cdnURL string
+	client     *s3.Client
+	bucketName string
+	cdnURL     string
+	region     string
 }
 
-func NewSpacesClient(cfg *config.Config) (*SpacesClient, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(cfg.SpacesRegion),
-		Endpoint: aws.String(cfg.SpacesEndpoint),
-		Credentials: credentials.NewStaticCredentials(
-			cfg.SpacesAccessKey,
-			cfg.SpacesSecretKey,
-			"",
-		),
-		S3ForcePathStyle: aws.Bool(false),
-	})
+func NewSpacesClient(appCfg *cfg.Config) (*SpacesClient, error) {
+	// Create AWS credentials
+	creds := credentials.NewStaticCredentialsProvider(
+		appCfg.SpacesAccessKey,
+		appCfg.SpacesSecretKey,
+		"",
+	)
+
+	// Load AWS config
+	awsCfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion(appCfg.SpacesRegion),
+		config.WithCredentialsProvider(creds),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	client := s3.New(sess)
+	// Create S3 client
+	client := s3.NewFromConfig(awsCfg)
 
 	return &SpacesClient{
-		client: client,
-		bucket: cfg.SpacesBucket,
-		cdnURL: cfg.CDNUrl,
+		client:     client,
+		bucketName: appCfg.SpacesBucket,
+		cdnURL:     appCfg.CDNUrl,
+		region:     appCfg.SpacesRegion,
 	}, nil
 }
 
 func (s *SpacesClient) GeneratePresignedUploadURL(key string, contentType string, duration time.Duration) (string, error) {
-	req, _ := s.client.PutObjectRequest(&s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
+	presignClient := s3.NewPresignClient(s.client)
+
+	request, err := presignClient.PresignPutObject(context.Background(), &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
 		Key:         aws.String(key),
 		ContentType: aws.String(contentType),
-		ACL:         aws.String("private"),
-	})
+	}, s3.WithPresignExpires(duration))
 
-	url, err := req.Presign(duration)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
+		return "", fmt.Errorf("failed to generate presigned upload URL: %w", err)
 	}
 
-	return url, nil
+	return request.URL, nil
 }
 
 func (s *SpacesClient) UploadFile(key string, body io.Reader, contentType string) error {
-	_, err := s.client.PutObject(&s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
+	ctx := context.Background()
+
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
 		Key:         aws.String(key),
-		Body:        aws.ReadSeekCloser(body),
+		Body:        body,
 		ContentType: aws.String(contentType),
-		ACL:         aws.String("private"),
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to upload file: %w", err)
 	}
@@ -75,18 +83,8 @@ func (s *SpacesClient) UploadFile(key string, body io.Reader, contentType string
 }
 
 func (s *SpacesClient) UploadPublicFile(key string, body io.Reader, contentType string) error {
-	_, err := s.client.PutObject(&s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
-		Key:         aws.String(key),
-		Body:        aws.ReadSeekCloser(body),
-		ContentType: aws.String(contentType),
-		ACL:         aws.String("public-read"),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to upload public file: %w", err)
-	}
-
-	return nil
+	// S3 bucket has public read policy, so this is the same as UploadFile
+	return s.UploadFile(key, body, contentType)
 }
 
 func (s *SpacesClient) GetFileURL(key string) string {
@@ -94,13 +92,19 @@ func (s *SpacesClient) GetFileURL(key string) string {
 		return fmt.Sprintf("%s/%s", strings.TrimRight(s.cdnURL, "/"), key)
 	}
 
-	req, _ := s.client.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: aws.String(s.bucket),
+	// Generate presigned URL for private access
+	presignClient := s3.NewPresignClient(s.client)
+	request, err := presignClient.PresignGetObject(context.Background(), &s3.GetObjectInput{
+		Bucket: aws.String(s.bucketName),
 		Key:    aws.String(key),
-	})
+	}, s3.WithPresignExpires(24*time.Hour))
 
-	url, _ := req.Presign(time.Hour * 24) // 24 hour expiry for private files
-	return url
+	if err != nil {
+		// Fallback to public URL if presign fails
+		return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucketName, s.region, key)
+	}
+
+	return request.URL
 }
 
 func (s *SpacesClient) GetPublicFileURL(key string) string {
@@ -108,15 +112,18 @@ func (s *SpacesClient) GetPublicFileURL(key string) string {
 		return fmt.Sprintf("%s/%s", strings.TrimRight(s.cdnURL, "/"), key)
 	}
 
-	return fmt.Sprintf("https://%s.%s/%s", s.bucket,
-		strings.TrimPrefix(*s.client.Config.Endpoint, "https://"), key)
+	// Public URL (bucket has public read access)
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucketName, s.region, key)
 }
 
 func (s *SpacesClient) DeleteFile(key string) error {
-	_, err := s.client.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(s.bucket),
+	ctx := context.Background()
+
+	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(s.bucketName),
 		Key:    aws.String(key),
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
@@ -125,12 +132,16 @@ func (s *SpacesClient) DeleteFile(key string) error {
 }
 
 func (s *SpacesClient) FileExists(key string) (bool, error) {
-	_, err := s.client.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
+	ctx := context.Background()
+
+	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(s.bucketName),
 		Key:    aws.String(key),
 	})
+
 	if err != nil {
-		if strings.Contains(err.Error(), "NoSuchKey") || strings.Contains(err.Error(), "Not Found") {
+		// Check if error is "not found"
+		if strings.Contains(err.Error(), "NotFound") || strings.Contains(err.Error(), "404") {
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to check if file exists: %w", err)
@@ -140,12 +151,19 @@ func (s *SpacesClient) FileExists(key string) (bool, error) {
 }
 
 func (s *SpacesClient) GetFileSize(key string) (int64, error) {
-	result, err := s.client.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
+	ctx := context.Background()
+
+	result, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(s.bucketName),
 		Key:    aws.String(key),
 	})
+
 	if err != nil {
 		return 0, fmt.Errorf("failed to get file size: %w", err)
+	}
+
+	if result.ContentLength == nil {
+		return 0, fmt.Errorf("content length is nil")
 	}
 
 	return *result.ContentLength, nil

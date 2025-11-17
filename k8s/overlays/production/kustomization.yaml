@@ -10,6 +10,8 @@ patchesStrategicMerge:
   - production-patches.yaml
   - frontend-patch.yaml
   - auth-service-patch.yaml
+  - video-service-patch.yaml
+  - media-processor-service-patch.yaml
 
 patchesJson6902:
   - target:
@@ -20,13 +22,13 @@ patchesJson6902:
     patch: |-
       - op: replace
         path: /spec/rules/0/host
-        value: app.152.42.144.167.nip.io
+        value: app.nolift.training
       - op: replace
         path: /spec/rules/1/host
-        value: api.152.42.144.167.nip.io
+        value: api.nolift.training
       - op: replace
         path: /spec/rules/2/host
-        value: auth.152.42.144.167.nip.io
+        value: auth.nolift.training
 
 images:
   - name: auth-service

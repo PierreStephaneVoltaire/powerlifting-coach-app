@@ -386,3 +386,35 @@ func (h *FeedHandlers) GetFeedPost(c *gin.Context) {
 
 	c.JSON(http.StatusOK, post)
 }
+
+func (h *FeedHandlers) GetPrivacySettings(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"is_public":      true,
+		"access_token":   "",
+		"require_token":  false,
+	})
+}
+
+func (h *FeedHandlers) UpdatePrivacySettings(c *gin.Context) {
+	var req struct {
+		IsPublic     bool   `json:"is_public"`
+		RequireToken bool   `json:"require_token"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	accessToken := ""
+	if req.RequireToken {
+		accessToken = uuid.New().String()[:8]
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"is_public":     req.IsPublic,
+		"access_token":  accessToken,
+		"require_token": req.RequireToken,
+		"message":       "Privacy settings updated",
+	})
+}

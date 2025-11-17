@@ -1,102 +1,51 @@
 import React, { useState } from 'react';
 import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
-
-interface PlateInventory {
-  '25kg': number;
-  '20kg': number;
-  '15kg': number;
-  '10kg': number;
-  '5kg': number;
-  '2.5kg': number;
-  '1.25kg': number;
-  '0.5kg': number;
-}
-
-interface PlateCount {
-  weight: string;
-  count: number;
-}
-
-const DEFAULT_INVENTORY: PlateInventory = {
-  '25kg': 4,
-  '20kg': 4,
-  '15kg': 2,
-  '10kg': 4,
-  '5kg': 4,
-  '2.5kg': 4,
-  '1.25kg': 2,
-  '0.5kg': 2,
-};
+import { generateUUID } from '@/utils/uuid';
+import {
+  Unit,
+  PlateInventoryKg,
+  PlateInventoryLb,
+  PlateCount,
+  BAR_OPTIONS,
+  DEFAULT_INVENTORY_KG,
+  DEFAULT_INVENTORY_LB,
+  KG_PLATE_COLORS,
+  LB_PLATE_COLOR,
+} from './plateCalculatorTypes';
+import { calculatePlates, convertBarWeight } from './plateCalculatorUtils';
+import { BarVisualization } from './BarVisualization';
+import { PlateInventoryEditor } from './PlateInventoryEditor';
 
 export const PlateCalculator: React.FC = () => {
   const { user } = useAuthStore();
+  const [unit, setUnit] = useState<Unit>('lb');
   const [targetWeight, setTargetWeight] = useState<number>(0);
-  const [barWeight, setBarWeight] = useState<number>(20);
-  const [inventory, setInventory] = useState<PlateInventory>(DEFAULT_INVENTORY);
+  const [barWeight, setBarWeight] = useState<number>(45);
+  const [inventoryKg, setInventoryKg] = useState<PlateInventoryKg>(DEFAULT_INVENTORY_KG);
+  const [inventoryLb, setInventoryLb] = useState<PlateInventoryLb>(DEFAULT_INVENTORY_LB);
   const [result, setResult] = useState<PlateCount[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const calculatePlates = () => {
-    setError(null);
+  const inventory = unit === 'kg' ? inventoryKg : inventoryLb;
 
-    if (targetWeight < barWeight) {
-      setError('Target weight must be greater than bar weight');
-      setResult([]);
-      return;
-    }
-
-    const weightPerSide = (targetWeight - barWeight) / 2;
-
-    if (weightPerSide < 0) {
-      setError('Invalid weight calculation');
-      setResult([]);
-      return;
-    }
-
-    const availablePlates = Object.entries(inventory)
-      .map(([weight, count]) => ({
-        weight: parseFloat(weight.replace('kg', '')),
-        count,
-      }))
-      .sort((a, b) => b.weight - a.weight);
-
-    let remaining = weightPerSide;
-    const plates: PlateCount[] = [];
-
-    for (const plate of availablePlates) {
-      if (remaining >= plate.weight && plate.count > 0) {
-        const neededCount = Math.min(
-          Math.floor(remaining / plate.weight),
-          plate.count
-        );
-        if (neededCount > 0) {
-          plates.push({
-            weight: `${plate.weight}kg`,
-            count: neededCount,
-          });
-          remaining -= neededCount * plate.weight;
-        }
-      }
-    }
-
-    if (remaining > 0.01) {
-      setError(`Cannot make exact weight. ${remaining.toFixed(2)}kg remaining per side.`);
-    }
-
+  const handleCalculate = () => {
+    const { plates, error: calcError } = calculatePlates(targetWeight, barWeight, inventory, unit);
     setResult(plates);
+    setError(calcError);
 
-    if (user) {
+    if (user && plates.length > 0) {
       const event = {
         schema_version: '1.0.0',
         event_type: 'tools.platecalc.query',
-        client_generated_id: crypto.randomUUID(),
+        client_generated_id: generateUUID(),
         user_id: user.id,
         timestamp: new Date().toISOString(),
         source_service: 'frontend',
         data: {
           target_weight: targetWeight,
           bar_weight: barWeight,
+          unit: unit,
           result_plates: plates,
         },
       };
@@ -107,17 +56,56 @@ export const PlateCalculator: React.FC = () => {
     }
   };
 
-  const updateInventory = (weight: keyof PlateInventory, count: number) => {
-    setInventory({
-      ...inventory,
-      [weight]: Math.max(0, count),
-    });
+  const updateInventory = (weight: string, count: number) => {
+    if (unit === 'kg') {
+      setInventoryKg({
+        ...inventoryKg,
+        [weight]: Math.max(0, count),
+      });
+    } else {
+      setInventoryLb({
+        ...inventoryLb,
+        [weight]: Math.max(0, count),
+      });
+    }
+  };
+
+  const switchUnit = (newUnit: Unit) => {
+    setUnit(newUnit);
+    setResult([]);
+    setError(null);
+    setBarWeight(convertBarWeight(barWeight, unit, newUnit));
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Plate Calculator</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Plate Calculator</h2>
+
+          <div className="flex bg-gray-200 rounded-lg p-1">
+            <button
+              onClick={() => switchUnit('lb')}
+              className={`px-4 py-2 rounded-md font-semibold transition-colors ${
+                unit === 'lb'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              LB
+            </button>
+            <button
+              onClick={() => switchUnit('kg')}
+              className={`px-4 py-2 rounded-md font-semibold transition-colors ${
+                unit === 'kg'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              KG
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
@@ -125,36 +113,38 @@ export const PlateCalculator: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Total Weight (kg)
+                  Total Weight ({unit})
                 </label>
                 <input
                   type="number"
-                  step="0.5"
+                  step={unit === 'kg' ? '0.5' : '2.5'}
                   value={targetWeight || ''}
                   onChange={(e) => setTargetWeight(parseFloat(e.target.value) || 0)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="e.g., 140"
+                  placeholder={unit === 'kg' ? 'e.g., 140' : 'e.g., 315'}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bar Weight (kg)
+                  Bar Weight ({unit})
                 </label>
                 <select
                   value={barWeight}
                   onChange={(e) => setBarWeight(parseFloat(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
-                  <option value="20">20kg (Standard Barbell)</option>
-                  <option value="15">15kg (Women's Barbell)</option>
-                  <option value="10">10kg (Training Bar)</option>
-                  <option value="5">5kg (Technique Bar)</option>
+                  {BAR_OPTIONS.map((bar) => (
+                    <option key={bar.label} value={bar[unit]}>
+                      {bar[unit]}
+                      {unit} ({bar.label})
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <button
-                onClick={calculatePlates}
+                onClick={handleCalculate}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Calculate
@@ -162,25 +152,11 @@ export const PlateCalculator: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Plate Inventory</h3>
-            <div className="space-y-2">
-              {Object.entries(inventory).map(([weight, count]) => (
-                <div key={weight} className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">{weight}</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={count}
-                    onChange={(e) =>
-                      updateInventory(weight as keyof PlateInventory, parseInt(e.target.value) || 0)
-                    }
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <PlateInventoryEditor
+            unit={unit}
+            inventory={inventory}
+            onUpdateInventory={updateInventory}
+          />
         </div>
 
         {error && (
@@ -195,32 +171,54 @@ export const PlateCalculator: React.FC = () => {
               Plates Per Side
             </h3>
             <div className="space-y-3">
-              {result.map((plate, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm"
-                >
-                  <span className="text-2xl font-bold text-blue-600">{plate.weight}</span>
-                  <span className="text-lg text-gray-700">
-                    x <span className="font-semibold">{plate.count}</span>
-                  </span>
-                </div>
-              ))}
+              {result.map((plate, idx) => {
+                const color = unit === 'kg'
+                  ? KG_PLATE_COLORS[plate.weight.toString()] || '#95A5A6'
+                  : LB_PLATE_COLOR;
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded border-2 border-gray-700"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-2xl font-bold text-blue-600">
+                        {plate.weight}{unit}
+                      </span>
+                    </div>
+                    <span className="text-lg text-gray-700">
+                      x <span className="font-semibold">{plate.count}</span>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-200">
+
+            <BarVisualization plates={result} unit={unit} barWeight={barWeight} />
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Total per side:</span>
                 <span className="text-lg font-semibold text-gray-900">
-                  {((targetWeight - barWeight) / 2).toFixed(2)}kg
+                  {((targetWeight - barWeight) / 2).toFixed(2)}{unit}
                 </span>
               </div>
               <div className="flex justify-between items-center mt-2">
                 <span className="text-sm text-gray-600">Total weight:</span>
-                <span className="text-xl font-bold text-blue-600">{targetWeight}kg</span>
+                <span className="text-xl font-bold text-blue-600">{targetWeight}{unit}</span>
               </div>
             </div>
           </div>
         )}
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6 mt-6">
+        <h2 className="text-2xl font-bold text-gray-900">Strength Check Me</h2>
+        <p className="text-gray-600 mt-2">Coming soon...</p>
       </div>
     </div>
   );

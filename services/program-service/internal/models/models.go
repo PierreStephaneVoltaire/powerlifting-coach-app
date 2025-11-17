@@ -23,24 +23,35 @@ const (
 	PhaseOffSeason   ProgramPhase = "off_season"
 )
 
+type ProgramStatus string
+
+const (
+	ProgramStatusDraft           ProgramStatus = "draft"
+	ProgramStatusPendingApproval ProgramStatus = "pending_approval"
+	ProgramStatusApproved        ProgramStatus = "approved"
+	ProgramStatusRejected        ProgramStatus = "rejected"
+)
+
 type Program struct {
-	ID           uuid.UUID              `json:"id" db:"id"`
-	AthleteID    uuid.UUID              `json:"athlete_id" db:"athlete_id"`
-	CoachID      *uuid.UUID             `json:"coach_id" db:"coach_id"`
-	Name         string                 `json:"name" db:"name"`
-	Description  *string                `json:"description" db:"description"`
-	Phase        ProgramPhase           `json:"phase" db:"phase"`
-	StartDate    time.Time              `json:"start_date" db:"start_date"`
-	EndDate      time.Time              `json:"end_date" db:"end_date"`
-	WeeksTotal   int                    `json:"weeks_total" db:"weeks_total"`
-	DaysPerWeek  int                    `json:"days_per_week" db:"days_per_week"`
-	ProgramData  map[string]interface{} `json:"program_data" db:"program_data"`
-	AIGenerated  bool                   `json:"ai_generated" db:"ai_generated"`
-	AIModel      *string                `json:"ai_model" db:"ai_model"`
-	AIPrompt     *string                `json:"ai_prompt" db:"ai_prompt"`
-	IsActive     bool                   `json:"is_active" db:"is_active"`
-	CreatedAt    time.Time              `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time              `json:"updated_at" db:"updated_at"`
+	ID                  uuid.UUID              `json:"id" db:"id"`
+	AthleteID           uuid.UUID              `json:"athlete_id" db:"athlete_id"`
+	CoachID             *uuid.UUID             `json:"coach_id" db:"coach_id"`
+	Name                string                 `json:"name" db:"name"`
+	Description         *string                `json:"description" db:"description"`
+	Phase               ProgramPhase           `json:"phase" db:"phase"`
+	StartDate           time.Time              `json:"start_date" db:"start_date"`
+	EndDate             time.Time              `json:"end_date" db:"end_date"`
+	WeeksTotal          int                    `json:"weeks_total" db:"weeks_total"`
+	DaysPerWeek         int                    `json:"days_per_week" db:"days_per_week"`
+	ProgramData         map[string]interface{} `json:"program_data" db:"program_data"`
+	PendingProgramData  *map[string]interface{} `json:"pending_program_data,omitempty" db:"pending_program_data"`
+	ProgramStatus       ProgramStatus          `json:"program_status" db:"program_status"`
+	AIGenerated         bool                   `json:"ai_generated" db:"ai_generated"`
+	AIModel             *string                `json:"ai_model" db:"ai_model"`
+	AIPrompt            *string                `json:"ai_prompt" db:"ai_prompt"`
+	IsActive            bool                   `json:"is_active" db:"is_active"`
+	CreatedAt           time.Time              `json:"created_at" db:"created_at"`
+	UpdatedAt           time.Time              `json:"updated_at" db:"updated_at"`
 }
 
 type TrainingSession struct {
@@ -78,16 +89,34 @@ type Exercise struct {
 	CompletedSets     []CompletedSet `json:"completed_sets,omitempty"`
 }
 
+type SetType string
+
+const (
+	SetTypeWarmUp   SetType = "warm_up"
+	SetTypeWorking  SetType = "working"
+	SetTypeBackoff  SetType = "backoff"
+	SetTypeAMRAP    SetType = "amrap"
+	SetTypeFailure  SetType = "failure"
+	SetTypeDropSet  SetType = "drop_set"
+	SetTypeCluster  SetType = "cluster"
+	SetTypePause    SetType = "pause"
+	SetTypeTempo    SetType = "tempo"
+	SetTypeCustom   SetType = "custom"
+)
+
 type CompletedSet struct {
-	ID            uuid.UUID  `json:"id" db:"id"`
-	ExerciseID    uuid.UUID  `json:"exercise_id" db:"exercise_id"`
-	SetNumber     int        `json:"set_number" db:"set_number"`
-	RepsCompleted int        `json:"reps_completed" db:"reps_completed"`
-	WeightKg      float64    `json:"weight_kg" db:"weight_kg"`
-	RPEActual     *float64   `json:"rpe_actual" db:"rpe_actual"`
-	VideoID       *uuid.UUID `json:"video_id" db:"video_id"`
-	Notes         *string    `json:"notes" db:"notes"`
-	CompletedAt   time.Time  `json:"completed_at" db:"completed_at"`
+	ID            uuid.UUID       `json:"id" db:"id"`
+	ExerciseID    uuid.UUID       `json:"exercise_id" db:"exercise_id"`
+	SetNumber     int             `json:"set_number" db:"set_number"`
+	RepsCompleted int             `json:"reps_completed" db:"reps_completed"`
+	WeightKg      float64         `json:"weight_kg" db:"weight_kg"`
+	RPEActual     *float64        `json:"rpe_actual" db:"rpe_actual"`
+	VideoID       *uuid.UUID      `json:"video_id" db:"video_id"`
+	Notes         *string         `json:"notes" db:"notes"`
+	SetType       SetType         `json:"set_type" db:"set_type"`
+	MediaURLs     []string        `json:"media_urls" db:"media_urls"`
+	ExerciseNotes *string         `json:"exercise_notes" db:"exercise_notes"`
+	CompletedAt   time.Time       `json:"completed_at" db:"completed_at"`
 }
 
 type AIConversation struct {
@@ -181,6 +210,9 @@ type LoggedSet struct {
 	RPEActual     *float64   `json:"rpe_actual"`
 	VideoID       *uuid.UUID `json:"video_id"`
 	Notes         *string    `json:"notes"`
+	SetType       SetType    `json:"set_type"`
+	MediaURLs     []string   `json:"media_urls"`
+	ExerciseNotes *string    `json:"exercise_notes"`
 }
 
 type ProgramResponse struct {

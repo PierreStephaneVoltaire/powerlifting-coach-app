@@ -189,81 +189,35 @@ func (h *MediaEventHandlers) HandleMediaUploaded(ctx context.Context, payload []
 	log.Info().
 		Str("upload_id", uploadID.String()).
 		Str("video_id", videoID.String()).
-		Msg("Media uploaded, starting processing")
+		Msg("Media uploaded, queuing for processing")
 
-	time.Sleep(100 * time.Millisecond)
-
-	processedURL := fmt.Sprintf("https://cdn.example.com/videos/%s.mp4", videoID.String())
-	thumbnailURL := fmt.Sprintf("https://cdn.example.com/thumbnails/%s.jpg", videoID.String())
-
-	updateProcessedQuery := `
-	UPDATE videos
-	SET status = 'ready', processed_url = $1, thumbnail_url = $2, processed_at = NOW()
-	WHERE id = $3
-	`
-	_, err = h.db.ExecContext(ctx, updateProcessedQuery, processedURL, thumbnailURL, videoID)
+	// Queue video for processing by media-processor-service
+	var filename string
+	filenameQuery := `SELECT filename FROM videos WHERE id = $1`
+	err = h.db.QueryRowContext(ctx, filenameQuery, videoID).Scan(&filename)
 	if err != nil {
-		return fmt.Errorf("failed to update video processing: %w", err)
+		return fmt.Errorf("failed to get filename: %w", err)
+	}
+
+	processMsg := map[string]interface{}{
+		"video_id": videoID.String(),
+		"user_id":  event.UserID,
+		"filename": filename,
+	}
+
+	if h.publisher != nil {
+		if err := h.publisher.PublishVideoProcessing(processMsg); err != nil {
+			log.Error().Err(err).Msg("Failed to queue video for processing")
+			// Update video status to failed
+			failQuery := `UPDATE videos SET status = 'failed' WHERE id = $1`
+			h.db.ExecContext(ctx, failQuery, videoID)
+			return fmt.Errorf("failed to queue video processing: %w", err)
+		}
 	}
 
 	log.Info().
 		Str("video_id", videoID.String()).
-		Msg("Media processing completed")
-
-	if h.publisher != nil {
-		mediaProcessedEvent := map[string]interface{}{
-			"schema_version":      "1.0.0",
-			"event_type":          "media.processed",
-			"client_generated_id": uuid.New().String(),
-			"user_id":             event.UserID,
-			"timestamp":           time.Now().UTC().Format(time.RFC3339),
-			"source_service":      "video-service",
-			"data": map[string]interface{}{
-				"video_id":      videoID.String(),
-				"media_url":     processedURL,
-				"thumbnail_url": thumbnailURL,
-			},
-		}
-		if err := h.publisher.PublishEvent("media.processed", mediaProcessedEvent); err != nil {
-			log.Error().Err(err).Msg("Failed to publish media.processed event")
-		}
-
-		var movementLabel, commentText, visibility string
-		var weight, rpe sql.NullFloat64
-
-		videoQuery := `
-		SELECT movement_label, weight, rpe, comment_text, visibility
-		FROM videos
-		WHERE id = $1
-		`
-		err = h.db.QueryRowContext(ctx, videoQuery, videoID).Scan(&movementLabel, &weight, &rpe, &commentText, &visibility)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to fetch video metadata for feed post")
-		} else {
-			feedPostEvent := map[string]interface{}{
-				"schema_version":      "1.0.0",
-				"event_type":          "feed.post.created",
-				"client_generated_id": uuid.New().String(),
-				"user_id":             event.UserID,
-				"timestamp":           time.Now().UTC().Format(time.RFC3339),
-				"source_service":      "video-service",
-				"data": map[string]interface{}{
-					"post_id":        videoID.String(),
-					"content_type":   "video",
-					"media_url":      processedURL,
-					"thumbnail_url":  thumbnailURL,
-					"movement_label": movementLabel,
-					"weight":         weight.Float64,
-					"rpe":            rpe.Float64,
-					"caption":        commentText,
-					"visibility":     visibility,
-				},
-			}
-			if err := h.publisher.PublishEvent("feed.post.created", feedPostEvent); err != nil {
-				log.Error().Err(err).Msg("Failed to publish feed.post.created event")
-			}
-		}
-	}
+		Msg("Video queued for processing")
 
 	return nil
 }

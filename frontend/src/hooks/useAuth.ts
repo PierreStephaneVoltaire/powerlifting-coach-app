@@ -4,17 +4,26 @@ import { apiClient } from '@/utils/api';
 import { LoginRequest, RegisterRequest } from '@/types';
 
 export const useAuth = () => {
-  const { user, tokens, isAuthenticated, login, logout, setLoading } = useAuthStore();
+  const { user, tokens, isAuthenticated, login, logout, setLoading, setOnboarded } = useAuthStore();
   const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: LoginRequest) => {
       setLoading(true);
       const tokens = await apiClient.login(email, password);
-      
-      // Create user in user service
       const userResponse = await apiClient.getProfile();
-      
+
+      try {
+        await apiClient.getUserSettings();
+        setOnboarded(true);
+      } catch (error: any) {
+        if (error.response && error.response.status === 404) {
+          setOnboarded(false);
+        } else {
+          throw error;
+        }
+      }
+
       return { tokens, userResponse };
     },
     onSuccess: ({ tokens, userResponse }) => {
@@ -30,10 +39,8 @@ export const useAuth = () => {
     mutationFn: async ({ email, password, name, user_type }: RegisterRequest) => {
       setLoading(true);
       const tokens = await apiClient.register(email, password, name, user_type);
-      
-      // Get user profile after registration
       const userResponse = await apiClient.getProfile();
-      
+      setOnboarded(false);
       return { tokens, userResponse };
     },
     onSuccess: ({ tokens, userResponse }) => {

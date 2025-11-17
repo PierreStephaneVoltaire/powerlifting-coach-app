@@ -47,6 +47,18 @@ type TokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
+type UserInfo struct {
+	ID       string `json:"id"`
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	UserType string `json:"user_type"`
+}
+
+type AuthResponse struct {
+	Tokens TokenResponse `json:"tokens"`
+	User   UserInfo      `json:"user"`
+}
+
 func NewService(cfg *config.Config) *Service {
 	client := gocloak.NewClient(cfg.KeycloakURL)
 	return &Service{
@@ -99,7 +111,8 @@ func (s *Service) setUserPassword(ctx context.Context, accessToken, realm, userI
 	return nil
 }
 
-func (s *Service) Register(ctx context.Context, req RegisterRequest) (*TokenResponse, error) {
+
+func (s *Service) Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error) {
 	adminToken, err := s.getAdminToken(ctx)
 	if err != nil {
 		return nil, err
@@ -145,23 +158,45 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*TokenResp
 		}
 	}
 
-	return s.Login(ctx, LoginRequest{
+	authResp, err := s.Login(ctx, LoginRequest{
 		Email:    req.Email,
 		Password: req.Password,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Use the user ID from registration, not from the token
+	authResp.User.ID = userID
+
+	return authResp, nil
 }
 
-func (s *Service) Login(ctx context.Context, req LoginRequest) (*TokenResponse, error) {
+func (s *Service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, error) {
 	token, err := s.client.Login(ctx, s.config.KeycloakClientID, s.config.KeycloakSecret, s.config.KeycloakRealm, req.Email, req.Password)
 	if err != nil {
 		return nil, fmt.Errorf("login failed: %w", err)
 	}
 
-	return &TokenResponse{
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		ExpiresIn:    token.ExpiresIn,
-		TokenType:    "Bearer",
+	// Get user info from token
+	claims, err := s.ValidateToken(ctx, token.AccessToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info: %w", err)
+	}
+
+	return &AuthResponse{
+		Tokens: TokenResponse{
+			AccessToken:  token.AccessToken,
+			RefreshToken: token.RefreshToken,
+			ExpiresIn:    token.ExpiresIn,
+			TokenType:    "Bearer",
+		},
+		User: UserInfo{
+			ID:       claims.UserID,
+			Email:    claims.Email,
+			Name:     claims.Name,
+			UserType: claims.UserType,
+		},
 	}, nil
 }
 

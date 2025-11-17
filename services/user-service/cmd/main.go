@@ -69,7 +69,7 @@ func main() {
 		users := v1.Group("/users")
 		{
 			users.POST("/create", userHandlers.CreateUser)
-			
+
 			users.Use(middleware.AuthMiddleware(authConfig))
 			{
 				users.GET("/profile", userHandlers.GetProfile)
@@ -80,6 +80,12 @@ func main() {
 				users.POST("/coach/grant-access", userHandlers.GrantAccess)
 				users.GET("/coach/athletes", userHandlers.GetMyAthletes)
 			}
+		}
+
+		athletes := v1.Group("/athletes")
+		athletes.Use(middleware.AuthMiddleware(authConfig))
+		{
+			athletes.GET("/profile/:id", userHandlers.GetAthletePublicProfile)
 		}
 	}
 

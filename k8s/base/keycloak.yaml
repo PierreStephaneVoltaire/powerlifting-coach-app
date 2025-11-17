@@ -15,6 +15,8 @@ spec:
       labels:
         app: keycloak
     spec:
+
+
       containers:
       - name: keycloak
         image: quay.io/keycloak/keycloak:23.0
@@ -52,6 +54,36 @@ spec:
           value: "true"
         - name: PROXY_ADDRESS_FORWARDING
           value: "true"
+        - name: SES_EMAIL_SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: ses-email-secret
+              key: smtp-host
+        - name: SES_EMAIL_SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: ses-email-secret
+              key: smtp-username
+        - name: SES_EMAIL_SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ses-email-secret
+              key: smtp-password
+        - name: SES_EMAIL_FROM_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: ses-email-secret
+              key: from-email
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: client-id
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: client-secret
         volumeMounts:
         - name: realm-config
           mountPath: /opt/keycloak/data/import

@@ -10,6 +10,6 @@ spec:
       - name: frontend
         env:
         - name: REACT_APP_API_URL
-          value: "http://api.152.42.144.167.nip.io"
+          value: "https://api.nolift.training"
         - name: REACT_APP_AUTH_URL
-          value: "http://api.152.42.144.167.nip.io/auth"
+          value: "https://api.nolift.training/auth"

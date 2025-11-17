@@ -30,7 +30,6 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Mobile menu button */}
           <button
             type="button"
             className="md:hidden -ml-2 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
@@ -40,7 +39,6 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
             <Bars3Icon className="h-6 w-6" />
           </button>
 
-          {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <div className="flex-shrink-0">
@@ -51,9 +49,7 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
             </Link>
           </div>
 
-          {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
             <button
               type="button"
               className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -62,7 +58,6 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
               <BellIcon className="h-6 w-6" />
             </button>
 
-            {/* Profile dropdown */}
             <Menu as="div" className="relative">
               <Menu.Button className="flex items-center p-2 text-sm rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <span className="sr-only">Open user menu</span>

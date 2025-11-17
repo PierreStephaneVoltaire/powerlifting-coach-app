@@ -1,15 +1,17 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { AuthTokens } from '@/types';
 import { offlineQueue } from './offlineQueue';
+import { toast } from '@/components/UI/Toast';
 
-// Use empty string so requests go to same origin, nginx proxies to backend services
+import { generateUUID } from '@/utils/uuid';
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const DEFAULT_TIMEOUT = 30000;
 const WRITE_TIMEOUT = 60000;
 
 class ApiClient {
   private client: AxiosInstance;
+  private serviceErrorShown: Set<string> = new Set();
 
   constructor() {
     this.client = axios.create({
@@ -23,8 +25,44 @@ class ApiClient {
     this.setupInterceptors();
   }
 
+  private getServiceName(url: string): string {
+    if (url.includes('/auth')) return 'Authentication';
+    if (url.includes('/programs')) return 'Program';
+    if (url.includes('/settings')) return 'Settings';
+    if (url.includes('/coaches')) return 'Coach';
+    if (url.includes('/feed')) return 'Feed';
+    if (url.includes('/users')) return 'User';
+    if (url.includes('/exercises')) return 'Exercise';
+    if (url.includes('/sessions')) return 'Session';
+    return 'API';
+  }
+
+  private handleServiceError(error: AxiosError) {
+    const url = error.config?.url || '';
+    const serviceName = this.getServiceName(url);
+
+    if (!error.response) {
+      if (!this.serviceErrorShown.has(serviceName)) {
+        this.serviceErrorShown.add(serviceName);
+        toast.error(`${serviceName} service is unavailable. Please try again later.`, 8000);
+
+        setTimeout(() => {
+          this.serviceErrorShown.delete(serviceName);
+        }, 30000);
+      }
+    } else if (error.response.status >= 500) {
+      if (!this.serviceErrorShown.has(serviceName)) {
+        this.serviceErrorShown.add(serviceName);
+        toast.error(`${serviceName} service encountered an error. Please try again.`, 8000);
+
+        setTimeout(() => {
+          this.serviceErrorShown.delete(serviceName);
+        }, 30000);
+      }
+    }
+  }
+
   private setupInterceptors() {
-    // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
         const { tokens } = useAuthStore.getState();
@@ -36,28 +74,27 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor to handle token refresh
     this.client.interceptors.response.use(
       (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
+      async (error: AxiosError) => {
+        const originalRequest = error.config as any;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        this.handleServiceError(error);
+
+        if (error.response?.status === 401 && !originalRequest?._retry) {
           originalRequest._retry = true;
 
           try {
-            const { tokens, refreshTokens, logout } = useAuthStore.getState();
-            
+            const { tokens, refreshTokens } = useAuthStore.getState();
+
             if (tokens?.refresh_token) {
               const newTokens = await this.refreshToken(tokens.refresh_token);
               refreshTokens(newTokens);
-              
-              // Retry original request with new token
+
               originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
               return this.client(originalRequest);
             }
           } catch (refreshError) {
-            // Refresh failed, logout user
             useAuthStore.getState().logout();
             window.location.href = '/login';
           }
@@ -75,7 +112,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Auth endpoints
   async login(email: string, password: string) {
     const response = await this.client.post('/api/v1/auth/login', {
       email,
@@ -105,7 +141,6 @@ class ApiClient {
     return response.data;
   }
 
-  // User endpoints
   async getProfile() {
     const response = await this.client.get('/api/v1/users/profile');
     return response.data;
@@ -140,7 +175,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Video endpoints
   async getUploadUrl(filename: string, fileSize: number) {
     const response = await this.client.post('/api/v1/videos/upload', {
       filename,
@@ -175,7 +209,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Settings endpoints
   async getUserSettings() {
     const response = await this.client.get('/api/v1/settings/user');
     return response.data;
@@ -191,7 +224,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Upload file to presigned URL
   async uploadFile(url: string, file: File, onProgress?: (progress: number) => void) {
     const response = await axios.put(url, file, {
       headers: {
@@ -207,7 +239,6 @@ class ApiClient {
     return response;
   }
 
-  // Feed endpoints
   async getFeed(limit = 20, cursor?: string, visibility = 'public') {
     const params: any = { limit, visibility };
     if (cursor) params.cursor = cursor;
@@ -221,7 +252,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Comments and Likes endpoints
   async getPostComments(postId: string) {
     const response = await this.client.get(`/api/v1/posts/${postId}/comments`);
     return response.data;
@@ -232,7 +262,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Event submission (notification service)
   async submitEvent(event: any, options: { useOfflineQueue?: boolean } = {}) {
     const { useOfflineQueue: shouldUseQueue = true } = options;
 
@@ -261,7 +290,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'user.settings.submitted',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -275,7 +304,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'comment.created',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -293,7 +322,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'interaction.liked',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -311,7 +340,7 @@ class ApiClient {
     const event = {
       schema_version: '1.0.0',
       event_type: 'feed.access.attempt',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: userId,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -329,6 +358,50 @@ class ApiClient {
     return response.data;
   }
 
+  async getActiveProgram() {
+    const response = await this.client.get('/api/v1/programs/active');
+    return response.data;
+  }
+
+  async getPendingProgram() {
+    const response = await this.client.get('/api/v1/programs/pending');
+    return response.data;
+  }
+
+  async createProgramFromChat(programData: any) {
+    const response = await this.client.post('/api/v1/programs/from-chat', programData);
+    return response.data;
+  }
+
+  async approveProgram(programId: string) {
+    const response = await this.client.post(`/api/v1/programs/${programId}/approve`);
+    return response.data;
+  }
+
+  async rejectProgram(programId: string) {
+    const response = await this.client.post(`/api/v1/programs/${programId}/reject`);
+    return response.data;
+  }
+
+  async exportProgram(programId: string, format: 'excel' = 'excel') {
+    const response = await this.client.post(
+      '/api/v1/programs/export',
+      { program_id: programId, format },
+      { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
+  async getProgram(programId: string) {
+    const response = await this.client.get(`/api/v1/programs/${programId}`);
+    return response.data;
+  }
+
+  async getMyPrograms() {
+    const response = await this.client.get('/api/v1/programs');
+    return response.data;
+  }
+
   async getPendingEventsCount(): Promise<number> {
     return offlineQueue.getPendingCount();
   }
@@ -336,6 +409,137 @@ class ApiClient {
   startOfflineQueueProcessor() {
     offlineQueue.startAutoProcess();
   }
+
+  async getPreviousSets(exerciseName: string, limit = 5) {
+    const response = await this.client.get(`/api/v1/exercises/${encodeURIComponent(exerciseName)}/previous`, {
+      params: { limit }
+    });
+    return response.data;
+  }
+
+  async generateWarmups(workingWeightKg: number, liftType: string) {
+    const response = await this.client.post('/api/v1/exercises/warmups/generate', {
+      working_weight_kg: workingWeightKg,
+      lift_type: liftType,
+    });
+    return response.data;
+  }
+
+  async getExerciseLibrary(liftType?: string) {
+    const params = liftType ? { lift_type: liftType } : {};
+    const response = await this.client.get('/api/v1/exercises/library', { params });
+    return response.data;
+  }
+
+  async createCustomExercise(exerciseData: any) {
+    const response = await this.client.post('/api/v1/exercises/library', exerciseData);
+    return response.data;
+  }
+
+  async getWorkoutTemplates() {
+    const response = await this.client.get('/api/v1/templates/workouts');
+    return response.data;
+  }
+
+  async createWorkoutTemplate(templateData: any) {
+    const response = await this.client.post('/api/v1/templates/workouts', templateData);
+    return response.data;
+  }
+
+  async getVolumeData(startDate: string, endDate: string, exerciseName?: string) {
+    const response = await this.client.post('/api/v1/analytics/volume', {
+      start_date: startDate,
+      end_date: endDate,
+      exercise_name: exerciseName,
+    });
+    return response.data;
+  }
+
+  async getE1RMData(startDate: string, endDate: string, liftType?: string) {
+    const response = await this.client.post('/api/v1/analytics/e1rm', {
+      start_date: startDate,
+      end_date: endDate,
+      lift_type: liftType,
+    });
+    return response.data;
+  }
+
+  async getSessionHistory(startDate?: string, endDate?: string, limit = 50) {
+    const params: any = { limit };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+
+    const response = await this.client.get('/api/v1/sessions/history', { params });
+    return response.data;
+  }
+
+  async deleteSession(sessionId: string, reason?: string) {
+    const response = await this.client.delete(`/api/v1/sessions/${sessionId}`, {
+      data: { reason }
+    });
+    return response.data;
+  }
+
+  async proposeChange(programId: string, changes: any, description?: string) {
+    const response = await this.client.post('/api/v1/programs/changes/propose', {
+      program_id: programId,
+      proposed_changes: changes,
+      change_description: description,
+    });
+    return response.data;
+  }
+
+  async getPendingChanges(programId: string) {
+    const response = await this.client.get(`/api/v1/programs/${programId}/changes/pending`);
+    return response.data;
+  }
+
+  async applyChange(changeId: string) {
+    const response = await this.client.post(`/api/v1/programs/changes/${changeId}/apply`);
+    return response.data;
+  }
+
+  async rejectChange(changeId: string) {
+    const response = await this.client.post(`/api/v1/programs/changes/${changeId}/reject`);
+    return response.data;
+  }
+
+  async chatWithAI(message: string, programId?: string, coachContextEnable = false) {
+    const response = await this.client.post('/api/v1/programs/chat', {
+      message,
+      program_id: programId,
+      coach_context_enable: coachContextEnable,
+    });
+    return response.data;
+  }
+
+  async getAIConversation() {
+    const response = await this.client.get('/api/v1/programs/chat/conversation');
+    return response.data;
+  }
+
+  async get(url: string, config?: any) {
+    return this.client.get(`/api/v1${url}`, config);
+  }
+
+  async post(url: string, data?: any, config?: any) {
+    return this.client.post(`/api/v1${url}`, data, config);
+  }
+
+  async put(url: string, data?: any, config?: any) {
+    return this.client.put(`/api/v1${url}`, data, config);
+  }
+
+  async delete(url: string, config?: any) {
+    return this.client.delete(`/api/v1${url}`, config);
+  }
+
+  async patch(url: string, data?: any, config?: any) {
+    return this.client.patch(`/api/v1${url}`, data, config);
+  }
 }
 
 export const apiClient = new ApiClient();
+
+// Why: Re-export for dev mode support - wrapper handles routing to fake data
+export { api } from './apiWrapper';

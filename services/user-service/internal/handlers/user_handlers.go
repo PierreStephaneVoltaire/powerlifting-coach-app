@@ -275,6 +275,78 @@ func (h *UserHandlers) GetMyAthletes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"athletes": response})
 }
 
+func (h *UserHandlers) GetAthletePublicProfile(c *gin.Context) {
+	athleteIDStr := c.Param("id")
+	athleteID, err := uuid.Parse(athleteIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid athlete ID"})
+		return
+	}
+
+	user, err := h.userRepo.GetUserByID(athleteID)
+	if err != nil {
+		log.Error().Err(err).Str("athlete_id", athleteIDStr).Msg("Failed to get athlete")
+		c.JSON(http.StatusNotFound, gin.H{"error": "Athlete not found"})
+		return
+	}
+
+	if user.UserType != models.UserTypeAthlete {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User is not an athlete"})
+		return
+	}
+
+	athleteProfile, _ := h.userRepo.GetAthleteProfile(athleteID)
+
+	squat := 0.0
+	bench := 0.0
+	deadlift := 0.0
+	weightClass := ""
+	federation := ""
+	bio := ""
+
+	if athleteProfile != nil {
+		if athleteProfile.SquatMaxKg != nil {
+			squat = *athleteProfile.SquatMaxKg
+		}
+		if athleteProfile.BenchMaxKg != nil {
+			bench = *athleteProfile.BenchMaxKg
+		}
+		if athleteProfile.DeadliftMaxKg != nil {
+			deadlift = *athleteProfile.DeadliftMaxKg
+		}
+		if athleteProfile.TargetWeightClass != nil {
+			weightClass = *athleteProfile.TargetWeightClass
+		}
+		if athleteProfile.PreferredFederation != nil {
+			federation = *athleteProfile.PreferredFederation
+		}
+		if athleteProfile.Bio != nil {
+			bio = *athleteProfile.Bio
+		}
+	}
+
+	response := gin.H{
+		"id":           user.ID,
+		"name":         user.Name,
+		"email":        user.Email,
+		"bio":          bio,
+		"weight_class": weightClass,
+		"federation":   federation,
+		"joined_at":    user.CreatedAt,
+		"stats": gin.H{
+			"current_squat_max":    squat,
+			"current_bench_max":    bench,
+			"current_deadlift_max": deadlift,
+			"total":                squat + bench + deadlift,
+			"total_workouts":       0,
+			"total_volume_kg":      0,
+		},
+		"recent_posts": []gin.H{},
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *UserHandlers) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "healthy",

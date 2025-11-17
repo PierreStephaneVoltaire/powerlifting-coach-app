@@ -3,6 +3,7 @@ import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
 import { Comment } from '@/types';
 
+import { generateUUID } from '@/utils/uuid';
 interface CommentSectionProps {
   postId: string;
 }
@@ -59,8 +60,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
       await apiClient.submitComment(user.id, postId, commentText, replyingTo || undefined);
 
       const tempComment: Comment = {
-        id: crypto.randomUUID(),
-        comment_id: crypto.randomUUID(),
+        id: generateUUID(),
+        comment_id: generateUUID(),
         post_id: postId,
         user_id: user.id,
         parent_comment_id: replyingTo || undefined,

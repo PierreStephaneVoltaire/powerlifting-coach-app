@@ -17,6 +17,7 @@ import (
 	"github.com/powerlifting-coach-app/video-service/internal/queue"
 	"github.com/powerlifting-coach-app/video-service/internal/repository"
 	"github.com/powerlifting-coach-app/video-service/internal/storage"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -69,6 +70,7 @@ func main() {
 	commentHandlers := handlers.NewCommentHandlers(db.DB)
 	commentHandlers.SetPublisher(eventPublisher)
 	mediaHandlers := handlers.NewMediaEventHandlers(db.DB, eventPublisher)
+	metadataHandlers := handlers.NewMetadataHandlers(db.DB, eventPublisher)
 
 	eventConsumer.RegisterHandler("feed.post.created", feedHandlers.HandleFeedPostCreated)
 	eventConsumer.RegisterHandler("feed.post.updated", feedHandlers.HandleFeedPostUpdated)
@@ -90,6 +92,11 @@ func main() {
 
 	if err := eventConsumer.StartConsuming("video-service.events", routingKeys); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start event consumer")
+	}
+
+	// Start consuming video metadata from media processor
+	if err := queueClient.ConsumeVideoMetadata(metadataHandlers.HandleVideoMetadata); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start metadata consumer")
 	}
 
 	videoRepo := repository.NewVideoRepository(db.DB)
@@ -143,6 +150,8 @@ func main() {
 			{
 				feed.GET("/", feedHandlers.GetFeed)
 				feed.GET("/:post_id", feedHandlers.GetFeedPost)
+				feed.GET("/privacy-settings", feedHandlers.GetPrivacySettings)
+				feed.POST("/privacy-settings", feedHandlers.UpdatePrivacySettings)
 			}
 		}
 
@@ -157,6 +166,7 @@ func main() {
 	}
 
 	router.GET("/health", videoHandlers.HealthCheck)
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,

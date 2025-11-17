@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { offlineQueue } from '@/utils/offlineQueue';
 
+import { generateUUID } from '@/utils/uuid';
 interface VideoUploadProps {
   onUploadComplete?: () => void;
 }
@@ -12,7 +13,9 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
   const [file, setFile] = useState<File | null>(null);
   const [movementLabel, setMovementLabel] = useState('');
   const [weight, setWeight] = useState('');
-  const [rpe, setRpe] = useState('');
+  const [unit, setUnit] = useState<'kg' | 'lb'>('lb');
+  const [effortType, setEffortType] = useState<'rpe' | 'rir'>('rpe');
+  const [effortValue, setEffortValue] = useState('');
   const [commentText, setCommentText] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [uploading, setUploading] = useState(false);
@@ -32,10 +35,16 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
     setUploading(true);
     setUploadProgress(0);
 
+    const rpeValue = effortValue
+      ? effortType === 'rpe'
+        ? parseFloat(effortValue)
+        : 10 - parseFloat(effortValue)
+      : null;
+
     const mediaUploadRequestedEvent = {
       schema_version: '1.0.0',
       event_type: 'media.upload_requested',
-      client_generated_id: crypto.randomUUID(),
+      client_generated_id: generateUUID(),
       user_id: user.id,
       timestamp: new Date().toISOString(),
       source_service: 'frontend',
@@ -44,12 +53,21 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
         content_type: file.type,
         file_size: file.size,
         movement_label: movementLabel,
-        weight: weight ? parseFloat(weight) : null,
-        rpe: rpe ? parseFloat(rpe) : null,
+        weight: weight ? `${parseFloat(weight)}${unit}` : null,
+        rpe: rpeValue,
         comment_text: commentText,
         visibility,
       },
     };
+
+    console.log('Uploading video with metadata:', {
+      filename: file.name,
+      movement: movementLabel,
+      weight: weight ? `${weight}${unit}` : 'N/A',
+      effort: effortValue ? `${effortValue} ${effortType.toUpperCase()}` : 'N/A',
+      rpe: rpeValue,
+      visibility,
+    });
 
     try {
       const interval = setInterval(() => {
@@ -62,7 +80,9 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
         });
       }, 200);
 
+      console.log('Enqueueing media upload event...');
       await offlineQueue.enqueue(mediaUploadRequestedEvent);
+      console.log('Event enqueued successfully');
 
       clearInterval(interval);
       setUploadProgress(100);
@@ -71,7 +91,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
         setFile(null);
         setMovementLabel('');
         setWeight('');
-        setRpe('');
+        setEffortValue('');
         setCommentText('');
         setVisibility('public');
         setUploading(false);
@@ -128,29 +148,53 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onUploadComplete }) => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Weight (lbs)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              className="w-full border rounded p-2"
-              disabled={uploading}
-            />
+            <label className="block text-sm font-medium mb-2">Weight</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="0.1"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className="flex-1 border rounded p-2"
+                placeholder="0"
+                disabled={uploading}
+              />
+              <select
+                value={unit}
+                onChange={(e) => setUnit(e.target.value as 'kg' | 'lb')}
+                className="border rounded p-2 bg-white"
+                disabled={uploading}
+              >
+                <option value="lb">lb</option>
+                <option value="kg">kg</option>
+              </select>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">RPE</label>
-            <input
-              type="number"
-              step="0.5"
-              min="1"
-              max="10"
-              value={rpe}
-              onChange={(e) => setRpe(e.target.value)}
-              className="w-full border rounded p-2"
-              disabled={uploading}
-            />
+            <label className="block text-sm font-medium mb-2">Effort</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="0.5"
+                min={effortType === 'rpe' ? '1' : '0'}
+                max={effortType === 'rpe' ? '10' : '9'}
+                value={effortValue}
+                onChange={(e) => setEffortValue(e.target.value)}
+                className="flex-1 border rounded p-2"
+                placeholder={effortType === 'rpe' ? '1-10' : '0-9'}
+                disabled={uploading}
+              />
+              <select
+                value={effortType}
+                onChange={(e) => setEffortType(e.target.value as 'rpe' | 'rir')}
+                className="border rounded p-2 bg-white"
+                disabled={uploading}
+              >
+                <option value="rpe">RPE</option>
+                <option value="rir">RIR</option>
+              </select>
+            </div>
           </div>
         </div>
 

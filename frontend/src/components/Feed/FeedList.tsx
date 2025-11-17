@@ -15,6 +15,7 @@ export const FeedList: React.FC = () => {
   const [isStale, setIsStale] = useState(false);
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [playingVideos, setPlayingVideos] = useState<Set<string>>(new Set());
 
   const { getCachedFeed, cacheFeed } = useFeedCache();
 
@@ -62,6 +63,12 @@ export const FeedList: React.FC = () => {
     if (!isLoading && hasMore && cursor) {
       loadFeed(cursor);
     }
+  };
+
+  const handleThumbnailClick = (postId: string) => {
+    const newPlayingVideos = new Set(playingVideos);
+    newPlayingVideos.add(postId);
+    setPlayingVideos(newPlayingVideos);
   };
 
   const handleLike = async (postId: string) => {
@@ -129,13 +136,37 @@ export const FeedList: React.FC = () => {
             </div>
 
             {post.media_url && (
-              <div className="mb-3">
-                <video
-                  src={post.media_url}
-                  controls
-                  className="w-full rounded-lg"
-                  poster={post.thumbnail_url}
-                />
+              <div className="mb-3 relative">
+                {!playingVideos.has(post.post_id) ? (
+                  <div
+                    className="relative cursor-pointer group"
+                    onClick={() => handleThumbnailClick(post.post_id)}
+                  >
+                    <img
+                      src={post.thumbnail_url}
+                      alt="Video thumbnail"
+                      className="w-full rounded-lg"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-all rounded-lg">
+                      <svg
+                        className="w-16 h-16 text-white opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                ) : (
+                  <video
+                    src={post.media_url}
+                    controls
+                    autoPlay
+                    className="w-full rounded-lg"
+                    poster={post.thumbnail_url}
+                    preload="none"
+                  />
+                )}
               </div>
             )}
 

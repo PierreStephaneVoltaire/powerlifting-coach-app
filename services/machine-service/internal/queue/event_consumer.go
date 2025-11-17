@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/streadway/amqp"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/utils"
 )
 
 type EventConsumer struct {
@@ -56,6 +57,11 @@ func NewEventConsumer(url string) (*EventConsumer, error) {
 }
 
 func (c *EventConsumer) setupExchange() error {
+	// Setup Dead Letter Queue
+	if err := utils.SetupDLQ(c.channel); err != nil {
+		return fmt.Errorf("failed to setup DLQ: %w", err)
+	}
+
 	err := c.channel.ExchangeDeclare(
 		AppEventsExchange,
 		"topic",
@@ -78,14 +84,8 @@ func (c *EventConsumer) RegisterHandler(eventType string, handler EventHandler) 
 }
 
 func (c *EventConsumer) StartConsuming(queueName string, routingKeys []string) error {
-	_, err := c.channel.QueueDeclare(
-		queueName,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
+	// Declare queue with single active consumer
+	_, err := utils.DeclareQueueWithSingleActiveConsumer(c.channel, queueName)
 	if err != nil {
 		return fmt.Errorf("failed to declare queue: %w", err)
 	}
@@ -150,12 +150,20 @@ func (c *EventConsumer) handleMessage(msg amqp.Delivery) {
 	ctx := context.Background()
 	err := handler(ctx, msg.Body)
 	if err != nil {
+		retryCount := utils.GetRetryCount(msg)
 		log.Error().
 			Err(err).
 			Str("event_type", event.EventType).
 			Str("client_generated_id", event.ClientGeneratedID).
+			Int("retry_count", retryCount).
 			Msg("Failed to handle event")
-		msg.Nack(false, true)
+
+		// Handle failure with retry logic
+		if handleErr := utils.HandleMessageFailure(c.channel, msg, AppEventsExchange, event.EventType); handleErr != nil {
+			log.Error().Err(handleErr).Msg("Failed to handle message failure")
+			// Fallback to simple nack without requeue to avoid infinite loops
+			msg.Nack(false, false)
+		}
 		return
 	}
 

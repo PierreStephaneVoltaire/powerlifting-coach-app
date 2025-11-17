@@ -11,11 +11,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/powerlifting-coach-app/program-service/internal/ai"
+	"github.com/powerlifting-coach-app/program-service/internal/clients"
 	"github.com/powerlifting-coach-app/program-service/internal/config"
 	"github.com/powerlifting-coach-app/program-service/internal/database"
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/handlers"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
+	"github.com/powerlifting-coach-app/program-service/internal/services"
 	"github.com/powerlifting-coach-app/program-service/internal/queue"
 	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog"
@@ -70,8 +72,11 @@ func main() {
 	programRepo := repository.NewProgramRepository(db.DB)
 	aiClient := ai.NewLiteLLMClient(cfg)
 	excelExporter := excel.NewExcelExporter()
+	workoutGenerator := services.NewWorkoutGenerator(programRepo)
+	settingsClient := clients.NewSettingsClient(cfg.SettingsService)
+	coachClient := clients.NewCoachClient(cfg.CoachService)
 
-	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter)
+	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator, settingsClient, coachClient)
 
 	router := gin.Default()
 
@@ -98,20 +103,64 @@ func main() {
 	{
 		programs := v1.Group("/programs")
 		{
-			// Public endpoints
 			programs.GET("/templates", programHandlers.GetProgramTemplates)
-			
-			// Protected endpoints
+
 			programs.Use(middleware.AuthMiddleware(authConfig))
 			{
 				programs.POST("/", programHandlers.CreateProgram)
 				programs.POST("/generate", programHandlers.GenerateProgram)
+				programs.POST("/from-chat", programHandlers.CreateProgramFromChat)
 				programs.GET("/", programHandlers.GetMyPrograms)
+				programs.GET("/active", programHandlers.GetActiveProgram)
+				programs.GET("/pending", programHandlers.GetPendingProgram)
 				programs.GET("/:id", programHandlers.GetProgram)
+				programs.POST("/:id/approve", programHandlers.ApproveProgram)
+				programs.POST("/:id/reject", programHandlers.RejectProgram)
 				programs.POST("/export", programHandlers.ExportProgram)
 				programs.POST("/chat", programHandlers.ChatWithAI)
+				programs.GET("/chat/conversation", programHandlers.GetAIConversation)
 				programs.POST("/log-workout", programHandlers.LogWorkout)
+
+				// Program change management (git-like)
+				programs.POST("/changes/propose", programHandlers.ProposeChange)
+				programs.GET("/:programId/changes/pending", programHandlers.GetPendingChanges)
+				programs.POST("/changes/:changeId/apply", programHandlers.ApplyChange)
+				programs.POST("/changes/:changeId/reject", programHandlers.RejectChange)
 			}
+		}
+
+		// Exercise library endpoints
+		exercises := v1.Group("/exercises")
+		exercises.Use(middleware.AuthMiddleware(authConfig))
+		{
+			exercises.GET("/library", programHandlers.GetExerciseLibrary)
+			exercises.POST("/library", programHandlers.CreateExerciseLibrary)
+			exercises.GET("/:exerciseName/previous", programHandlers.GetPreviousSets)
+			exercises.POST("/warmups/generate", programHandlers.GenerateWarmups)
+		}
+
+		// Workout template endpoints
+		templates := v1.Group("/templates")
+		templates.Use(middleware.AuthMiddleware(authConfig))
+		{
+			templates.GET("/workouts", programHandlers.GetWorkoutTemplates)
+			templates.POST("/workouts", programHandlers.CreateWorkoutTemplate)
+		}
+
+		// Analytics endpoints
+		analytics := v1.Group("/analytics")
+		analytics.Use(middleware.AuthMiddleware(authConfig))
+		{
+			analytics.POST("/volume", programHandlers.GetVolumeData)
+			analytics.POST("/e1rm", programHandlers.GetE1RMData)
+		}
+
+		// Session history endpoints
+		sessions := v1.Group("/sessions")
+		sessions.Use(middleware.AuthMiddleware(authConfig))
+		{
+			sessions.GET("/history", programHandlers.GetSessionHistory)
+			sessions.DELETE("/:sessionId", programHandlers.DeleteSession)
 		}
 	}
 

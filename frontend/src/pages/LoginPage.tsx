@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/utils/api';
 
+import { generateUUID } from '@/utils/uuid';
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuthStore();
@@ -18,12 +19,20 @@ export const LoginPage: React.FC = () => {
 
     try {
       const response = await apiClient.login(email, password);
+
+      if (!response || !response.tokens || !response.user) {
+        console.error('Invalid response structure:', response);
+        setError('Login succeeded but received invalid response format. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
       login(response.tokens, response);
 
       const event = {
         schema_version: '1.0.0',
         event_type: 'auth.user.logged_in',
-        client_generated_id: crypto.randomUUID(),
+        client_generated_id: generateUUID(),
         user_id: response.user.id,
         timestamp: new Date().toISOString(),
         source_service: 'frontend',
@@ -35,9 +44,37 @@ export const LoginPage: React.FC = () => {
 
       await apiClient.submitEvent(event);
 
-      navigate(response.user.needs_onboarding ? '/onboarding' : '/feed');
+      if (response.user.user_type === 'athlete') {
+        try {
+          await apiClient.getUserSettings();
+          navigate('/feed');
+        } catch (settingsError: any) {
+          if (settingsError.response?.status === 404) {
+            navigate('/onboarding');
+          } else {
+            navigate('/feed');
+          }
+        }
+      } else {
+        navigate('/feed');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      console.error('Response data:', err.response?.data);
+      console.error('Response status:', err.response?.status);
+
+      if (err.response) {
+        const errorMessage = err.response.data?.error || err.response.data?.message;
+        if (errorMessage) {
+          setError(errorMessage);
+        } else {
+          setError(`Login failed (${err.response.status}). Please try again.`);
+        }
+      } else if (err.request) {
+        setError('Cannot connect to server. Please check your connection.');
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -2,36 +2,50 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/powerlifting-coach-app/program-service/internal/ai"
+	"github.com/powerlifting-coach-app/program-service/internal/clients"
 	"github.com/powerlifting-coach-app/program-service/internal/excel"
 	"github.com/powerlifting-coach-app/program-service/internal/models"
 	"github.com/powerlifting-coach-app/program-service/internal/repository"
+	"github.com/powerlifting-coach-app/program-service/internal/services"
 	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/rs/zerolog/log"
 )
 
 type ProgramHandlers struct {
-	programRepo   *repository.ProgramRepository
-	aiClient      *ai.LiteLLMClient
-	excelExporter *excel.ExcelExporter
+	programRepo      *repository.ProgramRepository
+	aiClient         *ai.LiteLLMClient
+	excelExporter    *excel.ExcelExporter
+	workoutGenerator *services.WorkoutGenerator
+	settingsClient   *clients.SettingsClient
+	coachClient      *clients.CoachClient
 }
 
 func NewProgramHandlers(
 	programRepo *repository.ProgramRepository,
 	aiClient *ai.LiteLLMClient,
 	excelExporter *excel.ExcelExporter,
+	workoutGenerator *services.WorkoutGenerator,
+	settingsClient *clients.SettingsClient,
+	coachClient *clients.CoachClient,
 ) *ProgramHandlers {
 	return &ProgramHandlers{
-		programRepo:   programRepo,
-		aiClient:      aiClient,
-		excelExporter: excelExporter,
+		programRepo:      programRepo,
+		aiClient:         aiClient,
+		excelExporter:    excelExporter,
+		workoutGenerator: workoutGenerator,
+		settingsClient:   settingsClient,
+		coachClient:      coachClient,
 	}
 }
 
@@ -81,6 +95,13 @@ func (h *ProgramHandlers) GenerateProgram(c *gin.Context) {
 		return
 	}
 
+	// Get the auth token from the request header
+	authToken := c.GetHeader("Authorization")
+	if authToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		return
+	}
+
 	var req models.GenerateProgramRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -89,16 +110,13 @@ func (h *ProgramHandlers) GenerateProgram(c *gin.Context) {
 
 	userUUID, _ := uuid.Parse(userID)
 
-	// Get athlete profile for context
-	athleteProfile := h.getAthleteProfileString(userUUID)
-	
-	// Get coach feedback if enabled
+	athleteProfile := h.getAthleteProfileString(c.Request.Context(), authToken)
+
 	var coachFeedback string
 	if req.CoachContextEnable {
-		coachFeedback = h.getCoachFeedbackString(userUUID)
+		coachFeedback = h.getCoachFeedbackString(c.Request.Context(), authToken)
 	}
 
-	// Generate program using AI
 	programJSON, err := h.aiClient.GenerateProgram(c.Request.Context(), req, athleteProfile, coachFeedback)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to generate program with AI")
@@ -210,7 +228,7 @@ func (h *ProgramHandlers) GetProgram(c *gin.Context) {
 	}
 
 	// Check access permissions
-	if !h.hasAccessToProgram(userID, program) {
+	if !h.hasAccessToProgram(c, userID, program) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -234,6 +252,13 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Get the auth token from the request header
+	authToken := c.GetHeader("Authorization")
+	if authToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
 		return
 	}
 
@@ -267,19 +292,26 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 		}
 	}
 
-	// Get context
-	athleteProfile := h.getAthleteProfileString(userUUID)
+	athleteProfile := h.getAthleteProfileString(c.Request.Context(), authToken)
 	var coachFeedback string
 	if req.CoachContextEnable {
-		coachFeedback = h.getCoachFeedbackString(userUUID)
+		coachFeedback = h.getCoachFeedbackString(c.Request.Context(), authToken)
 	}
 
-	// Get AI response
 	aiResponse, err := h.aiClient.ChatWithAI(c.Request.Context(), conversation, req.Message, athleteProfile, coachFeedback)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get AI response")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get AI response"})
 		return
+	}
+
+	// Extract program JSON if present in AI response
+	var programData map[string]interface{}
+	extractedJSON := extractJSONFromResponse(aiResponse)
+	if extractedJSON != "" {
+		if err := json.Unmarshal([]byte(extractedJSON), &programData); err != nil {
+			log.Warn().Err(err).Msg("Failed to parse extracted JSON from AI response")
+		}
 	}
 
 	// Add messages to conversation
@@ -310,10 +342,71 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"message":      aiResponse,
 		"conversation": conversation,
-	})
+	}
+
+	// Include program data if extracted
+	if programData != nil {
+		response["program_proposal"] = programData
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetAIConversation retrieves the current AI conversation for the user
+func (h *ProgramHandlers) GetAIConversation(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userUUID, _ := uuid.Parse(userID)
+
+	// Get the most recent conversation
+	conversations, err := h.programRepo.GetAIConversationsByAthleteID(userUUID, 1)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get AI conversation")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get conversation"})
+		return
+	}
+
+	if len(conversations) == 0 {
+		// No conversation yet, return empty
+		c.JSON(http.StatusOK, gin.H{
+			"conversation": nil,
+			"has_conversation": false,
+		})
+		return
+	}
+
+	conversation := conversations[0]
+
+	// Extract the last program proposal if any message contains JSON
+	var lastProgramProposal map[string]interface{}
+	for i := len(conversation.Messages) - 1; i >= 0; i-- {
+		if conversation.Messages[i].Role == "assistant" {
+			jsonStr := extractJSONFromResponse(conversation.Messages[i].Content)
+			if jsonStr != "" {
+				if err := json.Unmarshal([]byte(jsonStr), &lastProgramProposal); err == nil {
+					break
+				}
+			}
+		}
+	}
+
+	response := gin.H{
+		"conversation":     conversation,
+		"has_conversation": true,
+	}
+
+	if lastProgramProposal != nil {
+		response["last_program_proposal"] = lastProgramProposal
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *ProgramHandlers) LogWorkout(c *gin.Context) {
@@ -380,7 +473,7 @@ func (h *ProgramHandlers) ExportProgram(c *gin.Context) {
 	}
 
 	// Check access permissions
-	if !h.hasAccessToProgram(userID, program) {
+	if !h.hasAccessToProgram(c, userID, program) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -430,32 +523,307 @@ func (h *ProgramHandlers) HealthCheck(c *gin.Context) {
 	})
 }
 
-// Helper functions
-func (h *ProgramHandlers) hasAccessToProgram(userID string, program *models.Program) bool {
+// GetActiveProgram returns the user's active approved program
+func (h *ProgramHandlers) GetActiveProgram(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	userUUID, _ := uuid.Parse(userID)
-	
-	// Athlete can access their own programs
+	program, err := h.programRepo.GetActiveApprovedProgramByAthleteID(userUUID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get active program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get active program"})
+		return
+	}
+
+	if program == nil {
+		c.JSON(http.StatusOK, gin.H{"has_program": false, "program": nil})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"has_program": true, "program": program})
+}
+
+// GetPendingProgram returns the user's pending program awaiting approval
+func (h *ProgramHandlers) GetPendingProgram(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userUUID, _ := uuid.Parse(userID)
+	program, err := h.programRepo.GetPendingProgramByAthleteID(userUUID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get pending program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get pending program"})
+		return
+	}
+
+	if program == nil {
+		c.JSON(http.StatusOK, gin.H{"has_pending": false, "program": nil})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"has_pending": true, "program": program})
+}
+
+// ApproveProgram approves pending program changes and makes them active
+func (h *ProgramHandlers) ApproveProgram(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	programIDStr := c.Param("id")
+	programID, err := uuid.Parse(programIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid program ID"})
+		return
+	}
+
+	// Verify program belongs to user
+	program, err := h.programRepo.GetProgramByID(programID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Program not found"})
+		return
+	}
+
+	if !h.hasAccessToProgram(c, userID, program) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
+	// Approve the program
+	if err := h.programRepo.ApproveProgramChanges(programID); err != nil {
+		log.Error().Err(err).Msg("Failed to approve program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve program"})
+		return
+	}
+
+	// Get updated program
+	updatedProgram, err := h.programRepo.GetProgramByID(programID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get updated program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get updated program"})
+		return
+	}
+
+	// Generate training sessions from approved program data
+	if err := h.workoutGenerator.GenerateWorkoutsFromProgram(updatedProgram); err != nil {
+		log.Error().Err(err).Msg("Failed to generate workouts from program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate workouts"})
+		return
+	}
+
+	log.Info().
+		Str("program_id", updatedProgram.ID.String()).
+		Msg("Program approved and workouts generated successfully")
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Program approved and workouts generated successfully",
+		"program": updatedProgram,
+	})
+}
+
+// RejectProgram rejects pending program changes
+func (h *ProgramHandlers) RejectProgram(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	programIDStr := c.Param("id")
+	programID, err := uuid.Parse(programIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid program ID"})
+		return
+	}
+
+	// Verify program belongs to user
+	program, err := h.programRepo.GetProgramByID(programID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Program not found"})
+		return
+	}
+
+	if !h.hasAccessToProgram(c, userID, program) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
+	// Reject the program
+	if err := h.programRepo.RejectProgramChanges(programID); err != nil {
+		log.Error().Err(err).Msg("Failed to reject program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject program"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Program rejected successfully"})
+}
+
+// CreateProgramFromChat creates a new program with pending data from AI chat
+func (h *ProgramHandlers) CreateProgramFromChat(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	var req struct {
+		Name        string                 `json:"name" binding:"required"`
+		Description *string                `json:"description"`
+		ProgramData map[string]interface{} `json:"program_data" binding:"required"`
+		StartDate   time.Time              `json:"start_date" binding:"required"`
+		WeeksTotal  int                    `json:"weeks_total" binding:"required"`
+		DaysPerWeek int                    `json:"days_per_week" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userUUID, _ := uuid.Parse(userID)
+
+	// Check if user already has a pending program
+	existingPending, _ := h.programRepo.GetPendingProgramByAthleteID(userUUID)
+	if existingPending != nil {
+		// Update existing pending program
+		if err := h.programRepo.SetPendingProgramData(existingPending.ID, req.ProgramData); err != nil {
+			log.Error().Err(err).Msg("Failed to update pending program")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update program"})
+			return
+		}
+
+		updatedProgram, _ := h.programRepo.GetProgramByID(existingPending.ID)
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Program updated and awaiting approval",
+			"program": updatedProgram,
+		})
+		return
+	}
+
+	// Create new program with pending status
+	endDate := req.StartDate.AddDate(0, 0, req.WeeksTotal*7)
+	phase := models.PhaseStrength // Default phase
+
+	program := &models.Program{
+		AthleteID:    userUUID,
+		Name:         req.Name,
+		Description:  req.Description,
+		Phase:        phase,
+		StartDate:    req.StartDate,
+		EndDate:      endDate,
+		WeeksTotal:   req.WeeksTotal,
+		DaysPerWeek:  req.DaysPerWeek,
+		ProgramData:  make(map[string]interface{}), // Empty until approved
+		AIGenerated:  true,
+		AIModel:      stringPtr("via-openwebui"),
+		IsActive:     true,
+		ProgramStatus: models.ProgramStatusPendingApproval,
+	}
+
+	// Set pending program data
+	pendingData := req.ProgramData
+	program.PendingProgramData = &pendingData
+
+	// Note: We need to handle this differently since CreateProgram doesn't support pending data yet
+	// Let's create with empty data first, then update
+	program.PendingProgramData = nil
+	if err := h.programRepo.CreateProgram(program); err != nil {
+		log.Error().Err(err).Msg("Failed to create program")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create program"})
+		return
+	}
+
+	// Now set the pending data
+	if err := h.programRepo.SetPendingProgramData(program.ID, req.ProgramData); err != nil {
+		log.Error().Err(err).Msg("Failed to set pending program data")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set program data"})
+		return
+	}
+
+	// Get the complete program with pending data
+	createdProgram, _ := h.programRepo.GetProgramByID(program.ID)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Program created and awaiting approval",
+		"program": createdProgram,
+	})
+}
+
+// Helper functions
+func (h *ProgramHandlers) hasAccessToProgram(c *gin.Context, userID string, program *models.Program) bool {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return false
+	}
+
 	if program.AthleteID == userUUID {
 		return true
 	}
 
-	// Coach can access if they're assigned to the program
 	if program.CoachID != nil && *program.CoachID == userUUID {
 		return true
 	}
 
-	// TODO: Check if user is a coach with access to this athlete
+	if h.coachClient != nil {
+		authToken := c.GetHeader("Authorization")
+		if authToken != "" {
+			hasAccess, err := h.coachClient.HasCoachAccess(c.Request.Context(), authToken, userUUID, program.AthleteID)
+			if err == nil && hasAccess {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 
-func (h *ProgramHandlers) getAthleteProfileString(athleteID uuid.UUID) string {
-	// TODO: Fetch athlete profile from user service
-	return fmt.Sprintf("Athlete ID: %s", athleteID.String())
+func (h *ProgramHandlers) getAthleteProfileString(ctx context.Context, authToken string) string {
+	// Fetch athlete profile from settings service
+	if h.settingsClient == nil {
+		log.Warn().Msg("Settings client not configured, using minimal profile")
+		return "Athlete profile not available"
+	}
+
+	settings, err := h.settingsClient.GetUserSettings(ctx, authToken)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to fetch athlete profile from settings service")
+		return "Athlete profile could not be retrieved"
+	}
+
+	return settings.FormatAthleteProfile()
 }
 
-func (h *ProgramHandlers) getCoachFeedbackString(athleteID uuid.UUID) string {
-	// TODO: Fetch recent coach feedback from coach service
-	return ""
+func (h *ProgramHandlers) getCoachFeedbackString(ctx context.Context, authToken string) string {
+	if h.coachClient == nil {
+		return ""
+	}
+
+	userIDStr := ctx.Value("user_id")
+	if userIDStr == nil {
+		return ""
+	}
+
+	athleteID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		return ""
+	}
+
+	feedback, err := h.coachClient.GetAthleteFeedback(ctx, authToken, athleteID)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to fetch coach feedback")
+		return ""
+	}
+
+	return clients.FormatCoachFeedback(feedback)
 }
 
 func (h *ProgramHandlers) determineProgramPhase(competitionDate *time.Time) models.ProgramPhase {
@@ -476,4 +844,27 @@ func (h *ProgramHandlers) determineProgramPhase(competitionDate *time.Time) mode
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+// extractJSONFromResponse extracts JSON code blocks from AI response text
+func extractJSONFromResponse(response string) string {
+	// Try to find JSON in code blocks first (```json ... ```)
+	codeBlockPattern := regexp.MustCompile("(?s)```(?:json)?\\s*\\n?({[^`]+})\\s*\\n?```")
+	matches := codeBlockPattern.FindStringSubmatch(response)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+
+	// Try to find standalone JSON object
+	jsonPattern := regexp.MustCompile(`(?s)\{[\s\S]*"phases"[\s\S]*"weeklyWorkouts"[\s\S]*"summary"[\s\S]*\}`)
+	match := jsonPattern.FindString(response)
+	if match != "" {
+		// Validate it's actual JSON
+		var test map[string]interface{}
+		if json.Unmarshal([]byte(match), &test) == nil {
+			return match
+		}
+	}
+
+	return ""
 }

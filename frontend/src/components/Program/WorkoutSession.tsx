@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
 
+import { generateUUID } from '@/utils/uuid';
 interface ExerciseSet {
   weight: number;
   reps: number;
@@ -56,7 +57,7 @@ export const WorkoutSession: React.FC = () => {
       const event = {
         schema_version: '1.0.0',
         event_type: 'workout.completed',
-        client_generated_id: crypto.randomUUID(),
+        client_generated_id: generateUUID(),
         user_id: user.id,
         timestamp: new Date().toISOString(),
         source_service: 'frontend',

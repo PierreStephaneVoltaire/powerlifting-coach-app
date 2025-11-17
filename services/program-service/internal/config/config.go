@@ -13,6 +13,8 @@ type Config struct {
 	LiteLLMEndpoint string
 	RabbitMQURL     string
 	UserService     string
+	SettingsService string
+	CoachService    string
 }
 
 func Load() *Config {
@@ -25,6 +27,8 @@ func Load() *Config {
 		LiteLLMEndpoint: getEnv("LITELLM_ENDPOINT", "http://litellm:4000"),
 		RabbitMQURL:     getEnv("RABBITMQ_URL", "amqp://admin:changeme123@rabbitmq:5672/"),
 		UserService:     getEnv("USER_SERVICE", "http://user-service:8081"),
+		SettingsService: getEnv("SETTINGS_SERVICE", "http://settings-service:8082"),
+		CoachService:    getEnv("COACH_SERVICE", "http://coach-service:8085"),
 	}
 }
 

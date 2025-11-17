@@ -1,23 +1,29 @@
 package notification
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net/smtp"
 
 	"github.com/powerlifting-coach-app/notification-service/internal/models"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 type Sender struct {
-	sendGridClient *sendgrid.Client
-	fromEmail     string
+	smtpHost     string
+	smtpPort     string
+	smtpUsername string
+	smtpPassword string
+	fromEmail    string
 }
 
-func NewSender(apiKey, fromEmail string) *Sender {
+func NewSender(smtpHost, smtpPort, smtpUsername, smtpPassword, fromEmail string) *Sender {
 	return &Sender{
-		sendGridClient: sendgrid.NewSendClient(apiKey),
-		fromEmail:     fromEmail,
+		smtpHost:     smtpHost,
+		smtpPort:     smtpPort,
+		smtpUsername: smtpUsername,
+		smtpPassword: smtpPassword,
+		fromEmail:    fromEmail,
 	}
 }
 
@@ -35,20 +41,81 @@ func (s *Sender) SendNotification(notification models.NotificationMessage) error
 }
 
 func (s *Sender) sendEmail(notification models.NotificationMessage) error {
-	from := mail.NewEmail("Powerlifting Coach", s.fromEmail)
-	to := mail.NewEmail("", notification.UserID.String()+"@temp.com") // This would need user email lookup
-	
-	message := mail.NewSingleEmail(from, notification.Subject, to, notification.Content, s.generateHTMLContent(notification))
-	
-	response, err := s.sendGridClient.Send(message)
+	// This would need user email lookup in production
+	recipientEmail := notification.UserID.String() + "@temp.com"
+
+	// Build email message
+	subject := notification.Subject
+	htmlContent := *s.generateHTMLContent(notification)
+
+	// Construct the email message with headers
+	message := []byte(
+		"From: " + s.fromEmail + "\r\n" +
+		"To: " + recipientEmail + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/html; charset=\"UTF-8\"\r\n" +
+		"\r\n" +
+		htmlContent + "\r\n")
+
+	// Set up authentication
+	auth := smtp.PlainAuth("", s.smtpUsername, s.smtpPassword, s.smtpHost)
+
+	// Connect to the SMTP server with TLS
+	serverAddr := fmt.Sprintf("%s:%s", s.smtpHost, s.smtpPort)
+
+	// Create TLS configuration
+	tlsConfig := &tls.Config{
+		ServerName: s.smtpHost,
+	}
+
+	// Connect to the server, authenticate, and send the email
+	client, err := smtp.Dial(serverAddr)
 	if err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
+		return fmt.Errorf("failed to connect to SMTP server: %w", err)
 	}
-	
-	if response.StatusCode >= 400 {
-		return fmt.Errorf("sendgrid returned status %d: %s", response.StatusCode, response.Body)
+	defer client.Close()
+
+	// Start TLS
+	if err = client.StartTLS(tlsConfig); err != nil {
+		return fmt.Errorf("failed to start TLS: %w", err)
 	}
-	
+
+	// Authenticate
+	if err = client.Auth(auth); err != nil {
+		return fmt.Errorf("failed to authenticate: %w", err)
+	}
+
+	// Set sender
+	if err = client.Mail(s.fromEmail); err != nil {
+		return fmt.Errorf("failed to set sender: %w", err)
+	}
+
+	// Set recipient
+	if err = client.Rcpt(recipientEmail); err != nil {
+		return fmt.Errorf("failed to set recipient: %w", err)
+	}
+
+	// Send the email body
+	w, err := client.Data()
+	if err != nil {
+		return fmt.Errorf("failed to get data writer: %w", err)
+	}
+
+	_, err = w.Write(message)
+	if err != nil {
+		return fmt.Errorf("failed to write message: %w", err)
+	}
+
+	err = w.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close data writer: %w", err)
+	}
+
+	if err = client.Quit(); err != nil {
+		return fmt.Errorf("failed to quit: %w", err)
+	}
+
 	log.Printf("Email sent successfully to user %s", notification.UserID)
 	return nil
 }
@@ -65,7 +132,12 @@ func (s *Sender) sendSMS(notification models.NotificationMessage) error {
 	return nil
 }
 
-func (s *Sender) generateHTMLContent(notification models.NotificationMessage) string {
+func (s *Sender) generateHTMLContent(notification models.NotificationMessage) *string {
+	html := s.generateHTML(notification)
+	return &html
+}
+
+func (s *Sender) generateHTML(notification models.NotificationMessage) string {
 	// Generate basic HTML template based on notification type
 	switch notification.Type {
 	case models.NotificationNewVideo:
@@ -180,7 +252,7 @@ func (s *Sender) generateWelcomeHTML(notification models.NotificationMessage) st
 		<html>
 		<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
 			<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-				<h2 style="color: #28a745;">Welcome to Powerlifting Coach!</h2>
+				<h2 style="color: #28a745;">Welcome to Coach Potato!</h2>
 				<p>%s</p>
 				<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
 					<p>Get started by:</p>

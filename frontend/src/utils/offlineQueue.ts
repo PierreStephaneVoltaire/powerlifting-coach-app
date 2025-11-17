@@ -1,5 +1,6 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
+import { generateUUID } from '@/utils/uuid';
 interface QueuedEvent {
   id: string;
   event: any;
@@ -52,7 +53,7 @@ class OfflineQueue {
     await this.init();
     if (!this.db) throw new Error('Failed to init DB');
 
-    const id = event.client_generated_id || crypto.randomUUID();
+    const id = event.client_generated_id || generateUUID();
     const queuedEvent: QueuedEvent = {
       id,
       event,
@@ -96,18 +97,23 @@ class OfflineQueue {
     if (!this.db) return;
 
     try {
+      console.log(`Processing queued event: ${queuedEvent.event.event_type}`, {
+        id: queuedEvent.id,
+        retry: queuedEvent.retryCount,
+      });
+
       const { apiClient } = await import('./api');
       await apiClient.submitEvent(queuedEvent.event);
 
       await this.db.delete(STORE_NAME, queuedEvent.id);
-      console.info('Event successfully submitted from queue', {
+      console.log(`Event successfully submitted: ${queuedEvent.event.event_type}`, {
         id: queuedEvent.id,
-        event_type: queuedEvent.event.event_type,
       });
     } catch (error: any) {
-      console.error('Failed to submit queued event', {
+      console.error(`Failed to submit queued event: ${queuedEvent.event.event_type}`, {
         id: queuedEvent.id,
         error: error.message,
+        retry: queuedEvent.retryCount,
       });
 
       if (queuedEvent.retryCount >= MAX_RETRIES) {

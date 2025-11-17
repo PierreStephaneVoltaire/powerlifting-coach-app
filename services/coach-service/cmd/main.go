@@ -96,6 +96,22 @@ func main() {
 			athletes.GET("/feedback/:id", coachHandlers.GetFeedback)
 			athletes.POST("/feedback/:id/respond", coachHandlers.RespondToFeedback)
 		}
+
+		// Relationship endpoints
+		relationships := v1.Group("/relationships")
+		{
+			relationships.POST("", coachHandlers.SendRelationshipRequest)
+			relationships.GET("", coachHandlers.GetMyRelationships)
+			relationships.GET("/:id", coachHandlers.GetRelationship)
+			relationships.POST("/:id/accept", coachHandlers.AcceptRelationshipRequest)
+			relationships.DELETE("/:id", coachHandlers.TerminateRelationship)
+		}
+
+		// Coach profile endpoints
+		coaches.POST("/certifications", coachHandlers.CreateCertification)
+		coaches.GET("/profile/:coach_id/certifications", coachHandlers.GetCertifications)
+		coaches.POST("/success-stories", coachHandlers.CreateSuccessStory)
+		coaches.GET("/profile/:coach_id/success-stories", coachHandlers.GetSuccessStories)
 	}
 
 	router.GET("/health", coachHandlers.HealthCheck)

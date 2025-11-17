@@ -6,7 +6,7 @@ metadata:
   labels:
     app: dm-service
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: dm-service
@@ -15,6 +15,8 @@ spec:
       labels:
         app: dm-service
     spec:
+
+
       containers:
       - name: dm-service
         image: dm-service:latest

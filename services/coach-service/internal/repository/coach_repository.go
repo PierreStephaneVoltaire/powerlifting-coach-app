@@ -464,3 +464,308 @@ func (r *CoachRepository) GetAthleteProgress(coachID, athleteID uuid.UUID, limit
 
 	return progress, nil
 }
+
+func (r *CoachRepository) SendRelationshipRequest(relationship *models.CoachAthleteRelationship) error {
+	query := `
+		INSERT INTO coach_athlete_relationships (coach_id, athlete_id, status, request_message)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, requested_at, created_at, updated_at`
+
+	err := r.db.QueryRow(query,
+		relationship.CoachID, relationship.AthleteID, models.StatusPending, relationship.RequestMessage,
+	).Scan(&relationship.ID, &relationship.RequestedAt, &relationship.CreatedAt, &relationship.UpdatedAt)
+
+	if err != nil {
+		return fmt.Errorf("failed to send relationship request: %w", err)
+	}
+
+	return nil
+}
+
+func (r *CoachRepository) AcceptRelationshipRequest(relationshipID, acceptedBy uuid.UUID) error {
+	query := `
+		UPDATE coach_athlete_relationships SET
+			status = $2,
+			accepted_at = NOW(),
+			updated_at = NOW()
+		WHERE id = $1 AND status = $3`
+
+	result, err := r.db.Exec(query, relationshipID, models.StatusActive, models.StatusPending)
+	if err != nil {
+		return fmt.Errorf("failed to accept relationship request: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("relationship not found or not in pending status")
+	}
+
+	return nil
+}
+
+func (r *CoachRepository) TerminateRelationship(relationshipID, terminatedBy uuid.UUID, reason *string, cooldownDays *int) error {
+	var cooldownUntil *string
+	if cooldownDays != nil && *cooldownDays > 0 {
+		cooldownUntil = new(string)
+		*cooldownUntil = fmt.Sprintf("NOW() + INTERVAL '%d days'", *cooldownDays)
+	}
+
+	query := `
+		UPDATE coach_athlete_relationships SET
+			status = $2,
+			terminated_at = NOW(),
+			terminated_by = $3,
+			termination_reason = $4,
+			cooldown_until = ` + func() string {
+		if cooldownUntil != nil {
+			return *cooldownUntil
+		}
+		return "NULL"
+	}() + `,
+			updated_at = NOW()
+		WHERE id = $1 AND status = $5`
+
+	result, err := r.db.Exec(query, relationshipID, models.StatusTerminated, terminatedBy, reason, models.StatusActive)
+	if err != nil {
+		return fmt.Errorf("failed to terminate relationship: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("relationship not found or not in active status")
+	}
+
+	return nil
+}
+
+func (r *CoachRepository) GetRelationshipsByCoachID(coachID uuid.UUID, status *models.RelationshipStatus) ([]models.CoachAthleteRelationship, error) {
+	var query string
+	var args []interface{}
+
+	if status != nil {
+		query = `
+			SELECT id, coach_id, athlete_id, status, request_message, requested_at,
+			       accepted_at, terminated_at, terminated_by, termination_reason,
+			       cooldown_until, created_at, updated_at
+			FROM coach_athlete_relationships
+			WHERE coach_id = $1 AND status = $2
+			ORDER BY created_at DESC`
+		args = []interface{}{coachID, *status}
+	} else {
+		query = `
+			SELECT id, coach_id, athlete_id, status, request_message, requested_at,
+			       accepted_at, terminated_at, terminated_by, termination_reason,
+			       cooldown_until, created_at, updated_at
+			FROM coach_athlete_relationships
+			WHERE coach_id = $1
+			ORDER BY created_at DESC`
+		args = []interface{}{coachID}
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relationships: %w", err)
+	}
+	defer rows.Close()
+
+	var relationships []models.CoachAthleteRelationship
+	for rows.Next() {
+		var rel models.CoachAthleteRelationship
+		err := rows.Scan(
+			&rel.ID, &rel.CoachID, &rel.AthleteID, &rel.Status, &rel.RequestMessage,
+			&rel.RequestedAt, &rel.AcceptedAt, &rel.TerminatedAt, &rel.TerminatedBy,
+			&rel.TerminationReason, &rel.CooldownUntil, &rel.CreatedAt, &rel.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan relationship: %w", err)
+		}
+		relationships = append(relationships, rel)
+	}
+
+	return relationships, nil
+}
+
+func (r *CoachRepository) GetRelationshipsByAthleteID(athleteID uuid.UUID, status *models.RelationshipStatus) ([]models.CoachAthleteRelationship, error) {
+	var query string
+	var args []interface{}
+
+	if status != nil {
+		query = `
+			SELECT id, coach_id, athlete_id, status, request_message, requested_at,
+			       accepted_at, terminated_at, terminated_by, termination_reason,
+			       cooldown_until, created_at, updated_at
+			FROM coach_athlete_relationships
+			WHERE athlete_id = $1 AND status = $2
+			ORDER BY created_at DESC`
+		args = []interface{}{athleteID, *status}
+	} else {
+		query = `
+			SELECT id, coach_id, athlete_id, status, request_message, requested_at,
+			       accepted_at, terminated_at, terminated_by, termination_reason,
+			       cooldown_until, created_at, updated_at
+			FROM coach_athlete_relationships
+			WHERE athlete_id = $1
+			ORDER BY created_at DESC`
+		args = []interface{}{athleteID}
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relationships: %w", err)
+	}
+	defer rows.Close()
+
+	var relationships []models.CoachAthleteRelationship
+	for rows.Next() {
+		var rel models.CoachAthleteRelationship
+		err := rows.Scan(
+			&rel.ID, &rel.CoachID, &rel.AthleteID, &rel.Status, &rel.RequestMessage,
+			&rel.RequestedAt, &rel.AcceptedAt, &rel.TerminatedAt, &rel.TerminatedBy,
+			&rel.TerminationReason, &rel.CooldownUntil, &rel.CreatedAt, &rel.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan relationship: %w", err)
+		}
+		relationships = append(relationships, rel)
+	}
+
+	return relationships, nil
+}
+
+func (r *CoachRepository) GetRelationshipByID(relationshipID uuid.UUID) (*models.CoachAthleteRelationship, error) {
+	query := `
+		SELECT id, coach_id, athlete_id, status, request_message, requested_at,
+		       accepted_at, terminated_at, terminated_by, termination_reason,
+		       cooldown_until, created_at, updated_at
+		FROM coach_athlete_relationships
+		WHERE id = $1`
+
+	var rel models.CoachAthleteRelationship
+	err := r.db.QueryRow(query, relationshipID).Scan(
+		&rel.ID, &rel.CoachID, &rel.AthleteID, &rel.Status, &rel.RequestMessage,
+		&rel.RequestedAt, &rel.AcceptedAt, &rel.TerminatedAt, &rel.TerminatedBy,
+		&rel.TerminationReason, &rel.CooldownUntil, &rel.CreatedAt, &rel.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("relationship not found")
+		}
+		return nil, fmt.Errorf("failed to get relationship: %w", err)
+	}
+
+	return &rel, nil
+}
+
+func (r *CoachRepository) CreateCertification(cert *models.CoachCertification) error {
+	query := `
+		INSERT INTO coach_certifications (coach_id, certification_name, issuing_organization,
+		                                  issue_date, expiry_date, verification_document_url)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, verification_status, created_at`
+
+	err := r.db.QueryRow(query,
+		cert.CoachID, cert.CertificationName, cert.IssuingOrganization,
+		cert.IssueDate, cert.ExpiryDate, cert.VerificationDocumentURL,
+	).Scan(&cert.ID, &cert.VerificationStatus, &cert.CreatedAt)
+
+	if err != nil {
+		return fmt.Errorf("failed to create certification: %w", err)
+	}
+
+	return nil
+}
+
+func (r *CoachRepository) GetCertificationsByCoachID(coachID uuid.UUID) ([]models.CoachCertification, error) {
+	query := `
+		SELECT id, coach_id, certification_name, issuing_organization, issue_date,
+		       expiry_date, verification_status, verification_document_url, created_at
+		FROM coach_certifications
+		WHERE coach_id = $1
+		ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query, coachID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get certifications: %w", err)
+	}
+	defer rows.Close()
+
+	var certs []models.CoachCertification
+	for rows.Next() {
+		var cert models.CoachCertification
+		err := rows.Scan(
+			&cert.ID, &cert.CoachID, &cert.CertificationName, &cert.IssuingOrganization,
+			&cert.IssueDate, &cert.ExpiryDate, &cert.VerificationStatus,
+			&cert.VerificationDocumentURL, &cert.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan certification: %w", err)
+		}
+		certs = append(certs, cert)
+	}
+
+	return certs, nil
+}
+
+func (r *CoachRepository) CreateSuccessStory(story *models.CoachSuccessStory) error {
+	query := `
+		INSERT INTO coach_success_stories (coach_id, athlete_name, achievement, competition_name,
+		                                   competition_date, total_kg, weight_class, federation,
+		                                   placement, is_public)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, created_at`
+
+	err := r.db.QueryRow(query,
+		story.CoachID, story.AthleteName, story.Achievement, story.CompetitionName,
+		story.CompetitionDate, story.TotalKg, story.WeightClass, story.Federation,
+		story.Placement, story.IsPublic,
+	).Scan(&story.ID, &story.CreatedAt)
+
+	if err != nil {
+		return fmt.Errorf("failed to create success story: %w", err)
+	}
+
+	return nil
+}
+
+func (r *CoachRepository) GetSuccessStoriesByCoachID(coachID uuid.UUID, publicOnly bool) ([]models.CoachSuccessStory, error) {
+	var query string
+	if publicOnly {
+		query = `
+			SELECT id, coach_id, athlete_name, achievement, competition_name, competition_date,
+			       total_kg, weight_class, federation, placement, is_public, created_at
+			FROM coach_success_stories
+			WHERE coach_id = $1 AND is_public = true
+			ORDER BY created_at DESC`
+	} else {
+		query = `
+			SELECT id, coach_id, athlete_name, achievement, competition_name, competition_date,
+			       total_kg, weight_class, federation, placement, is_public, created_at
+			FROM coach_success_stories
+			WHERE coach_id = $1
+			ORDER BY created_at DESC`
+	}
+
+	rows, err := r.db.Query(query, coachID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get success stories: %w", err)
+	}
+	defer rows.Close()
+
+	var stories []models.CoachSuccessStory
+	for rows.Next() {
+		var story models.CoachSuccessStory
+		err := rows.Scan(
+			&story.ID, &story.CoachID, &story.AthleteName, &story.Achievement,
+			&story.CompetitionName, &story.CompetitionDate, &story.TotalKg,
+			&story.WeightClass, &story.Federation, &story.Placement,
+			&story.IsPublic, &story.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan success story: %w", err)
+		}
+		stories = append(stories, story)
+	}
+
+	return stories, nil
+}

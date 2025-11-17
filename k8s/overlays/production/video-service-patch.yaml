@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-service
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+      - name: video-service
+        env:
+        - name: SPACES_ENDPOINT
+          value: "https://nolift-dev-videos-20251115041326268500000004.s3.ca-central-1.amazonaws.com"
+        - name: SPACES_BUCKET
+          value: "nolift-dev-videos-20251115041326268500000004"
+        - name: SPACES_REGION
+          value: "ca-central-1"

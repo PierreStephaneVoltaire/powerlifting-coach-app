@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/utils/api';
 
+import { generateUUID } from '@/utils/uuid';
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuthStore();
@@ -20,12 +21,20 @@ export const RegisterPage: React.FC = () => {
 
     try {
       const response = await apiClient.register(email, password, name, userType);
+
+      if (!response || !response.tokens || !response.user) {
+        console.error('Invalid response structure:', response);
+        setError('Registration succeeded but received invalid response format. Please try logging in.');
+        setIsLoading(false);
+        return;
+      }
+
       login(response.tokens, response);
 
       const event = {
         schema_version: '1.0.0',
         event_type: 'auth.user.logged_in',
-        client_generated_id: crypto.randomUUID(),
+        client_generated_id: generateUUID(),
         user_id: response.user.id,
         timestamp: new Date().toISOString(),
         source_service: 'frontend',
@@ -39,7 +48,22 @@ export const RegisterPage: React.FC = () => {
 
       navigate('/onboarding');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      console.error('Registration error:', err);
+      console.error('Response data:', err.response?.data);
+      console.error('Response status:', err.response?.status);
+
+      if (err.response) {
+        const errorMessage = err.response.data?.error || err.response.data?.message;
+        if (errorMessage) {
+          setError(errorMessage);
+        } else {
+          setError(`Registration failed (${err.response.status}). Please try again.`);
+        }
+      } else if (err.request) {
+        setError('Cannot connect to server. Please check your connection.');
+      } else {
+        setError(err.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

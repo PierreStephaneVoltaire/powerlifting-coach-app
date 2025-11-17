@@ -7,12 +7,12 @@ interface AuthState {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  
-  // Actions
+  onboarded: boolean;
   login: (tokens: AuthTokens, userResponse: UserResponse) => void;
   logout: () => void;
   updateUser: (user: User) => void;
   setLoading: (loading: boolean) => void;
+  setOnboarded: (onboarded: boolean) => void;
   refreshTokens: (tokens: AuthTokens) => void;
 }
 
@@ -23,6 +23,7 @@ export const useAuthStore = create<AuthState>()(
       tokens: null,
       isAuthenticated: false,
       isLoading: false,
+      onboarded: false,
 
       login: (tokens: AuthTokens, userResponse: UserResponse) => {
         set({
@@ -39,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
           tokens: null,
           isAuthenticated: false,
           isLoading: false,
+          onboarded: false,
         });
       },
 
@@ -48,6 +50,10 @@ export const useAuthStore = create<AuthState>()(
 
       setLoading: (isLoading: boolean) => {
         set({ isLoading });
+      },
+
+      setOnboarded: (onboarded: boolean) => {
+        set({ onboarded });
       },
 
       refreshTokens: (tokens: AuthTokens) => {
@@ -60,6 +66,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         tokens: state.tokens,
         isAuthenticated: state.isAuthenticated,
+        onboarded: state.onboarded,
       }),
     }
   )

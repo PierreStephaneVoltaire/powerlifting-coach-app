@@ -1,107 +1,140 @@
-output "cluster_id" {
-  description = "Kubernetes cluster ID"
-  value       = digitalocean_kubernetes_cluster.k8s.id
-}
-
 output "cluster_name" {
-  description = "Kubernetes cluster name"
-  value       = digitalocean_kubernetes_cluster.k8s.name
+  value = local.cluster_name
 }
 
 output "cluster_endpoint" {
-  description = "Kubernetes cluster endpoint"
-  value       = digitalocean_kubernetes_cluster.k8s.endpoint
-}
-
-output "cluster_ca_certificate" {
-  description = "Kubernetes cluster CA certificate"
-  value       = digitalocean_kubernetes_cluster.k8s.kube_config[0].cluster_ca_certificate
-  sensitive   = true
-}
-
-output "cluster_token" {
-  description = "Kubernetes cluster token"
-  value       = digitalocean_kubernetes_cluster.k8s.kube_config[0].token
-  sensitive   = true
+  description = "Kubernetes API endpoint (from Rancher kubeconfig)"
+  value       = var.rancher_cluster_enabled ? "See cluster_kubeconfig output" : "Rancher Server: https://${aws_eip.rancher.public_ip}"
 }
 
 output "vpc_id" {
-  description = "VPC ID"
-  value       = digitalocean_vpc.this.id
+  value = aws_vpc.main.id
 }
 
-output "spaces_bucket_name" {
-  description = "Spaces bucket name"
-  value       = digitalocean_spaces_bucket.videos.name
+output "public_subnet_ids" {
+  value = aws_subnet.public[*].id
 }
 
-output "spaces_bucket_endpoint" {
-  description = "Spaces bucket endpoint"
-  value       = "https://${var.region}.digitaloceanspaces.com"
+output "s3_videos_bucket" {
+  value = aws_s3_bucket.videos.id
 }
 
-output "spaces_access_key_id" {
-  description = "Spaces access key ID"
-  value       = digitalocean_spaces_key.default.access_key
-  sensitive   = true
+output "s3_videos_bucket_arn" {
+  value = aws_s3_bucket.videos.arn
 }
 
-output "spaces_secret_access_key" {
-  description = "Spaces secret access key"
-  value       = digitalocean_spaces_key.default.secret_key
-  sensitive   = true
+output "s3_videos_endpoint" {
+  value = "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
+}
+
+output "s3_videos_access_key" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.s3_videos[0].id : null
+  sensitive = true
+}
+
+output "s3_videos_secret_key" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.s3_videos[0].secret : null
+  sensitive = true
 }
 
 output "region" {
-  description = "Deployment region"
-  value       = var.region
+  value = var.aws_region
 }
 
 output "postgres_password" {
-  description = "PostgreSQL database password"
-  value       = var.kubernetes_resources_enabled ? random_password.postgres_password[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.postgres_password[0].result : null
+  sensitive = true
 }
 
 output "rabbitmq_password" {
-  description = "RabbitMQ password"
-  value       = var.kubernetes_resources_enabled ? random_password.rabbitmq_password[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.rabbitmq_password[0].result : null
+  sensitive = true
 }
 
 output "keycloak_client_secret" {
-  description = "Keycloak client secret"
-  value       = var.kubernetes_resources_enabled ? random_password.keycloak_client_secret[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.keycloak_client_secret[0].result : null
+  sensitive = true
 }
 
 output "keycloak_admin_password" {
-  description = "Keycloak admin password"
-  value       = var.kubernetes_resources_enabled ? random_password.keycloak_admin_password[0].result : "not-yet-generated"
-  sensitive   = true
+  value     = var.kubernetes_resources_enabled ? random_password.keycloak_admin_password[0].result : null
+  sensitive = true
 }
 
 output "argocd_url" {
-  description = "ArgoCD UI URL"
-  value       = var.kubernetes_resources_enabled ? "http://argocd.${local.lb_ip}.nip.io" : "not-yet-available"
-}
-
-output "argocd_admin_password" {
-  description = "ArgoCD admin password (get with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)"
-  value       = "Run: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+  value = var.kubernetes_resources_enabled ? "https://argocd.${var.domain_name}" : null
 }
 
 output "frontend_url" {
-  description = "Frontend application URL"
-  value       = var.kubernetes_resources_enabled ? "http://app.${local.lb_ip}.nip.io" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://app.${var.domain_name}" : null
 }
 
 output "api_url" {
-  description = "API base URL"
-  value       = var.kubernetes_resources_enabled ? "http://api.${local.lb_ip}.nip.io" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://api.${var.domain_name}" : null
 }
 
 output "auth_url" {
-  description = "Keycloak authentication URL"
-  value       = var.kubernetes_resources_enabled ? "http://auth.${local.lb_ip}.nip.io" : "not-yet-available"
+  value = var.kubernetes_resources_enabled ? "https://auth.${var.domain_name}" : null
+}
+
+output "grafana_url" {
+  value = var.kubernetes_resources_enabled ? "https://grafana.${var.domain_name}" : null
+}
+
+output "grafana_admin_password" {
+  value     = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : null
+  sensitive = true
+}
+
+output "prometheus_url" {
+  value = var.kubernetes_resources_enabled ? "https://prometheus.${var.domain_name}" : null
+}
+
+output "loki_url" {
+  value = var.kubernetes_resources_enabled ? "https://loki.${var.domain_name}" : null
+}
+
+output "rabbitmq_management_url" {
+  value = var.kubernetes_resources_enabled ? "https://rabbitmq.${var.domain_name}" : null
+}
+
+output "rabbitmq_management_username" {
+  value = "admin"
+}
+
+
+output "route53_zone_id" {
+  value = aws_route53_zone.main.zone_id
+}
+
+output "route53_zone_name" {
+  value = aws_route53_zone.main.name
+}
+
+output "aws_nameservers" {
+  value = aws_route53_zone.main.name_servers
+}
+
+output "domain_urls" {
+  value = {
+    frontend = "https://app.${var.domain_name}"
+    api      = "https://api.${var.domain_name}"
+    auth     = "https://auth.${var.domain_name}"
+    grafana  = "https://grafana.${var.domain_name}"
+    argocd   = "https://argocd.${var.domain_name}"
+  }
+}
+
+output "ses_smtp_endpoint" {
+  value = "email-smtp.${var.aws_region}.amazonaws.com"
+}
+
+output "ses_smtp_username" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.ses_smtp[0].id : null
+  sensitive = true
+}
+
+output "ses_smtp_password" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4 : null
+  sensitive = true
 }
