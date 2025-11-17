@@ -9,8 +9,9 @@ resource "rancher2_bootstrap" "admin" {
   provider = rancher2.bootstrap
   count    = var.rancher_cluster_enabled ? 1 : 0
 
-  password  = random_password.rancher_admin.result
-  telemetry = false
+  initial_password = random_password.rancher_admin.result
+  password         = random_password.rancher_admin.result
+  telemetry        = false
 
   depends_on = [
     aws_instance.rancher_server,
