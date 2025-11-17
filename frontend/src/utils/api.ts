@@ -463,6 +463,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getAIConversation() {
+    const response = await this.client.get('/api/v1/programs/chat/conversation');
+    return response.data;
+  }
+
   async get(url: string, config?: any) {
     return this.client.get(`/api/v1${url}`, config);
   }

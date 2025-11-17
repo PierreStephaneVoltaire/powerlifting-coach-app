@@ -117,6 +117,7 @@ func main() {
 				programs.POST("/:id/reject", programHandlers.RejectProgram)
 				programs.POST("/export", programHandlers.ExportProgram)
 				programs.POST("/chat", programHandlers.ChatWithAI)
+				programs.GET("/chat/conversation", programHandlers.GetAIConversation)
 				programs.POST("/log-workout", programHandlers.LogWorkout)
 
 				// Program change management (git-like)

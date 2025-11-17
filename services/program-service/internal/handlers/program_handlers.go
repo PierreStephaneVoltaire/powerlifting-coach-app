@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -305,6 +307,15 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 		return
 	}
 
+	// Extract program JSON if present in AI response
+	var programData map[string]interface{}
+	extractedJSON := extractJSONFromResponse(aiResponse)
+	if extractedJSON != "" {
+		if err := json.Unmarshal([]byte(extractedJSON), &programData); err != nil {
+			log.Warn().Err(err).Msg("Failed to parse extracted JSON from AI response")
+		}
+	}
+
 	// Add messages to conversation
 	userMessage := models.Message{
 		ID:        uuid.New().String(),
@@ -333,10 +344,71 @@ func (h *ProgramHandlers) ChatWithAI(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"message":      aiResponse,
 		"conversation": conversation,
-	})
+	}
+
+	// Include program data if extracted
+	if programData != nil {
+		response["program_proposal"] = programData
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetAIConversation retrieves the current AI conversation for the user
+func (h *ProgramHandlers) GetAIConversation(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userUUID, _ := uuid.Parse(userID)
+
+	// Get the most recent conversation
+	conversations, err := h.programRepo.GetAIConversationsByAthleteID(userUUID, 1)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get AI conversation")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get conversation"})
+		return
+	}
+
+	if len(conversations) == 0 {
+		// No conversation yet, return empty
+		c.JSON(http.StatusOK, gin.H{
+			"conversation": nil,
+			"has_conversation": false,
+		})
+		return
+	}
+
+	conversation := conversations[0]
+
+	// Extract the last program proposal if any message contains JSON
+	var lastProgramProposal map[string]interface{}
+	for i := len(conversation.Messages) - 1; i >= 0; i-- {
+		if conversation.Messages[i].Role == "assistant" {
+			jsonStr := extractJSONFromResponse(conversation.Messages[i].Content)
+			if jsonStr != "" {
+				if err := json.Unmarshal([]byte(jsonStr), &lastProgramProposal); err == nil {
+					break
+				}
+			}
+		}
+	}
+
+	response := gin.H{
+		"conversation":     conversation,
+		"has_conversation": true,
+	}
+
+	if lastProgramProposal != nil {
+		response["last_program_proposal"] = lastProgramProposal
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *ProgramHandlers) LogWorkout(c *gin.Context) {
@@ -745,4 +817,27 @@ func (h *ProgramHandlers) determineProgramPhase(competitionDate *time.Time) mode
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+// extractJSONFromResponse extracts JSON code blocks from AI response text
+func extractJSONFromResponse(response string) string {
+	// Try to find JSON in code blocks first (```json ... ```)
+	codeBlockPattern := regexp.MustCompile("(?s)```(?:json)?\\s*\\n?({[^`]+})\\s*\\n?```")
+	matches := codeBlockPattern.FindStringSubmatch(response)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+
+	// Try to find standalone JSON object
+	jsonPattern := regexp.MustCompile(`(?s)\{[\s\S]*"phases"[\s\S]*"weeklyWorkouts"[\s\S]*"summary"[\s\S]*\}`)
+	match := jsonPattern.FindString(response)
+	if match != "" {
+		// Validate it's actual JSON
+		var test map[string]interface{}
+		if json.Unmarshal([]byte(match), &test) == nil {
+			return match
+		}
+	}
+
+	return ""
 }
