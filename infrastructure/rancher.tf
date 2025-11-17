@@ -118,7 +118,7 @@ resource "aws_iam_role_policy" "rancher_server_permissive" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*"]
+        Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*","iam:*"]
         Resource = "*"
       }
     ]

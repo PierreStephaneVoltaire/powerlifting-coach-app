@@ -49,7 +49,7 @@ resource "rancher2_machine_config_v2" "nodes" {
     security_group        = [aws_security_group.rancher_node[0].name]
     subnet_id             = aws_subnet.public[0].id
     vpc_id                = aws_vpc.main.id
-    zone                  = data.aws_availability_zones.available.names[0]
+    zone                  = "a"
     instance_type         = "t3a.medium"
     root_size             = "30"
     iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
@@ -159,7 +159,7 @@ resource "aws_iam_role_policy" "rancher_node_permissive" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*", "ebs:*"]
+        Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*", "ebs:*","iam:*"]
         Resource = "*"
       }
     ]
