@@ -9,14 +9,17 @@ RUN npm install --legacy-peer-deps
 COPY . .
 ENV TSC_COMPILE_ON_ERROR=true
 ENV DISABLE_ESLINT_PLUGIN=true
-ENV REACT_APP_API_URL=
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
 RUN npm run build
 
-FROM public.ecr.aws/docker/library/nginx:alpine
+FROM public.ecr.aws/docker/library/node:16-alpine
 
-COPY --from=builder /app/build /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR /app
+RUN npm install -g serve@14
 
-EXPOSE 80
+COPY --from=builder /app/build ./build
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+
+CMD ["serve", "-s", "build", "-l", "3000"]
