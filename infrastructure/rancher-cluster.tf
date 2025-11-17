@@ -11,7 +11,6 @@ resource "rancher2_bootstrap" "admin" {
 
   initial_password = random_password.rancher_admin.result
   password         = random_password.rancher_admin.result
-  telemetry        = false
 
   depends_on = [
     aws_instance.rancher_server,
