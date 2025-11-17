@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/golang:1.22-alpine AS builder
+FROM public.ecr.aws/docker/library/golang:1.23-alpine AS builder
 
 # Install FFmpeg and build dependencies
 RUN apk add --no-cache git ffmpeg ca-certificates
