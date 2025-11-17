@@ -5,6 +5,7 @@ import { apiClient } from '@/utils/api';
 import ReactMarkdown from 'react-markdown';
 import { format, differenceInWeeks } from 'date-fns';
 import { generateUUID } from '@/utils/uuid';
+import { ProgramProposalModal } from '@/components/Chat/ProgramProposalModal';
 
 interface Message {
   id: string;
@@ -36,6 +37,9 @@ export const ChatPage: React.FC = () => {
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [currentProposal, setCurrentProposal] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const [activeProgram, setActiveProgram] = useState<any>(null);
+  const [isApprovingProgram, setIsApprovingProgram] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,13 +60,18 @@ export const ChatPage: React.FC = () => {
   const loadInitialData = async () => {
     setIsInitializing(true);
     try {
-      const [settingsResponse, conversationResponse] = await Promise.all([
+      const [settingsResponse, conversationResponse, activeProgramResponse] = await Promise.all([
         apiClient.getUserSettings().catch(() => null),
         apiClient.getAIConversation().catch(() => ({ has_conversation: false })),
+        apiClient.getActiveProgram().catch(() => null),
       ]);
 
       if (settingsResponse) {
         setUserSettings(settingsResponse);
+      }
+
+      if (activeProgramResponse) {
+        setActiveProgram(activeProgramResponse);
       }
 
       if (conversationResponse.has_conversation && conversationResponse.conversation) {
@@ -122,7 +131,11 @@ You can then adjust anything you'd like before approving it.`;
     setInput('');
 
     try {
-      const response = await apiClient.chatWithAI(userMessage);
+      const response = await apiClient.chatWithAI(
+        userMessage,
+        activeProgram?.id,
+        false
+      );
 
       const assistantMsg: Message = {
         id: generateUUID(),
@@ -154,6 +167,51 @@ You can then adjust anything you'd like before approving it.`;
     const compDate = new Date(userSettings.competition_date);
     const weeks = differenceInWeeks(compDate, new Date());
     return weeks > 0 ? weeks : 0;
+  };
+
+  const handleApproveProgram = async (programData: any) => {
+    setIsApprovingProgram(true);
+    try {
+      if (activeProgram) {
+        await apiClient.proposeChange(
+          activeProgram.id,
+          currentProposal,
+          programData.name || 'Program modification from chat'
+        );
+        setCurrentProposal(null);
+        setShowProposalModal(false);
+
+        const confirmationMsg: Message = {
+          id: generateUUID(),
+          role: 'assistant',
+          content: `I've created a change proposal for your program. You can review and apply these changes from your program page, or continue refining the proposal here.
+
+To apply the changes immediately, visit your program page and look for pending changes.`,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, confirmationMsg]);
+      } else {
+        const result = await apiClient.createProgramFromChat(programData);
+        setActiveProgram(result);
+        setCurrentProposal(null);
+        setShowProposalModal(false);
+
+        const confirmationMsg: Message = {
+          id: generateUUID(),
+          role: 'assistant',
+          content: `Your program "${programData.name}" has been created and is now active.
+
+You can continue our conversation to make adjustments, or start following your program right away. If you want to propose changes later, just describe what you'd like to modify and I'll help you create a change proposal.`,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, confirmationMsg]);
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to create program';
+      setError(errorMsg);
+    } finally {
+      setIsApprovingProgram(false);
+    }
   };
 
   const weeksUntilComp = getWeeksUntilComp();
@@ -188,18 +246,28 @@ You can then adjust anything you'd like before approving it.`;
               {userSettings?.training_days_per_week && (
                 <span>{userSettings.training_days_per_week} days/week</span>
               )}
+              {activeProgram && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Active: {activeProgram.name || 'Program'}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-2">
             {currentProposal && (
               <button
-                onClick={() => {
-                  console.log('Current proposal:', currentProposal);
-                  alert('Program proposal ready. Implement approval flow here.');
-                }}
+                onClick={() => setShowProposalModal(true)}
                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
               >
                 Review Program
+              </button>
+            )}
+            {activeProgram && (
+              <button
+                onClick={() => navigate(`/program/${activeProgram.id}`)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                View Program
               </button>
             )}
             <button
@@ -365,6 +433,17 @@ You can then adjust anything you'd like before approving it.`;
           </form>
         </div>
       </div>
+
+      {showProposalModal && currentProposal && (
+        <ProgramProposalModal
+          proposal={currentProposal}
+          competitionDate={userSettings?.competition_date}
+          onApprove={handleApproveProgram}
+          onClose={() => setShowProposalModal(false)}
+          isLoading={isApprovingProgram}
+          isChangeProposal={!!activeProgram}
+        />
+      )}
     </div>
   );
 };
