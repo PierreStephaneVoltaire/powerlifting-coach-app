@@ -150,6 +150,8 @@ func main() {
 			{
 				feed.GET("/", feedHandlers.GetFeed)
 				feed.GET("/:post_id", feedHandlers.GetFeedPost)
+				feed.GET("/privacy-settings", feedHandlers.GetPrivacySettings)
+				feed.POST("/privacy-settings", feedHandlers.UpdatePrivacySettings)
 			}
 		}
 

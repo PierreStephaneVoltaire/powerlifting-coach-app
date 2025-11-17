@@ -383,6 +383,15 @@ class ApiClient {
     return response.data;
   }
 
+  async exportProgram(programId: string, format: 'excel' = 'excel') {
+    const response = await this.client.post(
+      '/api/v1/programs/export',
+      { program_id: programId, format },
+      { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
   async getProgram(programId: string) {
     const response = await this.client.get(`/api/v1/programs/${programId}`);
     return response.data;

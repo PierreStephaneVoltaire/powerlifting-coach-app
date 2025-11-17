@@ -12,6 +12,7 @@ export const ProgramOverview: React.FC<ProgramOverviewProps> = ({ program, onRef
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentWeek, setCurrentWeek] = useState(1);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadSessions();
@@ -76,6 +77,26 @@ export const ProgramOverview: React.FC<ProgramOverviewProps> = ({ program, onRef
   );
   const weeksUntilComp = Math.ceil(daysUntilComp / 7);
 
+  const handleExportProgram = async () => {
+    try {
+      setExporting(true);
+      const blob = await apiClient.exportProgram(program.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${program.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export program:', error);
+      alert('Failed to export program. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       {/* Header Section */}
@@ -87,12 +108,21 @@ export const ProgramOverview: React.FC<ProgramOverviewProps> = ({ program, onRef
               <p className="text-gray-600">{program.description}</p>
             )}
           </div>
-          <button
-            onClick={() => window.open('/chat', '_blank')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-          >
-            Chat with Coach
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportProgram}
+              disabled={exporting}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm disabled:opacity-50"
+            >
+              {exporting ? 'Exporting...' : 'Export to Excel'}
+            </button>
+            <button
+              onClick={() => window.open('/chat', '_blank')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+            >
+              Chat with Coach
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">

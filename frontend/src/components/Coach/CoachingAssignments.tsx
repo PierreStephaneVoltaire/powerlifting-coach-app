@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from '@/components/UI/Toast';
 
 interface CoachingAssignment {
   id: string;
@@ -39,7 +40,13 @@ export const CoachingAssignments: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load coaching assignments');
+        if (response.status === 404) {
+          toast.warning('Coaching assignments feature is not yet implemented', 8000);
+          setError('Coaching assignments is coming soon. This feature will allow you to manage your coach-athlete connections.');
+        } else {
+          throw new Error('Failed to load coaching assignments');
+        }
+        return;
       }
 
       const data = await response.json();
@@ -53,7 +60,8 @@ export const CoachingAssignments: React.FC = () => {
 
       await loadUsers(Array.from(userIds));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load coaching assignments');
+      toast.warning('Coaching assignments feature is not yet implemented', 8000);
+      setError('Coaching assignments is coming soon. This feature will allow you to manage your coach-athlete connections.');
     } finally {
       setLoading(false);
     }

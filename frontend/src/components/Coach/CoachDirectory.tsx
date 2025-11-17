@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../../utils/api';
+import { toast } from '@/components/UI/Toast';
 
 interface Coach {
   id: string;
@@ -43,13 +43,20 @@ export const CoachDirectory: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load coaches');
+        if (response.status === 404) {
+          toast.warning('Coach directory feature is not yet implemented', 8000);
+          setError('Coach directory is coming soon. This feature will allow you to browse and connect with certified powerlifting coaches.');
+        } else {
+          throw new Error('Failed to load coaches');
+        }
+        return;
       }
 
       const data = await response.json();
       setCoaches(data.coaches || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load coaches');
+      toast.warning('Coach directory feature is not yet implemented', 8000);
+      setError('Coach directory is coming soon. This feature will allow you to browse and connect with certified powerlifting coaches.');
     } finally {
       setLoading(false);
     }

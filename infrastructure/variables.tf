@@ -111,7 +111,7 @@ variable "monthly_budget_limit" {
 variable "budget_notification_email" {
   description = "Email address to receive budget notifications when spend exceeds thresholds"
   type        = string
-  default = "psvoltaire96@gmai.com"
+  default = "psvoltaire96@gmail.com"
 }
 
 variable "deploy_frontend" {
