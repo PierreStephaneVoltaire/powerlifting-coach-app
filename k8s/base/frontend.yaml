@@ -28,8 +28,6 @@ spec:
           value: "http://api.DOMAIN_PLACEHOLDER"
         - name: REACT_APP_AUTH_URL
           value: "http://api.DOMAIN_PLACEHOLDER/auth"
-        - name: REACT_APP_CDN_URL
-          value: "https://noliftdevvideos.blob.core.windows.net/nolift-videos"
         resources:
           requests:
             memory: "32Mi"

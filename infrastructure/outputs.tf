@@ -27,6 +27,16 @@ output "s3_videos_endpoint" {
   value = "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
 }
 
+output "s3_videos_access_key" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.s3_videos[0].id : null
+  sensitive = true
+}
+
+output "s3_videos_secret_key" {
+  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.s3_videos[0].secret : null
+  sensitive = true
+}
+
 output "region" {
   value = var.aws_region
 }

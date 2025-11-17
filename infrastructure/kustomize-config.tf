@@ -15,6 +15,8 @@ patchesStrategicMerge:
   - production-patches.yaml
   - frontend-patch.yaml
   - auth-service-patch.yaml
+  - video-service-patch.yaml
+  - media-processor-service-patch.yaml
 
 patchesJson6902:
   - target:
@@ -113,5 +115,55 @@ spec:
         env:
         - name: KEYCLOAK_URL
           value: "http://keycloak:8080"
+EOT
+}
+
+resource "local_file" "video_service_patch" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  filename = "${path.module}/../k8s/overlays/production/video-service-patch.yaml"
+  content  = <<-EOT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-service
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+      - name: video-service
+        env:
+        - name: SPACES_ENDPOINT
+          value: "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
+        - name: SPACES_BUCKET
+          value: "${aws_s3_bucket.videos.id}"
+        - name: SPACES_REGION
+          value: "${var.aws_region}"
+EOT
+}
+
+resource "local_file" "media_processor_service_patch" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  filename = "${path.module}/../k8s/overlays/production/media-processor-service-patch.yaml"
+  content  = <<-EOT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-processor-service
+  namespace: app
+spec:
+  template:
+    spec:
+      containers:
+      - name: media-processor
+        env:
+        - name: SPACES_ENDPOINT
+          value: "https://${aws_s3_bucket.videos.bucket_regional_domain_name}"
+        - name: SPACES_BUCKET
+          value: "${aws_s3_bucket.videos.id}"
+        - name: SPACES_REGION
+          value: "${var.aws_region}"
 EOT
 }
