@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VolumeChart } from './VolumeChart';
 import { E1RMChart } from './E1RMChart';
-import { api } from '../../utils/apiWrapper';
+import { apiClient } from '../../utils/api';
 
 export const AnalyticsDashboard: React.FC = () => {
   const [volumeData, setVolumeData] = useState<any[]>([]);
@@ -22,7 +22,7 @@ export const AnalyticsDashboard: React.FC = () => {
       startDate.setDate(startDate.getDate() - timeRange);
 
       // Fetch volume data
-      const volumeResponse = await api.post('/analytics/volume', {
+      const volumeResponse = await apiClient.post('/analytics/volume', {
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         lift_type: selectedLift !== 'all' ? selectedLift : null,
@@ -30,7 +30,7 @@ export const AnalyticsDashboard: React.FC = () => {
       setVolumeData(volumeResponse.data.volume_data || []);
 
       // Fetch e1RM data
-      const e1rmResponse = await api.post('/analytics/e1rm', {
+      const e1rmResponse = await apiClient.post('/analytics/e1rm', {
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         lift_type: selectedLift !== 'all' ? selectedLift : null,

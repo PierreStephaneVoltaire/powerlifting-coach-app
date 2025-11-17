@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '@/utils/apiWrapper';
+import { apiClient } from '@/utils/api';
 
 interface SetLog {
   set_number: number;
@@ -64,7 +64,7 @@ export const useWorkoutLogger = (session: any, onComplete: () => void) => {
 
   const fetchPreviousSets = async (exerciseName: string) => {
     try {
-      const response = await api.get(`/exercises/${encodeURIComponent(exerciseName)}/previous?limit=1`);
+      const response = await apiClient.get(`/exercises/${encodeURIComponent(exerciseName)}/previous?limit=1`);
       if (response.data.previous_sets && response.data.previous_sets.length > 0) {
         setPreviousSets(response.data.previous_sets);
       }
@@ -104,7 +104,7 @@ export const useWorkoutLogger = (session: any, onComplete: () => void) => {
     }
 
     try {
-      const response = await api.post('/exercises/warmups/generate', {
+      const response = await apiClient.post('/exercises/warmups/generate', {
         working_weight_kg: firstWorkingSet.weight_kg,
         lift_type: currentExercise.lift_type || 'accessory',
       });
@@ -222,7 +222,7 @@ export const useWorkoutLogger = (session: any, onComplete: () => void) => {
         rpe_rating: rpeRating || null,
       };
 
-      await api.post('/programs/log-workout', workoutData);
+      await apiClient.post('/programs/log-workout', workoutData);
 
       localStorage.removeItem(`workout-progress-${session.id}`);
       onComplete();

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { AuthTokens } from '@/types';
 import { offlineQueue } from './offlineQueue';
