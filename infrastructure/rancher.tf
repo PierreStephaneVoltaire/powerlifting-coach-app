@@ -165,7 +165,7 @@ docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
-  rancher/rancher:latest
+  rancher/rancher:v2.8.5
 
 echo "Rancher Server started. Bootstrap password: ${random_password.rancher_admin.result}"
 EOF
