@@ -25,7 +25,7 @@ func Load() *Config {
 		Port:             getEnv("PORT", "8086"),
 		Environment:      getEnv("ENVIRONMENT", "development"),
 		RabbitMQURL:      getEnv("RABBITMQ_URL", "amqp://admin:changeme123@rabbitmq:5672/"),
-		SMTPHost:         getEnv("SMTP_HOST", "smtp.azurecomm.net"),
+		SMTPHost:         getEnv("SMTP_HOST", "email-smtp.us-east-1.amazonaws.com"),
 		SMTPPort:         getEnv("SMTP_PORT", "587"),
 		SMTPUsername:     getEnv("SMTP_USERNAME", ""),
 		SMTPPassword:     getEnv("SMTP_PASSWORD", ""),

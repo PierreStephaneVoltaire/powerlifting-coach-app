@@ -37,11 +37,11 @@ spec:
               name: app-secrets
               key: spaces-secret
         - name: SPACES_ENDPOINT
-          value: "https://noliftdevvideos.blob.core.windows.net"
+          value: "S3_ENDPOINT_PLACEHOLDER"
         - name: SPACES_BUCKET
-          value: "nolift-videos"
+          value: "S3_BUCKET_PLACEHOLDER"
         - name: SPACES_REGION
-          value: "eastus"
+          value: "S3_REGION_PLACEHOLDER"
         - name: FFMPEG_PATH
           value: "ffmpeg"
         - name: THUMBNAIL_SIZE

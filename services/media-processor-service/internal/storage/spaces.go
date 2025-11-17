@@ -7,38 +7,46 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
-	"github.com/powerlifting-coach-app/media-processor-service/internal/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	cfg "github.com/powerlifting-coach-app/media-processor-service/internal/config"
 )
 
 type SpacesClient struct {
-	client        *azblob.Client
-	containerName string
-	cdnURL        string
-	accountName   string
+	client     *s3.Client
+	bucketName string
+	cdnURL     string
+	region     string
 }
 
-func NewSpacesClient(cfg *config.Config) (*SpacesClient, error) {
-	// Create credential
-	credential, err := azblob.NewSharedKeyCredential(cfg.SpacesAccessKey, cfg.SpacesSecretKey)
+func NewSpacesClient(appCfg *cfg.Config) (*SpacesClient, error) {
+	// Create AWS credentials
+	creds := credentials.NewStaticCredentialsProvider(
+		appCfg.SpacesAccessKey,
+		appCfg.SpacesSecretKey,
+		"",
+	)
+
+	// Load AWS config
+	awsCfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion(appCfg.SpacesRegion),
+		config.WithCredentialsProvider(creds),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Azure credential: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	// Create blob service client
-	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", cfg.SpacesAccessKey)
-	client, err := azblob.NewClientWithSharedKeyCredential(serviceURL, credential, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Azure blob client: %w", err)
-	}
+	// Create S3 client
+	client := s3.NewFromConfig(awsCfg)
 
 	return &SpacesClient{
-		client:        client,
-		containerName: cfg.SpacesBucket,
-		cdnURL:        cfg.CDNUrl,
-		accountName:   cfg.SpacesAccessKey,
+		client:     client,
+		bucketName: appCfg.SpacesBucket,
+		cdnURL:     appCfg.CDNUrl,
+		region:     appCfg.SpacesRegion,
 	}, nil
 }
 
@@ -57,10 +65,12 @@ func (s *SpacesClient) DownloadFile(key string, localPath string) error {
 	}
 	defer file.Close()
 
-	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
+	downloader := manager.NewDownloader(s.client)
+	_, err = downloader.Download(ctx, file, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucketName),
+		Key:    aws.String(key),
+	})
 
-	// Download blob to file
-	_, err = blobClient.DownloadFile(ctx, file, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
@@ -77,14 +87,12 @@ func (s *SpacesClient) UploadFileFromPath(key string, localPath string, contentT
 	}
 	defer file.Close()
 
-	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
-
-	// Upload blob with public access (container already has public read)
-	_, err = blobClient.UploadFile(ctx, file, &azblob.UploadFileOptions{
-		HTTPHeaders: &blob.HTTPHeaders{
-			BlobContentType: &contentType,
-		},
-		AccessTier: to.Ptr(blob.AccessTierHot),
+	uploader := manager.NewUploader(s.client)
+	_, err = uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
+		Key:         aws.String(key),
+		Body:        file,
+		ContentType: aws.String(contentType),
 	})
 
 	if err != nil {
@@ -97,14 +105,12 @@ func (s *SpacesClient) UploadFileFromPath(key string, localPath string, contentT
 func (s *SpacesClient) UploadFile(key string, body io.Reader, contentType string) error {
 	ctx := context.Background()
 
-	blobClient := s.client.ServiceClient().NewContainerClient(s.containerName).NewBlockBlobClient(key)
-
-	// Upload blob with public access (container already has public read)
-	_, err := blobClient.UploadStream(ctx, body, &azblob.UploadStreamOptions{
-		HTTPHeaders: &blob.HTTPHeaders{
-			BlobContentType: &contentType,
-		},
-		AccessTier: to.Ptr(blob.AccessTierHot),
+	uploader := manager.NewUploader(s.client)
+	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
+		Key:         aws.String(key),
+		Body:        body,
+		ContentType: aws.String(contentType),
 	})
 
 	if err != nil {
@@ -119,6 +125,6 @@ func (s *SpacesClient) GetPublicFileURL(key string) string {
 		return fmt.Sprintf("%s/%s", strings.TrimRight(s.cdnURL, "/"), key)
 	}
 
-	// Public URL (container has public read access)
-	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", s.accountName, s.containerName, key)
+	// Public URL (bucket has public read access)
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucketName, s.region, key)
 }
