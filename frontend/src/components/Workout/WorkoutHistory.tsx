@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
-import { api } from '../../utils/api';
+import { apiClient } from '../../utils/api';
 import { format } from 'date-fns';
 import 'react-calendar/dist/Calendar.css';
 
@@ -33,7 +33,7 @@ export const WorkoutHistory: React.FC = () => {
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - 3); // Last 3 months
 
-      const response = await api.get(`/sessions/history?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`);
+      const response = await apiClient.get(`/sessions/history?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`);
       setSessions(response.data.sessions || []);
     } catch (error) {
       console.error('Failed to fetch session history:', error);
@@ -83,7 +83,7 @@ export const WorkoutHistory: React.FC = () => {
     }
 
     try {
-      await api.delete(`/sessions/${sessionId}`, {
+      await apiClient.delete(`/sessions/${sessionId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },

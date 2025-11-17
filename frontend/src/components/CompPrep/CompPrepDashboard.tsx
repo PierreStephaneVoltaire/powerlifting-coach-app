@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../utils/api';
+import { apiClient } from '../../utils/api';
 import { format, differenceInDays, differenceInWeeks } from 'date-fns';
 
 interface CompPrepData {
@@ -29,7 +29,7 @@ export const CompPrepDashboard: React.FC = () => {
     setLoading(true);
     try {
       // Fetch current program to get competition date
-      const programResponse = await api.get('/programs/current');
+      const programResponse = await apiClient.get('/programs/current');
       const program = programResponse.data.program;
 
       // Mock data for now - in production this would come from athlete profile and program

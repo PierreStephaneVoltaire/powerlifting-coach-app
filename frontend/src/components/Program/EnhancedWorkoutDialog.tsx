@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../utils/api';
+import { apiClient } from '../../utils/api';
 
 interface EnhancedWorkoutDialogProps {
   session: any;
@@ -65,7 +65,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
 
   const fetchPreviousSets = async (exerciseName: string) => {
     try {
-      const response = await api.get(`/exercises/${encodeURIComponent(exerciseName)}/previous?limit=1`);
+      const response = await apiClient.get(`/exercises/${encodeURIComponent(exerciseName)}/previous?limit=1`);
       if (response.data.previous_sets && response.data.previous_sets.length > 0) {
         setPreviousSets(response.data.previous_sets);
       }
@@ -105,7 +105,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
     }
 
     try {
-      const response = await api.post('/exercises/warmups/generate', {
+      const response = await apiClient.post('/exercises/warmups/generate', {
         working_weight_kg: firstWorkingSet.weight_kg,
         lift_type: currentExercise.lift_type || 'accessory',
       });
@@ -234,10 +234,10 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
         rpe_rating: rpeRating || null,
       };
 
-      await api.post('/programs/log-workout', workoutData);
+      await apiClient.post('/programs/log-workout', workoutData);
 
       try {
-        const privacyResponse = await api.get('/feed/privacy-settings', {
+        const privacyResponse = await apiClient.get('/feed/privacy-settings', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
 
@@ -259,7 +259,7 @@ export const EnhancedWorkoutDialog: React.FC<EnhancedWorkoutDialogProps> = ({ se
             (rpeRating ? `\n💪 RPE: ${rpeRating}/10` : '') +
             (workoutNotes ? `\n\n${workoutNotes}` : '');
 
-          await api.post('/feed/posts', {
+          await apiClient.post('/feed/posts', {
             content: postContent,
             workout_data: workoutData,
           }, {

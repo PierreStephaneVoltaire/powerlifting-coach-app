@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { AuthTokens } from '@/types';
 import { offlineQueue } from './offlineQueue';
@@ -540,6 +540,3 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
-
-// Why: Re-export for dev mode support - wrapper handles routing to fake data
-export { api } from './apiWrapper';
