@@ -96,7 +96,7 @@ class ApiClient {
             }
           } catch (refreshError) {
             useAuthStore.getState().logout();
-            window.location.href = '/login';
+            // Let React Router handle redirect via ProtectedRoute
           }
         }
 

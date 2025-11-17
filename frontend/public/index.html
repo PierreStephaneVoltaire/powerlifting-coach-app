@@ -12,7 +12,8 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>PowerCoach - Powerlifting Training</title>
     <script>
-      if ('serviceWorker' in navigator) {
+      // Only register service worker in production, not during development
+      if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/service-worker.js')
             .then((registration) => {
@@ -21,6 +22,14 @@
             .catch((error) => {
               console.log('SW registration failed:', error);
             });
+        });
+      } else if ('serviceWorker' in navigator && window.location.hostname === 'localhost') {
+        // Unregister any existing service worker in development
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+            console.log('SW unregistered for development');
+          });
         });
       }
     </script>

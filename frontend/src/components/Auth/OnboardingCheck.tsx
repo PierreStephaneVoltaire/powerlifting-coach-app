@@ -41,27 +41,21 @@ export const OnboardingCheck: React.FC<{ children: React.ReactNode }> = ({ child
         if (has_pending) {
           // User has a pending program awaiting approval
           setHasPendingProgram(true);
-
-          // If not already on program page, redirect there to show approval UI
-          if (!location.pathname.startsWith('/program')) {
-            navigate('/program');
-          }
+          setIsCheckingProgram(false);
         } else {
           // No program at all - redirect to chat to create one
-          if (location.pathname !== '/chat') {
-            navigate('/chat');
-          }
+          navigate('/chat');
+          setIsCheckingProgram(false);
         }
       } catch (error) {
         console.error('Failed to check program status:', error);
         // On error, allow access but log the issue
-      } finally {
         setIsCheckingProgram(false);
       }
     };
 
     checkOnboardingAndProgram();
-  }, [isAuthenticated, onboarded, navigate, location.pathname]);
+  }, [isAuthenticated, onboarded, navigate]);
 
   if (isCheckingProgram) {
     return (
