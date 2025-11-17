@@ -92,9 +92,6 @@ output "rabbitmq_management_username" {
   value = "admin"
 }
 
-output "openwebui_url" {
-  value = var.kubernetes_resources_enabled ? "https://openwebui.${var.domain_name}" : null
-}
 
 output "route53_zone_id" {
   value = aws_route53_zone.main.zone_id
