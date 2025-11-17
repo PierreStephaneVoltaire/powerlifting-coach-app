@@ -152,13 +152,8 @@ spec:
       labels:
         app: promtail
     spec:
-      nodeSelector:
-        workload-type: spot
-      tolerations:
-      - key: kubernetes.azure.com/scalesetpriority
-        operator: Equal
-        value: spot
-        effect: NoSchedule
+
+
       serviceAccount: promtail
       containers:
       - name: promtail

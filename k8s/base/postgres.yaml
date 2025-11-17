@@ -29,13 +29,8 @@ spec:
       labels:
         app: postgres
     spec:
-      nodeSelector:
-        workload-type: spot
-      tolerations:
-      - key: kubernetes.azure.com/scalesetpriority
-        operator: Equal
-        value: spot
-        effect: NoSchedule
+
+
       containers:
       - name: postgres
         image: public.ecr.aws/docker/library/postgres:15-alpine

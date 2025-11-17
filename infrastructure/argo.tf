@@ -23,6 +23,16 @@ resource "helm_release" "argocd" {
     value = "true"
   }
 
+  set {
+    name  = "configs.cm.kustomize\\.buildOptions"
+    value = "--load-restrictor LoadRestrictionsNone"
+  }
+
+  set {
+    name  = "global.domain"
+    value = "argocd.${var.domain_name}"
+  }
+
   depends_on = [
     kubernetes_namespace.argocd
   ]

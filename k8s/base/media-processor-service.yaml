@@ -14,13 +14,8 @@ spec:
       labels:
         app: media-processor-service
     spec:
-      nodeSelector:
-        workload-type: spot
-      tolerations:
-      - key: kubernetes.azure.com/scalesetpriority
-        operator: Equal
-        value: spot
-        effect: NoSchedule
+
+
       containers:
       - name: media-processor
         image: ghcr.io/pierrestephanevoltaire/powerlifting-coach-app/media-processor-service:latest

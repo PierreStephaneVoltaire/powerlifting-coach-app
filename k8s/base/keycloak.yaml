@@ -15,13 +15,8 @@ spec:
       labels:
         app: keycloak
     spec:
-      nodeSelector:
-        workload-type: spot
-      tolerations:
-      - key: kubernetes.azure.com/scalesetpriority
-        operator: Equal
-        value: spot
-        effect: NoSchedule
+
+
       containers:
       - name: keycloak
         image: quay.io/keycloak/keycloak:23.0
