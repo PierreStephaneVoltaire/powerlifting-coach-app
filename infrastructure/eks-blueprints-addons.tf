@@ -156,8 +156,14 @@ resource "kubectl_manifest" "letsencrypt_prod" {
         solvers = [
           {
             http01 = {
-              ingress = {
-                class = "nginx"
+              gatewayHTTPRoute = {
+                parentRefs = [
+                  {
+                    name      = "nginx-gateway"
+                    namespace = "nginx-gateway"
+                    kind      = "Gateway"
+                  }
+                ]
               }
             }
           }
@@ -166,27 +172,64 @@ resource "kubectl_manifest" "letsencrypt_prod" {
     }
   })
 
-  depends_on = [helm_release.cert_manager]
+  depends_on = [helm_release.cert_manager, helm_release.nginx_gateway_fabric]
 }
 
-resource "helm_release" "nginx_ingress" {
+resource "helm_release" "gateway_api_crds" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
-  name             = "ingress-nginx"
-  repository       = "https://kubernetes.github.io/ingress-nginx"
-  chart            = "ingress-nginx"
-  namespace        = "ingress-nginx"
+  name             = "gateway-api"
+  repository       = "https://kubernetes-sigs.github.io/gateway-api/charts"
+  chart            = "gateway-api"
+  namespace        = "gateway-system"
   create_namespace = true
-  version          = "4.10.0"
+  version          = "1.2.0"
+}
+
+resource "helm_release" "nginx_gateway_fabric" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  name             = "nginx-gateway-fabric"
+  repository       = "oci://ghcr.io/nginxinc/charts"
+  chart            = "nginx-gateway-fabric"
+  namespace        = "nginx-gateway"
+  create_namespace = true
+  version          = "1.4.0"
 
   values = [
     yamlencode({
-      controller = {
-        ingressClassResource = {
-          default = true
+      nginxGateway = {
+        gatewayClassName = "nginx"
+        config = {
+          logging = {
+            level = "debug"
+          }
         }
-        metrics = {
-          enabled = true
+      }
+      nginx = {
+        config = {
+          entries = [
+            {
+              name  = "proxy_intercept_errors"
+              value = "off"
+            },
+            {
+              name  = "proxy_connect_timeout"
+              value = "60s"
+            },
+            {
+              name  = "proxy_send_timeout"
+              value = "60s"
+            },
+            {
+              name  = "proxy_read_timeout"
+              value = "60s"
+            },
+            {
+              name  = "client_max_body_size"
+              value = "100m"
+            }
+          ]
         }
         resources = {
           requests = {
@@ -199,8 +242,65 @@ resource "helm_release" "nginx_ingress" {
           }
         }
       }
+      service = {
+        type = "LoadBalancer"
+      }
     })
   ]
+
+  depends_on = [helm_release.gateway_api_crds]
+}
+
+resource "kubectl_manifest" "nginx_gateway" {
+  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "Gateway"
+    metadata = {
+      name      = "nginx-gateway"
+      namespace = "nginx-gateway"
+      annotations = {
+        "cert-manager.io/cluster-issuer" = "letsencrypt-prod"
+      }
+    }
+    spec = {
+      gatewayClassName = "nginx"
+      listeners = [
+        {
+          name     = "http"
+          port     = 80
+          protocol = "HTTP"
+          allowedRoutes = {
+            namespaces = {
+              from = "All"
+            }
+          }
+        },
+        {
+          name     = "https"
+          port     = 443
+          protocol = "HTTPS"
+          tls = {
+            mode = "Terminate"
+            certificateRefs = [
+              {
+                kind = "Secret"
+                name = "wildcard-tls"
+              }
+            ]
+          }
+          allowedRoutes = {
+            namespaces = {
+              from = "All"
+            }
+          }
+        }
+      ]
+    }
+  })
+
+  depends_on = [helm_release.nginx_gateway_fabric]
 }
 
 resource "helm_release" "loki" {

@@ -624,7 +624,11 @@ jobs:
 
       - name: Build image with Podman
         run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./frontend
+          podman build \
+            --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} \
+            -t ${{ steps.meta.outputs.tags }} \
+            -t ${{ steps.meta.outputs.latest }} \
+            ./frontend
 
       - name: Push image to GHCR
         run: |

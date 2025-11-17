@@ -20,19 +20,46 @@ patchesStrategicMerge:
 
 patchesJson6902:
   - target:
-      group: networking.k8s.io
+      group: gateway.networking.k8s.io
       version: v1
-      kind: Ingress
-      name: powerlifting-coach-ingress
+      kind: HTTPRoute
+      name: frontend-route
     patch: |-
       - op: replace
-        path: /spec/rules/0/host
+        path: /spec/hostnames/0
+        value: app.${var.domain_name}
+  - target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: HTTPRoute
+      name: api-route
+    patch: |-
+      - op: replace
+        path: /spec/hostnames/0
+        value: api.${var.domain_name}
+  - target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: HTTPRoute
+      name: auth-route
+    patch: |-
+      - op: replace
+        path: /spec/hostnames/0
+        value: auth.${var.domain_name}
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: app-tls
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
         value: app.${var.domain_name}
       - op: replace
-        path: /spec/rules/1/host
+        path: /spec/dnsNames/1
         value: api.${var.domain_name}
       - op: replace
-        path: /spec/rules/2/host
+        path: /spec/dnsNames/2
         value: auth.${var.domain_name}
 
 images:
@@ -89,11 +116,13 @@ spec:
     spec:
       containers:
       - name: frontend
-        env:
-        - name: REACT_APP_API_URL
-          value: "https://api.${var.domain_name}"
-        - name: REACT_APP_AUTH_URL
-          value: "https://api.${var.domain_name}/auth"
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
 EOT
 }
 

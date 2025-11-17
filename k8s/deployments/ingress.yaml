@@ -1,104 +1,114 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
-  name: powerlifting-coach-ingress
-  namespace: app
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: 100m
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://app.powerliftingcoach.app"
-    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  name: powerlifting-coach-tls
+  namespace: nginx-gateway
 spec:
-  tls:
-  - hosts:
+  secretName: powerlifting-coach-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
     - app.powerliftingcoach.app
     - api.powerliftingcoach.app
-    secretName: powerlifting-coach-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: frontend-route
+  namespace: app
+spec:
+  parentRefs:
+    - name: nginx-gateway
+      namespace: nginx-gateway
+      sectionName: https
+  hostnames:
+    - app.powerliftingcoach.app
   rules:
-  - host: app.powerliftingcoach.app
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend
-            port:
-              number: 80
-  - host: api.powerliftingcoach.app
-    http:
-      paths:
-      - path: /api/v1/auth
-        pathType: Prefix
-        backend:
-          service:
-            name: auth-service
-            port:
-              number: 8080
-      - path: /api/v1/users
-        pathType: Prefix
-        backend:
-          service:
-            name: user-service
-            port:
-              number: 8081
-      - path: /api/v1/videos
-        pathType: Prefix
-        backend:
-          service:
-            name: video-service
-            port:
-              number: 8082
-      - path: /api/v1/settings
-        pathType: Prefix
-        backend:
-          service:
-            name: settings-service
-            port:
-              number: 8083
-      - path: /api/v1/programs
-        pathType: Prefix
-        backend:
-          service:
-            name: program-service
-            port:
-              number: 8084
-      - path: /api/v1/coach
-        pathType: Prefix
-        backend:
-          service:
-            name: coach-service
-            port:
-              number: 8085
-      - path: /api/v1/notifications
-        pathType: Prefix
-        backend:
-          service:
-            name: notification-service
-            port:
-              number: 8086
-      - path: /api/v1/notify
-        pathType: Prefix
-        backend:
-          service:
-            name: notification-service
-            port:
-              number: 8086
-      - path: /api/v1/dm
-        pathType: Prefix
-        backend:
-          service:
-            name: dm-service
-            port:
-              number: 8084
-
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: frontend
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: api-route
+  namespace: app
+spec:
+  parentRefs:
+    - name: nginx-gateway
+      namespace: nginx-gateway
+      sectionName: https
+  hostnames:
+    - api.powerliftingcoach.app
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/auth
+      backendRefs:
+        - name: auth-service
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/users
+      backendRefs:
+        - name: user-service
+          port: 8081
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/videos
+      backendRefs:
+        - name: video-service
+          port: 8082
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/settings
+      backendRefs:
+        - name: settings-service
+          port: 8083
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/programs
+      backendRefs:
+        - name: program-service
+          port: 8084
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/coach
+      backendRefs:
+        - name: coach-service
+          port: 8085
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/notifications
+      backendRefs:
+        - name: notification-service
+          port: 8086
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/notify
+      backendRefs:
+        - name: notification-service
+          port: 8086
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/dm
+      backendRefs:
+        - name: dm-service
+          port: 8084
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -111,6 +121,9 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
-    - http01:
-        ingress:
-          class: nginx
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: nginx-gateway
+                namespace: nginx-gateway
+                kind: Gateway

@@ -38,49 +38,73 @@ resource "helm_release" "argocd" {
   ]
 }
 
-resource "kubernetes_ingress_v1" "argocd" {
+resource "kubectl_manifest" "argocd_httproute" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
-  metadata {
-    name      = "argocd-ingress"
-    namespace = kubernetes_namespace.argocd[0].metadata[0].name
-    annotations = {
-      "kubernetes.io/ingress.class"                    = "nginx"
-      "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTP"
-      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "argocd-route"
+      namespace = kubernetes_namespace.argocd[0].metadata[0].name
     }
-  }
-
-  spec {
-    tls {
-      hosts       = ["argocd.${var.domain_name}"]
-      secret_name = "argocd-tls"
-    }
-
-    rule {
-      host = "argocd.${var.domain_name}"
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = "argocd-server"
-              port {
-                number = 80
+    spec = {
+      parentRefs = [
+        {
+          name        = "nginx-gateway"
+          namespace   = "nginx-gateway"
+          sectionName = "https"
+        }
+      ]
+      hostnames = ["argocd.${var.domain_name}"]
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
               }
             }
-          }
+          ]
+          backendRefs = [
+            {
+              name = "argocd-server"
+              port = 80
+            }
+          ]
         }
-      }
+      ]
     }
-  }
+  })
 
   depends_on = [
-    helm_release.argocd
+    helm_release.argocd,
+    helm_release.nginx_gateway_fabric
   ]
+}
+
+resource "kubectl_manifest" "argocd_certificate" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "argocd-tls"
+      namespace = "nginx-gateway"
+    }
+    spec = {
+      secretName = "argocd-tls"
+      issuerRef = {
+        name = "letsencrypt-prod"
+        kind = "ClusterIssuer"
+      }
+      dnsNames = ["argocd.${var.domain_name}"]
+    }
+  })
+
+  depends_on = [kubectl_manifest.letsencrypt_prod]
 }
 
 resource "kubernetes_manifest" "app_frontend" {
