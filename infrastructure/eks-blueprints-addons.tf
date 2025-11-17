@@ -182,16 +182,6 @@ resource "helm_release" "nginx_ingress" {
   values = [
     yamlencode({
       controller = {
-        service = {
-          type = "NodePort"
-        }
-        hostPort = {
-          enabled = true
-          ports = {
-            http  = 80
-            https = 443
-          }
-        }
         ingressClassResource = {
           default = true
         }
