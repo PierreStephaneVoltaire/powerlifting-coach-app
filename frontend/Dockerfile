@@ -1,7 +1,7 @@
 FROM public.ecr.aws/docker/library/node:16-alpine AS builder
 
 WORKDIR /app
-RUN apk add --no-cache git 
+RUN apk add --no-cache git
 
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
@@ -9,6 +9,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 ENV TSC_COMPILE_ON_ERROR=true
 ENV DISABLE_ESLINT_PLUGIN=true
+ENV REACT_APP_API_URL=
 RUN npm run build
 
 FROM public.ecr.aws/docker/library/nginx:alpine

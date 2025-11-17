@@ -202,11 +202,35 @@ resource "helm_release" "nginx_gateway_fabric" {
         gatewayClassName = "nginx"
         config = {
           logging = {
-            level = "info"
+            level = "debug"
           }
         }
       }
       nginx = {
+        config = {
+          entries = [
+            {
+              name  = "proxy_intercept_errors"
+              value = "off"
+            },
+            {
+              name  = "proxy_connect_timeout"
+              value = "60s"
+            },
+            {
+              name  = "proxy_send_timeout"
+              value = "60s"
+            },
+            {
+              name  = "proxy_read_timeout"
+              value = "60s"
+            },
+            {
+              name  = "client_max_body_size"
+              value = "100m"
+            }
+          ]
+        }
         resources = {
           requests = {
             cpu    = "100m"

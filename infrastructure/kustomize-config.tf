@@ -116,11 +116,13 @@ spec:
     spec:
       containers:
       - name: frontend
-        env:
-        - name: REACT_APP_API_URL
-          value: "https://api.${var.domain_name}"
-        - name: REACT_APP_AUTH_URL
-          value: "https://api.${var.domain_name}/auth"
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
 EOT
 }
 

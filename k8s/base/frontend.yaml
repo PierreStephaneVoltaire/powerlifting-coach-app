@@ -23,11 +23,6 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 80
-        env:
-        - name: REACT_APP_API_URL
-          value: "http://api.DOMAIN_PLACEHOLDER"
-        - name: REACT_APP_AUTH_URL
-          value: "http://api.DOMAIN_PLACEHOLDER/auth"
         resources:
           requests:
             memory: "32Mi"
