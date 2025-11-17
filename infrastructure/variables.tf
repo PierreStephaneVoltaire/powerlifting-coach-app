@@ -99,7 +99,7 @@ variable "google_oauth_client_secret" {
 variable "email_domain_verified" {
   description = "Whether the email domain has been verified in AWS SES. Set to false initially, then true after domain verification completes."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "monthly_budget_limit" {
@@ -129,7 +129,7 @@ variable "deploy_datalayer" {
 variable "deploy_backend" {
   description = "Deploy backend services via ArgoCD"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "rancher_cluster_enabled" {
