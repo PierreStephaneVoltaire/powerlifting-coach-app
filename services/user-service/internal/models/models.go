@@ -44,6 +44,9 @@ type AthleteProfile struct {
 	TrainingFrequency    *int             `json:"training_frequency" db:"training_frequency"`
 	Goals                *string          `json:"goals" db:"goals"`
 	Injuries             *string          `json:"injuries" db:"injuries"`
+	Bio                  *string          `json:"bio" db:"bio"`
+	TargetWeightClass    *string          `json:"target_weight_class" db:"target_weight_class"`
+	PreferredFederation  *string          `json:"preferred_federation" db:"preferred_federation"`
 	CreatedAt            time.Time        `json:"created_at" db:"created_at"`
 	UpdatedAt            time.Time        `json:"updated_at" db:"updated_at"`
 }

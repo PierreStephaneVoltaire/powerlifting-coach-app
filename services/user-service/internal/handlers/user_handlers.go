@@ -300,8 +300,9 @@ func (h *UserHandlers) GetAthletePublicProfile(c *gin.Context) {
 	squat := 0.0
 	bench := 0.0
 	deadlift := 0.0
-	var weightKg *float64
-	var experienceLevel *models.ExperienceLevel
+	weightClass := ""
+	federation := ""
+	bio := ""
 
 	if athleteProfile != nil {
 		if athleteProfile.SquatMaxKg != nil {
@@ -313,23 +314,34 @@ func (h *UserHandlers) GetAthletePublicProfile(c *gin.Context) {
 		if athleteProfile.DeadliftMaxKg != nil {
 			deadlift = *athleteProfile.DeadliftMaxKg
 		}
-		weightKg = athleteProfile.WeightKg
-		experienceLevel = athleteProfile.ExperienceLevel
+		if athleteProfile.TargetWeightClass != nil {
+			weightClass = *athleteProfile.TargetWeightClass
+		}
+		if athleteProfile.PreferredFederation != nil {
+			federation = *athleteProfile.PreferredFederation
+		}
+		if athleteProfile.Bio != nil {
+			bio = *athleteProfile.Bio
+		}
 	}
 
 	response := gin.H{
-		"id":               user.ID,
-		"name":             user.Name,
-		"email":            user.Email,
-		"weight_kg":        weightKg,
-		"experience_level": experienceLevel,
-		"joined_at":        user.CreatedAt,
+		"id":           user.ID,
+		"name":         user.Name,
+		"email":        user.Email,
+		"bio":          bio,
+		"weight_class": weightClass,
+		"federation":   federation,
+		"joined_at":    user.CreatedAt,
 		"stats": gin.H{
 			"current_squat_max":    squat,
 			"current_bench_max":    bench,
 			"current_deadlift_max": deadlift,
 			"total":                squat + bench + deadlift,
+			"total_workouts":       0,
+			"total_volume_kg":      0,
 		},
+		"recent_posts": []gin.H{},
 	}
 
 	c.JSON(http.StatusOK, response)

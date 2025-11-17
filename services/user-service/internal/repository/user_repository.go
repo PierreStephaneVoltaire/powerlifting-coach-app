@@ -120,19 +120,34 @@ func (r *UserRepository) createCoachProfile(userID uuid.UUID) error {
 
 func (r *UserRepository) GetAthleteProfile(userID uuid.UUID) (*models.AthleteProfile, error) {
 	query := `
-		SELECT id, user_id, weight_kg, experience_level, competition_date, access_code, 
+		SELECT id, user_id, weight_kg, experience_level, competition_date, access_code,
 		       access_code_expires_at, squat_max_kg, bench_max_kg, deadlift_max_kg,
-		       training_frequency, goals, injuries, created_at, updated_at
+		       training_frequency, goals, injuries,
+		       COALESCE(bio, '') as bio,
+		       COALESCE(target_weight_class, '') as target_weight_class,
+		       COALESCE(preferred_federation, '') as preferred_federation,
+		       created_at, updated_at
 		FROM athlete_profiles WHERE user_id = $1`
-	
+
 	profile := &models.AthleteProfile{}
+	var bio, weightClass, federation string
 	err := r.db.QueryRow(query, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.WeightKg, &profile.ExperienceLevel,
 		&profile.CompetitionDate, &profile.AccessCode, &profile.AccessCodeExpiresAt,
 		&profile.SquatMaxKg, &profile.BenchMaxKg, &profile.DeadliftMaxKg,
 		&profile.TrainingFrequency, &profile.Goals, &profile.Injuries,
+		&bio, &weightClass, &federation,
 		&profile.CreatedAt, &profile.UpdatedAt,
 	)
+	if bio != "" {
+		profile.Bio = &bio
+	}
+	if weightClass != "" {
+		profile.TargetWeightClass = &weightClass
+	}
+	if federation != "" {
+		profile.PreferredFederation = &federation
+	}
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("athlete profile not found")
