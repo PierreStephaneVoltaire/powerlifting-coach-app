@@ -4,22 +4,17 @@ metadata:
   name: letsencrypt-prod
 spec:
   acme:
-    # Production Let's Encrypt server
     server: https://acme-v02.api.letsencrypt.org/directory
-
-    # Email address for ACME registration
-    # ⚠️ Replace with your actual email address
     email: admin@nolift.training
-
-    # Name of the secret to store the ACME account private key
     privateKeySecretRef:
       name: letsencrypt-prod
-
-    # HTTP-01 challenge solver
     solvers:
-    - http01:
-        ingress:
-          class: nginx
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: nginx-gateway
+                namespace: nginx-gateway
+                kind: Gateway
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -27,18 +22,14 @@ metadata:
   name: letsencrypt-staging
 spec:
   acme:
-    # Staging Let's Encrypt server (for testing)
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-
-    # Email address for ACME registration
     email: admin@nolift.training
-
-    # Name of the secret to store the ACME account private key
     privateKeySecretRef:
       name: letsencrypt-staging
-
-    # HTTP-01 challenge solver
     solvers:
-    - http01:
-        ingress:
-          class: nginx
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: nginx-gateway
+                namespace: nginx-gateway
+                kind: Gateway

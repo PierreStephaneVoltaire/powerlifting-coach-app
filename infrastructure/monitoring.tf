@@ -1,179 +1,275 @@
-resource "kubernetes_ingress_v1" "grafana" {
+resource "kubectl_manifest" "grafana_httproute" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
-  metadata {
-    name      = "grafana-ingress"
-    namespace = "monitoring"
-    annotations = {
-      "kubernetes.io/ingress.class"                    = "nginx"
-      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "grafana-route"
+      namespace = "monitoring"
     }
-  }
-
-  spec {
-    tls {
-      hosts       = ["grafana.${var.domain_name}"]
-      secret_name = "grafana-tls"
-    }
-
-    rule {
-      host = "grafana.${var.domain_name}"
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
+    spec = {
+      parentRefs = [
+        {
+          name      = "nginx-gateway"
+          namespace = "nginx-gateway"
+          sectionName = "https"
+        }
+      ]
+      hostnames = ["grafana.${var.domain_name}"]
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
+              }
+            }
+          ]
+          backendRefs = [
+            {
               name = "prometheus-grafana"
-              port {
-                number = 80
-              }
+              port = 80
             }
-          }
+          ]
         }
-      }
+      ]
     }
-  }
+  })
 
   depends_on = [
     helm_release.kube_prometheus_stack,
-    helm_release.nginx_ingress
+    helm_release.nginx_gateway_fabric
   ]
 }
 
-resource "kubernetes_ingress_v1" "prometheus" {
+resource "kubectl_manifest" "grafana_certificate" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
-  metadata {
-    name      = "prometheus-ingress"
-    namespace = "monitoring"
-    annotations = {
-      "kubernetes.io/ingress.class"                    = "nginx"
-      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+  yaml_body = yamlencode({
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "grafana-tls"
+      namespace = "nginx-gateway"
     }
-  }
-
-  spec {
-    tls {
-      hosts       = ["prometheus.${var.domain_name}"]
-      secret_name = "prometheus-tls"
+    spec = {
+      secretName = "grafana-tls"
+      issuerRef = {
+        name = "letsencrypt-prod"
+        kind = "ClusterIssuer"
+      }
+      dnsNames = ["grafana.${var.domain_name}"]
     }
+  })
 
-    rule {
-      host = "prometheus.${var.domain_name}"
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
+  depends_on = [kubectl_manifest.letsencrypt_prod]
+}
+
+resource "kubectl_manifest" "prometheus_httproute" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "prometheus-route"
+      namespace = "monitoring"
+    }
+    spec = {
+      parentRefs = [
+        {
+          name      = "nginx-gateway"
+          namespace = "nginx-gateway"
+          sectionName = "https"
+        }
+      ]
+      hostnames = ["prometheus.${var.domain_name}"]
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
+              }
+            }
+          ]
+          backendRefs = [
+            {
               name = "prometheus-kube-prometheus-prometheus"
-              port {
-                number = 9090
-              }
+              port = 9090
             }
-          }
+          ]
         }
-      }
+      ]
     }
-  }
+  })
 
   depends_on = [
     helm_release.kube_prometheus_stack,
-    helm_release.nginx_ingress
+    helm_release.nginx_gateway_fabric
   ]
 }
 
-resource "kubernetes_ingress_v1" "loki" {
+resource "kubectl_manifest" "prometheus_certificate" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
-  metadata {
-    name      = "loki-ingress"
-    namespace = "monitoring"
-    annotations = {
-      "kubernetes.io/ingress.class"                    = "nginx"
-      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+  yaml_body = yamlencode({
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "prometheus-tls"
+      namespace = "nginx-gateway"
     }
-  }
-
-  spec {
-    tls {
-      hosts       = ["loki.${var.domain_name}"]
-      secret_name = "loki-tls"
+    spec = {
+      secretName = "prometheus-tls"
+      issuerRef = {
+        name = "letsencrypt-prod"
+        kind = "ClusterIssuer"
+      }
+      dnsNames = ["prometheus.${var.domain_name}"]
     }
+  })
 
-    rule {
-      host = "loki.${var.domain_name}"
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = "loki"
-              port {
-                number = 3100
+  depends_on = [kubectl_manifest.letsencrypt_prod]
+}
+
+resource "kubectl_manifest" "loki_httproute" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "loki-route"
+      namespace = "monitoring"
+    }
+    spec = {
+      parentRefs = [
+        {
+          name      = "nginx-gateway"
+          namespace = "nginx-gateway"
+          sectionName = "https"
+        }
+      ]
+      hostnames = ["loki.${var.domain_name}"]
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
               }
             }
-          }
+          ]
+          backendRefs = [
+            {
+              name = "loki"
+              port = 3100
+            }
+          ]
         }
-      }
+      ]
     }
-  }
+  })
 
   depends_on = [
     helm_release.loki,
-    helm_release.nginx_ingress
+    helm_release.nginx_gateway_fabric
   ]
 }
 
-resource "kubernetes_ingress_v1" "rabbitmq_management" {
+resource "kubectl_manifest" "loki_certificate" {
   count = var.kubernetes_resources_enabled ? 1 : 0
 
-  metadata {
-    name      = "rabbitmq-management-ingress"
-    namespace = kubernetes_namespace.app[0].metadata[0].name
-    annotations = {
-      "kubernetes.io/ingress.class"                    = "nginx"
-      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
-      "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+  yaml_body = yamlencode({
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "loki-tls"
+      namespace = "nginx-gateway"
     }
-  }
-
-  spec {
-    tls {
-      hosts       = ["rabbitmq.${var.domain_name}"]
-      secret_name = "rabbitmq-tls"
+    spec = {
+      secretName = "loki-tls"
+      issuerRef = {
+        name = "letsencrypt-prod"
+        kind = "ClusterIssuer"
+      }
+      dnsNames = ["loki.${var.domain_name}"]
     }
+  })
 
-    rule {
-      host = "rabbitmq.${var.domain_name}"
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = "rabbitmq"
-              port {
-                number = 15672
+  depends_on = [kubectl_manifest.letsencrypt_prod]
+}
+
+resource "kubectl_manifest" "rabbitmq_httproute" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "rabbitmq-management-route"
+      namespace = kubernetes_namespace.app[0].metadata[0].name
+    }
+    spec = {
+      parentRefs = [
+        {
+          name      = "nginx-gateway"
+          namespace = "nginx-gateway"
+          sectionName = "https"
+        }
+      ]
+      hostnames = ["rabbitmq.${var.domain_name}"]
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
               }
             }
-          }
+          ]
+          backendRefs = [
+            {
+              name = "rabbitmq"
+              port = 15672
+            }
+          ]
         }
-      }
+      ]
     }
-  }
+  })
 
   depends_on = [
     kubernetes_namespace.app,
-    helm_release.nginx_ingress
+    helm_release.nginx_gateway_fabric
   ]
+}
+
+resource "kubectl_manifest" "rabbitmq_certificate" {
+  count = var.kubernetes_resources_enabled ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "rabbitmq-tls"
+      namespace = "nginx-gateway"
+    }
+    spec = {
+      secretName = "rabbitmq-tls"
+      issuerRef = {
+        name = "letsencrypt-prod"
+        kind = "ClusterIssuer"
+      }
+      dnsNames = ["rabbitmq.${var.domain_name}"]
+    }
+  })
+
+  depends_on = [kubectl_manifest.letsencrypt_prod]
 }
