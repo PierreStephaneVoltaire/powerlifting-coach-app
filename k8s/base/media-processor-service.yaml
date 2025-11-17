@@ -18,7 +18,7 @@ spec:
 
       containers:
       - name: media-processor
-        image: ghcr.io/pierrestephanevoltaire/powerlifting-coach-app/media-processor-service:latest
+        image: ghcr.io/pierrestephanevoltaire/powerlifting-coach/media-processor-service:latest
         imagePullPolicy: Always
         env:
         - name: RABBITMQ_URL
