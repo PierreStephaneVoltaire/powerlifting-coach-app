@@ -13,7 +13,11 @@ ENV GOPRIVATE=github.com/PierreStephaneVoltaire/powerlifting-coach-app/*
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
+
+ARG TARGETARCH
+ARG TARGETOS=linux
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -installsuffix cgo -o main cmd/main.go
 
 FROM public.ecr.aws/docker/library/alpine:latest
 

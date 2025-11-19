@@ -151,23 +151,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/auth-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/auth-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/auth-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/auth-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/auth-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/auth-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build user service
   build-user-service:
@@ -193,23 +193,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/user-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/user-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/user-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/user-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/user-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/user-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build video service
   build-video-service:
@@ -235,23 +235,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/video-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/video-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/video-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/video-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/video-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/video-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build media-processor service
   build-media-processor-service:
@@ -277,23 +277,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/media-processor-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/media-processor-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/media-processor-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/media-processor-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/media-processor-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/media-processor-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build settings service
   build-settings-service:
@@ -319,23 +319,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/settings-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/settings-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/settings-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/settings-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/settings-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/settings-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build program service
   build-program-service:
@@ -361,23 +361,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/program-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/program-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/program-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/program-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/program-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/program-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build coach service
   build-coach-service:
@@ -403,23 +403,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/coach-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/coach-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/coach-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/coach-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/coach-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/coach-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build notification service
   build-notification-service:
@@ -445,23 +445,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/notification-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/notification-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/notification-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/notification-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/notification-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/notification-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build dm service
   build-dm-service:
@@ -487,23 +487,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/dm-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/dm-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/dm-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/dm-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/dm-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/dm-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build machine service
   build-machine-service:
@@ -529,23 +529,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/machine-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/machine-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/machine-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/machine-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/machine-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/machine-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build reminder service
   build-reminder-service:
@@ -571,23 +571,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/reminder-service"
-          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
+          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/reminder-service
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/reminder-service
+          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/reminder-service
+
+          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/reminder-service
+          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/reminder-service
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Build frontend
   build-frontend:
@@ -613,27 +613,23 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata and create GHCR tags
-        id: meta
+      - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/frontend"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build \
-            --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} \
-            -t ${{ steps.meta.outputs.tags }} \
-            -t ${{ steps.meta.outputs.latest }} \
-            ./frontend
+          podman manifest create ${SHA_TAG}
+          podman manifest create ${LATEST_TAG}
 
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+          podman build --platform linux/amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
+          podman build --platform linux/arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
+
+          podman build --platform linux/amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
+          podman build --platform linux/arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
+
+          podman manifest push --remove-signatures ${SHA_TAG}
+          podman manifest push --remove-signatures ${LATEST_TAG}
 
   # Security scan for Docker images
   security-scan-images:

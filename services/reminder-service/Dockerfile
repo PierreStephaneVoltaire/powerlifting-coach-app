@@ -7,7 +7,10 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o reminder-service ./cmd/main.go
+ARG TARGETARCH
+ARG TARGETOS=linux
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o reminder-service ./cmd/main.go
 
 FROM alpine:latest
 
