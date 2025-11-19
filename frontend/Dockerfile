@@ -1,6 +1,5 @@
 FROM public.ecr.aws/docker/library/node:16-alpine AS builder
 
-# Build arguments for multi-arch support
 ARG TARGETARCH
 ARG TARGETOS=linux
 

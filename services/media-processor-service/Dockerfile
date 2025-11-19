@@ -9,14 +9,11 @@ WORKDIR /app
 COPY go.mod go.sum* ./
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build arguments for multi-arch support
 ARG TARGETARCH
 ARG TARGETOS=linux
 
-# Build the application
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -installsuffix cgo -o media-processor ./cmd/main.go
 
 FROM public.ecr.aws/docker/library/alpine:latest

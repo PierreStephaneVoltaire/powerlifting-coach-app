@@ -12,7 +12,6 @@ RUN go mod download
 
 COPY . .
 
-# Build arguments for multi-arch support
 ARG TARGETARCH
 ARG TARGETOS=linux
 
