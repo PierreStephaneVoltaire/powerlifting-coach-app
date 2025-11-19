@@ -1,5 +1,8 @@
 FROM public.ecr.aws/docker/library/node:16-alpine AS builder
 
+ARG TARGETARCH
+ARG TARGETOS=linux
+
 WORKDIR /app
 RUN apk add --no-cache git
 
