@@ -125,6 +125,11 @@ resource "aws_iam_role_policy" "rancher_server_permissive" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "rancher_server_ssm" {
+  role       = aws_iam_role.rancher_server.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 resource "aws_iam_instance_profile" "rancher_server" {
   name = "${local.cluster_name}-rancher-server-profile"
   role = aws_iam_role.rancher_server.name
@@ -156,6 +161,9 @@ set -e
 exec > >(tee /var/log/user-data.log) 2>&1
 
 yum update -y
+yum install -y amazon-ssm-agent
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
 amazon-linux-extras install docker -y
 systemctl start docker
 systemctl enable docker
