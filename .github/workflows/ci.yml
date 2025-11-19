@@ -142,32 +142,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/auth-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/auth-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/auth-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build user service
   build-user-service:
@@ -184,32 +183,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/user-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/user-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/user-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build video service
   build-video-service:
@@ -226,32 +224,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/video-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/video-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/video-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build media-processor service
   build-media-processor-service:
@@ -268,32 +265,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/media-processor-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/media-processor-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/media-processor-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build settings service
   build-settings-service:
@@ -310,32 +306,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/settings-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/settings-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/settings-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build program service
   build-program-service:
@@ -352,32 +347,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/program-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/program-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/program-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build coach service
   build-coach-service:
@@ -394,32 +388,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/coach-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/coach-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/coach-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build notification service
   build-notification-service:
@@ -436,32 +429,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/notification-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/notification-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/notification-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build dm service
   build-dm-service:
@@ -478,32 +470,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/dm-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/dm-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/dm-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build machine service
   build-machine-service:
@@ -520,32 +511,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/machine-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/machine-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/machine-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build reminder service
   build-reminder-service:
@@ -562,32 +552,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/reminder-service"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build -t ${{ steps.meta.outputs.tags }} -t ${{ steps.meta.outputs.latest }} ./services/reminder-service
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/reminder-service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
   # Build frontend
   build-frontend:
@@ -604,36 +593,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata and create GHCR tags
+      - name: Extract metadata
         id: meta
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/frontend"
           SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
-          echo "tags=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "tags=${SHA_TAG},${LATEST_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build image with Podman
-        run: |
-          podman build \
-            --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} \
-            -t ${{ steps.meta.outputs.tags }} \
-            -t ${{ steps.meta.outputs.latest }} \
-            ./frontend
-
-      - name: Push image to GHCR
-        run: |
-          podman push --remove-signatures ${{ steps.meta.outputs.tags }}
-          podman push --remove-signatures ${{ steps.meta.outputs.latest }}
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }}
 
   # Security scan for Docker images
   security-scan-images:
