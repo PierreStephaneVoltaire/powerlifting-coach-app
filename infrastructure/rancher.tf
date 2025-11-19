@@ -140,22 +140,9 @@ resource "random_password" "rancher_admin" {
   special = false
 }
 
-resource "aws_instance" "rancher_server" {
-  ami                    = data.aws_ami.amazon_linux_2.id
-  instance_type          = "t4g.micro"
-  key_name               = aws_key_pair.rancher.key_name
-  vpc_security_group_ids = [aws_security_group.rancher_server.id]
-  subnet_id              = aws_subnet.public[0].id
-  iam_instance_profile   = aws_iam_instance_profile.rancher_server.name
-
-  root_block_device {
-    volume_type           = "gp3"
-    volume_size           = 30
-    encrypted             = true
-    delete_on_termination = true
-  }
-
-  user_data = <<-EOF
+locals {
+  instance_type="t4g.medium"
+ user_data = <<-EOF
 #!/bin/bash
 set -e
 exec > >(tee /var/log/user-data.log) 2>&1
@@ -178,14 +165,39 @@ docker run -d --restart=unless-stopped \
 echo "Rancher Server started. Bootstrap password: ${random_password.rancher_admin.result}"
 EOF
 
+}
+resource "null_resource" "force_replacement" {
+  triggers = {
+    instance_type = local.instance_type
+    user_data     = base64encode(local.user_data)
+  }
+}
+resource "aws_instance" "rancher_server" {
+  ami                    = data.aws_ami.amazon_linux_2.id
+  instance_type          = local.instance_type
+  key_name               = aws_key_pair.rancher.key_name
+  vpc_security_group_ids = [aws_security_group.rancher_server.id]
+  subnet_id              = aws_subnet.public[0].id
+  iam_instance_profile   = aws_iam_instance_profile.rancher_server.name
+  force_destroy = true
+  user_data = local.user_data
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = 30
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  
   tags = {
     Name        = "${local.cluster_name}-rancher-server"
     Environment = var.environment
     Project     = var.project_name
   }
 
+ 
   lifecycle {
-    ignore_changes = [user_data]
+    replace_triggered_by = [null_resource.force_replacement.id]
   }
 }
 
