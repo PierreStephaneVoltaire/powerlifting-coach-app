@@ -193,13 +193,6 @@ sleep 30
 cp /etc/letsencrypt/live/rancher.${var.domain_name}/fullchain.pem /opt/rancher/ssl/cert.pem
 cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl/key.pem
 
-# Set up certificate renewal cron job
-cat > /etc/cron.daily/renew-rancher-cert.sh <<'CRON_EOF'
-#!/bin/bash
-/opt/certbot/bin/certbot renew --quiet --deploy-hook "cp /etc/letsencrypt/live/rancher.${var.domain_name}/fullchain.pem /opt/rancher/ssl/cert.pem && cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl/key.pem && docker restart \$(docker ps -q --filter ancestor=rancher/rancher:latest)"
-CRON_EOF
-chmod +x /etc/cron.daily/renew-rancher-cert.sh
-
 # Run Rancher with Let's Encrypt certificates
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
@@ -208,8 +201,6 @@ docker run -d --restart=unless-stopped \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
   rancher/rancher:latest \
   --no-cacerts
-
-echo "Rancher Server started with Let's Encrypt SSL. Bootstrap password: ${random_password.rancher_admin.result}"
 EOF
 
   tags = {
