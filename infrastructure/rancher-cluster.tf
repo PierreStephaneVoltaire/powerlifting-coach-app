@@ -50,7 +50,7 @@ resource "rancher2_machine_config_v2" "nodes" {
     subnet_id             = aws_subnet.public[0].id
     vpc_id                = aws_vpc.main.id
     zone                  = "a"
-    instance_type         = "t3a.medium"
+    instance_type         = "t3a.small"
     root_size             = "30"
     iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
     ssh_user              = "ec2-user"
