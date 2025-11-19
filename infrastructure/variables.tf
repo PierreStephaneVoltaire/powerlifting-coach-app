@@ -19,7 +19,7 @@ variable "environment" {
 variable "kubernetes_version" {
   description = "Kubernetes version for the cluster (K3s format: v1.31.13-k3s1)"
   type        = string
-  default     = "v1.34.2-rc2-k3s1"
+  default     = "v1.33.5-k3s1"
 }
 
 variable "worker_desired_capacity" {
