@@ -169,13 +169,47 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
+# Install certbot
+yum install -y python3 augeas-libs
+python3 -m venv /opt/certbot
+/opt/certbot/bin/pip install --upgrade pip
+/opt/certbot/bin/pip install certbot
+
+# Create directories for certificates
+mkdir -p /opt/rancher/ssl
+
+# Wait for DNS to propagate
+sleep 30
+
+# Obtain Let's Encrypt certificate
+/opt/certbot/bin/certbot certonly --standalone \
+  --non-interactive \
+  --agree-tos \
+  --email admin@${var.domain_name} \
+  --domains rancher.${var.domain_name} \
+  --http-01-port=80
+
+# Copy certificates to rancher directory
+cp /etc/letsencrypt/live/rancher.${var.domain_name}/fullchain.pem /opt/rancher/ssl/cert.pem
+cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl/key.pem
+
+# Set up certificate renewal cron job
+cat > /etc/cron.daily/renew-rancher-cert.sh <<'CRON_EOF'
+#!/bin/bash
+/opt/certbot/bin/certbot renew --quiet --deploy-hook "cp /etc/letsencrypt/live/rancher.${var.domain_name}/fullchain.pem /opt/rancher/ssl/cert.pem && cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl/key.pem && docker restart \$(docker ps -q --filter ancestor=rancher/rancher:latest)"
+CRON_EOF
+chmod +x /etc/cron.daily/renew-rancher-cert.sh
+
+# Run Rancher with Let's Encrypt certificates
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
+  -v /opt/rancher/ssl:/etc/rancher/ssl:ro \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
-  rancher/rancher:latest
+  rancher/rancher:latest \
+  --no-cacerts
 
-echo "Rancher Server started. Bootstrap password: ${random_password.rancher_admin.result}"
+echo "Rancher Server started with Let's Encrypt SSL. Bootstrap password: ${random_password.rancher_admin.result}"
 EOF
 
   tags = {
