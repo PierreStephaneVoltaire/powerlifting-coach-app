@@ -171,6 +171,13 @@ resource "aws_iam_role_policy" "rancher_node_permissive" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "rancher_node_ssm" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  role       = aws_iam_role.rancher_node[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 resource "aws_iam_instance_profile" "rancher_node" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
