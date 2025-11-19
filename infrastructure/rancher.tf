@@ -137,7 +137,7 @@ resource "random_password" "rancher_admin" {
 
 resource "aws_instance" "rancher_server" {
   ami                    = data.aws_ami.amazon_linux_2.id
-  instance_type          = "t4g.nano"
+  instance_type          = "t4g.micro"
   key_name               = aws_key_pair.rancher.key_name
   vpc_security_group_ids = [aws_security_group.rancher_server.id]
   subnet_id              = aws_subnet.public[0].id
