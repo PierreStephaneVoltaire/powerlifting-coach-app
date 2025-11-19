@@ -172,7 +172,7 @@ usermod -aG docker ec2-user
 yum install -y python3 augeas-libs
 python3 -m venv /opt/certbot
 /opt/certbot/bin/pip install --upgrade pip
-/opt/certbot/bin/pip install certbot
+/opt/certbot/bin/pip install 'urllib3<2' certbot
 
 mkdir -p /opt/rancher/ssl
 
