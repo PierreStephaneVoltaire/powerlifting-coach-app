@@ -2,7 +2,7 @@ provider "rancher2" {
   alias     = "bootstrap"
   api_url   = "https://rancher.${var.domain_name}"
   bootstrap = true
-  insecure  = true
+  insecure  = false
 }
 
 resource "rancher2_bootstrap" "admin" {
@@ -21,7 +21,7 @@ resource "rancher2_bootstrap" "admin" {
 provider "rancher2" {
   api_url   = "https://rancher.${var.domain_name}"
   bootstrap = false
-  insecure  = true
+  insecure  = false
   token_key = try(rancher2_bootstrap.admin[0].token, "")
 }
 
