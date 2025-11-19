@@ -169,19 +169,15 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
-# Install certbot
 yum install -y python3 augeas-libs
 python3 -m venv /opt/certbot
 /opt/certbot/bin/pip install --upgrade pip
 /opt/certbot/bin/pip install certbot
 
-# Create directories for certificates
 mkdir -p /opt/rancher/ssl
 
-# Wait for DNS to propagate
 sleep 30
 
-# Obtain Let's Encrypt certificate
 /opt/certbot/bin/certbot certonly --standalone \
   --non-interactive \
   --agree-tos \
@@ -189,11 +185,9 @@ sleep 30
   --domains rancher.${var.domain_name} \
   --http-01-port=80
 
-# Copy certificates to rancher directory
 cp /etc/letsencrypt/live/rancher.${var.domain_name}/fullchain.pem /opt/rancher/ssl/cert.pem
 cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl/key.pem
 
-# Run Rancher with Let's Encrypt certificates
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
