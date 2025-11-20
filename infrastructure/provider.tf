@@ -65,24 +65,21 @@ data "aws_partition" "current" {}
 provider "kubernetes" {
   host                   = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
   cluster_ca_certificate = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster["certificate-authority-data"]) : null
-  client_certificate     = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-certificate-data"]) : null
-  client_key             = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-key-data"]) : null
+  token                  = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user.token : null
 }
 
 provider "helm" {
   kubernetes {
     host                   = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
     cluster_ca_certificate = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster["certificate-authority-data"]) : null
-    client_certificate     = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-certificate-data"]) : null
-    client_key             = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-key-data"]) : null
+    token                  = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user.token : null
   }
 }
 
 provider "kubectl" {
   host                   = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
   cluster_ca_certificate = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster["certificate-authority-data"]) : null
-  client_certificate     = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-certificate-data"]) : null
-  client_key             = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-key-data"]) : null
+  token                  = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user.token : null
   load_config_file       = false
 }
 
