@@ -178,8 +178,10 @@ fi
 /root/.acme.sh/acme.sh --install-cert --domain rancher.${var.domain_name} \
   --cert-file /opt/rancher/ssl/cert.pem \
   --key-file /opt/rancher/ssl/key.pem \
-  --fullchain-file /opt/rancher/ssl/fullchain.pem \
-  --ca-file /opt/rancher/ssl/cacerts.pem
+  --fullchain-file /opt/rancher/ssl/fullchain.pem
+
+# Copy the CA certificate (intermediate chain) for agent verification
+cp /root/.acme.sh/rancher.${var.domain_name}_ecc/ca.cer /opt/rancher/ssl/cacerts.pem
 
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
