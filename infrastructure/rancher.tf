@@ -178,15 +178,15 @@ fi
 /root/.acme.sh/acme.sh --install-cert --domain rancher.${var.domain_name} \
   --cert-file /opt/rancher/ssl/cert.pem \
   --key-file /opt/rancher/ssl/key.pem \
-  --fullchain-file /opt/rancher/ssl/fullchain.pem
+  --fullchain-file /opt/rancher/ssl/fullchain.pem \
+  --ca-file /opt/rancher/ssl/cacerts.pem
 
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
   -v /opt/rancher/ssl:/etc/rancher/ssl:ro \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
-  rancher/rancher:latest \
-  --no-cacerts
+  rancher/rancher:latest
 EOF
 
 }
