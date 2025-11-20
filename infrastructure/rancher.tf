@@ -178,22 +178,13 @@ sleep 30
 # Set ZeroSSL as the default CA
 /root/.acme.sh/acme.sh --set-default-ca --server zerossl
 
-# Issue certificate using ZeroSSL with optional EAB credentials
-if [ -n "${var.zerossl_eab_kid}" ] && [ -n "${var.zerossl_eab_hmac_key}" ]; then
-  # Use provided EAB credentials
-  /root/.acme.sh/acme.sh --issue --standalone \
-    --domain rancher.${var.domain_name} \
-    --httpport 80 \
-    --server zerossl \
-    --eab-kid "${var.zerossl_eab_kid}" \
-    --eab-hmac-key "${var.zerossl_eab_hmac_key}"
-else
-  # Auto-register with ZeroSSL using email
-  /root/.acme.sh/acme.sh --issue --standalone \
-    --domain rancher.${var.domain_name} \
-    --httpport 80 \
-    --server zerossl
-fi
+# Issue certificate using ZeroSSL with EAB credentials
+/root/.acme.sh/acme.sh --issue --standalone \
+  --domain rancher.${var.domain_name} \
+  --httpport 80 \
+  --server zerossl \
+  --eab-kid "${var.zerossl_eab_kid}" \
+  --eab-hmac-key "${var.zerossl_eab_hmac_key}"
 
 # Install certificates to the Rancher SSL directory
 /root/.acme.sh/acme.sh --install-cert --domain rancher.${var.domain_name} \

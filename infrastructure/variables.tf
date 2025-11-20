@@ -145,15 +145,13 @@ variable "admin_ips" {
 }
 
 variable "zerossl_eab_kid" {
-  description = "ZeroSSL EAB (External Account Binding) Key ID. Optional - if not provided, acme.sh will auto-register with ZeroSSL using email."
+  description = "ZeroSSL EAB (External Account Binding) Key ID. Required for ZeroSSL certificate issuance. Get from https://app.zerossl.com/developer"
   type        = string
   sensitive   = true
-  default     = ""
 }
 
 variable "zerossl_eab_hmac_key" {
-  description = "ZeroSSL EAB (External Account Binding) HMAC Key. Optional - if not provided, acme.sh will auto-register with ZeroSSL using email."
+  description = "ZeroSSL EAB (External Account Binding) HMAC Key. Required for ZeroSSL certificate issuance. Get from https://app.zerossl.com/developer"
   type        = string
   sensitive   = true
-  default     = ""
 }
