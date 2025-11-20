@@ -118,3 +118,68 @@ resource "aws_iam_user_policy" "s3_videos" {
     ]
   })
 }
+
+module "kubernetes_base" {
+  count  = var.kubernetes_resources_enabled ? 1 : 0
+  source = "./modules/kubernetes-base"
+
+  environment                = var.environment
+  domain_name                = var.domain_name
+  s3_access_key_id           = aws_iam_access_key.s3_videos[0].id
+  s3_secret_access_key       = aws_iam_access_key.s3_videos[0].secret
+  s3_bucket_domain           = aws_s3_bucket.videos.bucket_regional_domain_name
+  s3_bucket_id               = aws_s3_bucket.videos.id
+  aws_region                 = var.aws_region
+  ses_smtp_endpoint          = local.ses_smtp_endpoint
+  ses_smtp_username          = aws_iam_access_key.ses_smtp[0].id
+  ses_smtp_password          = aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4
+  google_oauth_client_id     = var.google_oauth_client_id
+  google_oauth_client_secret = var.google_oauth_client_secret
+  stopped                    = var.stopped
+  project_root               = path.module
+}
+
+module "kubernetes_networking" {
+  count  = var.kubernetes_resources_enabled ? 1 : 0
+  source = "./modules/kubernetes-networking"
+
+  domain_name  = var.domain_name
+  cluster_name = local.cluster_name
+  stopped      = var.stopped
+}
+
+module "kubernetes_monitoring" {
+  count  = var.kubernetes_resources_enabled ? 1 : 0
+  source = "./modules/kubernetes-monitoring"
+
+  domain_name            = var.domain_name
+  app_namespace          = module.kubernetes_base[0].app_namespace
+  grafana_admin_password = module.kubernetes_base[0].grafana_admin_password
+  stopped                = var.stopped
+
+  depends_on = [module.kubernetes_networking]
+}
+
+module "argocd" {
+  count  = var.kubernetes_resources_enabled ? 1 : 0
+  source = "./modules/argocd"
+
+  domain_name = var.domain_name
+  stopped     = var.stopped
+
+  depends_on = [module.kubernetes_networking]
+}
+
+module "argocd_apps" {
+  count  = var.kubernetes_resources_enabled && var.argocd_resources_enabled ? 1 : 0
+  source = "./modules/argocd-apps"
+
+  project_name     = var.project_name
+  argocd_namespace = module.argocd[0].argocd_namespace
+  app_namespace    = module.kubernetes_base[0].app_namespace
+  deploy_frontend  = var.deploy_frontend
+  deploy_datalayer = var.deploy_datalayer
+  deploy_backend   = var.deploy_backend
+
+  depends_on = [module.argocd]
+}
