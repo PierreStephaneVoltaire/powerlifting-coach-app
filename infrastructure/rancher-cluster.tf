@@ -78,20 +78,9 @@ resource "rancher2_machine_config_v2" "worker_nodes" {
 
   generate_name = "${local.cluster_name}-worker"
 
-  amazonec2_config {
-    ami                   = data.aws_ami.amazon_linux_2.id
-    region                = var.aws_region
-    security_group        = [aws_security_group.rancher_node[0].name]
-    subnet_id             = aws_subnet.public[0].id
-    vpc_id                = aws_vpc.main.id
-    zone                  = "a"
-    instance_type         = "t4g.medium"
-    root_size             = "30"
-    iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
-    ssh_user              = "ec2-user"
-    request_spot_instance = true
-    spot_price            = "0.05"
-  }
+data "rancher2_cluster_v2" "local" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+  name  = "local"
 
   depends_on = [rancher2_bootstrap.admin, aws_ssm_parameter.password]
 }
@@ -220,7 +209,7 @@ resource "aws_iam_instance_profile" "rancher_node" {
   role = aws_iam_role.rancher_node[0].name
 }
 
-resource "rancher2_cluster_v2" "main" {
+resource "rancher2_node_pool" "worker_spot_pool" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
   name               = local.cluster_name
@@ -283,14 +272,38 @@ resource "rancher2_cluster_v2" "main" {
   ]
 }
 
+resource "rancher2_node_template" "worker" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  name        = "${local.cluster_name}-worker-template"
+  description = "Spot worker node template"
+
+  amazonec2_config {
+    ami                   = data.aws_ami.amazon_linux_2.id
+    region                = var.aws_region
+    security_group        = [aws_security_group.rancher_node[0].name]
+    subnet_id             = aws_subnet.public[0].id
+    vpc_id                = aws_vpc.main.id
+    zone                  = "a"
+    instance_type         = "t4g.medium"
+    root_size             = 30
+    iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
+    ssh_user              = "ec2-user"
+    request_spot_instance = true
+    spot_price            = "0.05"
+  }
+
+  depends_on = [rancher2_bootstrap.admin]
+}
+
 resource "local_file" "kubeconfig_rancher" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
   filename        = "${path.module}/kubeconfig.yaml"
-  content         = rancher2_cluster_v2.main[0].kube_config
+  content         = data.rancher2_cluster_v2.local[0].kube_config
   file_permission = "0600"
 
-  depends_on = [rancher2_cluster_v2.main]
+  depends_on = [data.rancher2_cluster_v2.local]
 }
 
 resource "aws_route53_record" "cluster_wildcard" {
@@ -304,13 +317,13 @@ resource "aws_route53_record" "cluster_wildcard" {
 }
 
 output "rancher_cluster_id" {
-  description = "ID of the Rancher-managed cluster"
-  value       = var.rancher_cluster_enabled ? rancher2_cluster_v2.main[0].id : null
+  description = "ID of the Rancher local cluster"
+  value       = var.rancher_cluster_enabled ? data.rancher2_cluster_v2.local[0].id : null
 }
 
 output "rancher_cluster_name" {
-  description = "Name of the Rancher-managed cluster"
-  value       = var.rancher_cluster_enabled ? rancher2_cluster_v2.main[0].name : null
+  description = "Name of the Rancher local cluster"
+  value       = var.rancher_cluster_enabled ? data.rancher2_cluster_v2.local[0].name : null
 }
 
 output "rancher_admin_token" {
@@ -320,7 +333,7 @@ output "rancher_admin_token" {
 }
 
 output "cluster_kubeconfig" {
-  description = "Kubeconfig for the cluster (use terraform output -raw cluster_kubeconfig)"
-  value       = var.rancher_cluster_enabled ? rancher2_cluster_v2.main[0].kube_config : null
+  description = "Kubeconfig for the local cluster (use terraform output -raw cluster_kubeconfig)"
+  value       = var.rancher_cluster_enabled ? data.rancher2_cluster_v2.local[0].kube_config : null
   sensitive   = true
 }
