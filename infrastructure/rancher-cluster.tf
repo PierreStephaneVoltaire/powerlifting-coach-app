@@ -78,9 +78,20 @@ resource "rancher2_machine_config_v2" "worker_nodes" {
 
   generate_name = "${local.cluster_name}-worker"
 
-data "rancher2_cluster_v2" "local" {
-  count = var.rancher_cluster_enabled ? 1 : 0
-  name  = "local"
+  amazonec2_config {
+    ami                   = data.aws_ami.amazon_linux_2.id
+    region                = var.aws_region
+    security_group        = [aws_security_group.rancher_node[0].name]
+    subnet_id             = aws_subnet.public[0].id
+    vpc_id                = aws_vpc.main.id
+    zone                  = "a"
+    instance_type         = "t4g.medium"
+    root_size             = "30"
+    iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
+    ssh_user              = "ec2-user"
+    request_spot_instance = true
+    spot_price            = "0.05"
+  }
 
   depends_on = [rancher2_bootstrap.admin, aws_ssm_parameter.password]
 }
