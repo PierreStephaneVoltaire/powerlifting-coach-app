@@ -169,6 +169,7 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
+export HOME=/root
 curl https://get.acme.sh | sh -s email=admin@${var.domain_name}
 
 mkdir -p /opt/rancher/ssl
