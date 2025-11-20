@@ -141,5 +141,19 @@ variable "rancher_cluster_enabled" {
 variable "admin_ips" {
   type = list(string)
   default = [ "0.0.0.0/0" ]
-  
+
+}
+
+variable "zerossl_eab_kid" {
+  description = "ZeroSSL EAB (External Account Binding) Key ID. Optional - if not provided, acme.sh will auto-register with ZeroSSL using email."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "zerossl_eab_hmac_key" {
+  description = "ZeroSSL EAB (External Account Binding) HMAC Key. Optional - if not provided, acme.sh will auto-register with ZeroSSL using email."
+  type        = string
+  sensitive   = true
+  default     = ""
 }
