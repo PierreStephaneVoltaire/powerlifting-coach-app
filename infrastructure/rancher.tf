@@ -156,29 +156,27 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
-yum install -y python3 augeas-libs
-python3 -m venv /opt/certbot
-/opt/certbot/bin/pip install --upgrade pip
-/opt/certbot/bin/pip install certbot
-
+curl https://get.acme.sh | sh -s email=admin@${var.domain_name}
 mkdir -p /opt/rancher/ssl
-
 sleep 30
+/root/.acme.sh/acme.sh --set-default-ca --server zerossl
 
-/opt/certbot/bin/certbot certonly --standalone \
-  --non-interactive \
-  --agree-tos \
-  --email admin@${var.domain_name} \
-  --domains rancher.${var.domain_name} \
-  --http-01-port=80
-
-cp /etc/letsencrypt/live/rancher.${var.domain_name}/fullchain.pem /opt/rancher/ssl/cert.pem
-cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl/key.pem
-
+if [ -n "${var.zerossl_eab_kid}" ] && [ -n "${var.zerossl_eab_hmac_key}" ]; then
+  /root/.acme.sh/acme.sh --issue --standalone \
+    --domain rancher.${var.domain_name} \
+    --httpport 80 \
+    --server zerossl \
+    --eab-kid "${var.zerossl_eab_kid}" \
+    --eab-hmac-key "${var.zerossl_eab_hmac_key}"
+else
+  /root/.acme.sh/acme.sh --issue --standalone \
+    --domain rancher.${var.domain_name} \
+    --httpport 80 \
+    --server zerossl
+fi
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
-  -v /opt/rancher/ssl:/etc/rancher/ssl:ro \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
   rancher/rancher:latest \
   --no-cacerts
