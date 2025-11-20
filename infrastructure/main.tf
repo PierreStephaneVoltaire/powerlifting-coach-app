@@ -119,6 +119,40 @@ resource "aws_iam_user_policy" "s3_videos" {
   })
 }
 
+module "rancher_cluster" {
+  count  = var.rancher_cluster_enabled ? 1 : 0
+  source = "./modules/rancher-cluster"
+
+  cluster_name             = local.cluster_name
+  environment              = var.environment
+  project_name             = var.project_name
+  domain_name              = var.domain_name
+  aws_region               = var.aws_region
+  aws_account_id           = data.aws_caller_identity.current.account_id
+  kubernetes_version       = var.kubernetes_version
+  worker_desired_capacity  = var.worker_desired_capacity
+  stopped                  = var.stopped
+  ami_id                   = data.aws_ami.amazon_linux_2.id
+  vpc_id                   = aws_vpc.main.id
+  subnet_id                = aws_subnet.public[0].id
+  rancher_server_sg_id     = aws_security_group.rancher_server.id
+  rancher_server_fqdn      = aws_route53_record.rancher_server.fqdn
+  route53_zone_id          = aws_route53_zone.main.zone_id
+  admin_ips                = var.admin_ips
+  rancher_admin_password   = random_password.rancher_admin.result
+  rancher_server_ready     = aws_eip_association.rancher_server
+  project_root             = path.module
+
+  providers = {
+    rancher2.bootstrap = rancher2.bootstrap
+  }
+
+  depends_on = [
+    aws_instance.rancher_server,
+    aws_eip_association.rancher_server
+  ]
+}
+
 module "kubernetes_base" {
   count  = var.kubernetes_resources_enabled ? 1 : 0
   source = "./modules/kubernetes-base"

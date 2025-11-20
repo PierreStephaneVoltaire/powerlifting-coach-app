@@ -62,21 +62,35 @@ provider "aws" {
 
 data "aws_partition" "current" {}
 
+provider "rancher2" {
+  alias     = "bootstrap"
+  api_url   = "https://rancher.${var.domain_name}"
+  bootstrap = true
+  insecure  = true
+}
+
+provider "rancher2" {
+  api_url   = "https://rancher.${var.domain_name}"
+  bootstrap = false
+  insecure  = true
+  token_key = var.rancher_cluster_enabled ? try(module.rancher_cluster[0].admin_token, "") : ""
+}
+
 provider "kubernetes" {
-  host  = var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
-  token = var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user.token : null
+  host  = var.rancher_cluster_enabled ? try(module.rancher_cluster[0].kube_host, null) : null
+  token = var.rancher_cluster_enabled ? try(module.rancher_cluster[0].kube_token, null) : null
 }
 
 provider "helm" {
   kubernetes {
-    host  = var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
-    token = var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user.token : null
+    host  = var.rancher_cluster_enabled ? try(module.rancher_cluster[0].kube_host, null) : null
+    token = var.rancher_cluster_enabled ? try(module.rancher_cluster[0].kube_token, null) : null
   }
 }
 
 provider "kubectl" {
-  host             = var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
-  token            = var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user.token : null
+  host             = var.rancher_cluster_enabled ? try(module.rancher_cluster[0].kube_host, null) : null
+  token            = var.rancher_cluster_enabled ? try(module.rancher_cluster[0].kube_token, null) : null
   load_config_file = false
 }
 

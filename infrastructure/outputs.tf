@@ -42,22 +42,22 @@ output "region" {
 }
 
 output "postgres_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.postgres_password[0].result : null
+  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].postgres_password : null
   sensitive = true
 }
 
 output "rabbitmq_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.rabbitmq_password[0].result : null
+  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].rabbitmq_password : null
   sensitive = true
 }
 
 output "keycloak_client_secret" {
-  value     = var.kubernetes_resources_enabled ? random_password.keycloak_client_secret[0].result : null
+  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].keycloak_client_secret : null
   sensitive = true
 }
 
 output "keycloak_admin_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.keycloak_admin_password[0].result : null
+  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].keycloak_admin_password : null
   sensitive = true
 }
 
@@ -82,7 +82,7 @@ output "grafana_url" {
 }
 
 output "grafana_admin_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : null
+  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].grafana_admin_password : null
   sensitive = true
 }
 
@@ -140,6 +140,28 @@ output "ses_smtp_password" {
 }
 
 output "rancher_admin" {
-  value = random_password.rancher_admin
+  value     = random_password.rancher_admin
   sensitive = true
+}
+
+output "rancher_cluster_id" {
+  description = "ID of the Rancher-managed cluster"
+  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].cluster_id : null
+}
+
+output "rancher_cluster_name" {
+  description = "Name of the Rancher-managed cluster"
+  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].cluster_name : null
+}
+
+output "rancher_admin_token" {
+  description = "Rancher admin API token"
+  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].admin_token : null
+  sensitive   = true
+}
+
+output "cluster_kubeconfig" {
+  description = "Kubeconfig for the cluster (use terraform output -raw cluster_kubeconfig)"
+  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].kubeconfig : null
+  sensitive   = true
 }

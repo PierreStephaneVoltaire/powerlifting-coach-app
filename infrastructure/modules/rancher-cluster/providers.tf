@@ -1,0 +1,23 @@
+terraform {
+  required_providers {
+    rancher2 = {
+      source  = "rancher/rancher2"
+      version = "~> 8.3.1"
+    }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.4"
+    }
+  }
+}
+
+provider "rancher2" {
+  alias     = "bootstrap"
+  api_url   = "https://rancher.${var.domain_name}"
+  bootstrap = true
+  insecure  = true
+}
