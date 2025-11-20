@@ -19,4 +19,17 @@ terraform state rm  kubectl_manifest.letsencrypt_prod[0]kubectl_manifest.nginx_g
 terraform state rm  helm_release.loki[0]kubectl_manifest.grafana_httproute[0]
 terraform state rm  kubectl_manifest.prometheus_httproute[0]
 terraform state rm  kubectl_manifest.rabbitmq_httproute[0]
+terraform state rm kubectl_manifest.letsencrypt_prod[0]
+terraform state rm kubectl_manifest.nginx_gateway[0]
+terraform state rm  helm_release.loki[0]
+terraform state rm kubectl_manifest.grafana_httproute[0]
+terraform state rm kubectl_manifest.argocd_certificate[0]
+terraform state rm helm_release.promtail[0]
+terraform state rm kubectl_manifest.grafana_certificate[0]
+terraform state rm kubectl_manifest.prometheus_certificate[0]
+terraform state rm kubectl_manifest.loki_httproute[0]
+terraform state rm kubectl_manifest.loki_certificate[0]
+terraform state rm kubectl_manifest.rabbitmq_certificate[0]
+
+
 terraform apply
