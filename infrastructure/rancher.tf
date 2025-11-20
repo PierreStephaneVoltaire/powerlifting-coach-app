@@ -193,8 +193,7 @@ docker run -d --restart=unless-stopped \
   --privileged \
   -v /opt/rancher/ssl:/etc/rancher/ssl:ro \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
-  rancher/rancher:latest \
-  --no-cacerts
+  rancher/rancher:latest
 EOF
 
   tags = {
