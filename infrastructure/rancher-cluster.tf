@@ -51,11 +51,38 @@ resource "aws_ssm_parameter" "password" {
 
 }
 
+resource "rancher2_machine_config_v2" "control_plane_nodes" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  generate_name = "${local.cluster_name}-control-plane"
+
+  amazonec2_config {
+    ami                   = data.aws_ami.amazon_linux_2.id
+    region                = var.aws_region
+    security_group        = [aws_security_group.rancher_node[0].name]
+    subnet_id             = aws_subnet.public[0].id
+    vpc_id                = aws_vpc.main.id
+    zone                  = "a"
+    instance_type         = "t4g.medium"
+    root_size             = "30"
+    iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
+    ssh_user              = "ec2-user"
+    request_spot_instance = false
+  }
+
+  depends_on = [rancher2_bootstrap.admin, aws_ssm_parameter.password]
+}
+
+resource "rancher2_machine_config_v2" "worker_nodes" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  generate_name = "${local.cluster_name}-worker"
+
 data "rancher2_cluster_v2" "local" {
   count = var.rancher_cluster_enabled ? 1 : 0
   name  = "local"
 
-  depends_on = [rancher2_bootstrap.admin]
+  depends_on = [rancher2_bootstrap.admin, aws_ssm_parameter.password]
 }
 
 resource "aws_security_group" "rancher_node" {
@@ -185,18 +212,63 @@ resource "aws_iam_instance_profile" "rancher_node" {
 resource "rancher2_node_pool" "worker_spot_pool" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
-  cluster_id       = data.rancher2_cluster_v2.local[0].cluster_v1_id
-  name             = "worker-spot-pool"
-  hostname_prefix  = "${local.cluster_name}-worker"
-  node_template_id = rancher2_node_template.worker[0].id
-  quantity         = var.stopped ? 0 : var.worker_desired_capacity
-  control_plane    = false
-  etcd             = false
-  worker           = true
+  name               = local.cluster_name
+  kubernetes_version = var.kubernetes_version
+
+  rke_config {
+    machine_pools {
+      name                         = "control-plane-pool"
+      cloud_credential_secret_name = rancher2_cloud_credential.aws[0].id
+      control_plane_role           = true
+      etcd_role                    = true
+      worker_role                  = false
+      quantity                     = var.stopped ? 0 : 1
+      max_unhealthy                = "100%"
+
+      machine_config {
+        kind = rancher2_machine_config_v2.control_plane_nodes[0].kind
+        name = rancher2_machine_config_v2.control_plane_nodes[0].name
+      }
+
+      rolling_update {
+        max_unavailable = "1"
+        max_surge       = "1"
+      }
+    }
+
+    machine_pools {
+      name                         = "worker-spot-pool"
+      cloud_credential_secret_name = rancher2_cloud_credential.aws[0].id
+      control_plane_role           = false
+      etcd_role                    = false
+      worker_role                  = true
+      quantity                     = var.stopped ? 0 : var.worker_desired_capacity
+      max_unhealthy                = "100%"
+
+      machine_config {
+        kind = rancher2_machine_config_v2.worker_nodes[0].kind
+        name = rancher2_machine_config_v2.worker_nodes[0].name
+      }
+
+      rolling_update {
+        max_unavailable = "1"
+        max_surge       = "1"
+      }
+    }
+
+    machine_global_config = <<-EOF
+      cni: "canal"
+      disable:
+        - traefik
+      tls-san:
+        - "${local.cluster_name}.${var.domain_name}"
+    EOF
+  }
 
   depends_on = [
     rancher2_bootstrap.admin,
-    data.rancher2_cluster_v2.local
+    rancher2_machine_config_v2.control_plane_nodes,
+    rancher2_machine_config_v2.worker_nodes
   ]
 }
 
