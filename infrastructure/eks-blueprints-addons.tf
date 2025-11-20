@@ -175,16 +175,25 @@ resource "kubectl_manifest" "letsencrypt_prod" {
   depends_on = [helm_release.cert_manager, helm_release.nginx_gateway_fabric]
 }
 
-resource "helm_release" "gateway_api_crds" {
-  count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
 
-  name             = "gateway-api"
-  repository       = "https://kubernetes-sigs.github.io/gateway-api/charts"
-  chart            = "gateway-api"
-  namespace        = "gateway-system"
-  create_namespace = true
-  version          = "1.2.0"
+data "http" "gateway_api_crds" {
+  url = "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml"
 }
+
+resource "kubectl_manifest" "gateway_api_crds" {
+  count      = var.kubernetes_resources_enabled && !var.stopped ? length(data.kubectl_file_documents.gateway_api_crds.documents) : 0
+  yaml_body  = element(data.kubectl_file_documents.gateway_api_crds.documents, count.index)
+  server_side_apply = true 
+}
+
+data "kubectl_file_documents" "gateway_api_crds" {
+  content = data.http.gateway_api_crds.response_body
+}
+
+
+
+
+
 
 resource "helm_release" "nginx_gateway_fabric" {
   count = var.kubernetes_resources_enabled && !var.stopped ? 1 : 0
@@ -248,7 +257,7 @@ resource "helm_release" "nginx_gateway_fabric" {
     })
   ]
 
-  depends_on = [helm_release.gateway_api_crds]
+  depends_on = [kubectl_manifest.gateway_api_crds]
 }
 
 resource "kubectl_manifest" "nginx_gateway" {
