@@ -235,7 +235,8 @@ resource "rancher2_cluster_v2" "main" {
 
   depends_on = [
     rancher2_bootstrap.admin,
-    rancher2_machine_config_v2.nodes
+    rancher2_machine_config_v2.nodes,
+    rancher2_setting.agenttlsmode
   ]
 }
 
