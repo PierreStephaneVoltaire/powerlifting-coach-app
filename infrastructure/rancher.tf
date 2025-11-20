@@ -140,6 +140,31 @@ resource "random_password" "rancher_admin" {
   special = false
 }
 
+resource "aws_ebs_volume" "rancher_data" {
+  availability_zone = aws_subnet.public[0].availability_zone
+  size              = 20
+  type              = "gp3"
+  encrypted         = true
+  iops              = 3000
+  throughput        = 125
+
+  tags = {
+    Name        = "${local.cluster_name}-rancher-data"
+    Environment = var.environment
+    Project     = var.project_name
+    Backup      = "Daily"
+  }
+}
+
+resource "aws_volume_attachment" "rancher_data" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.rancher_data.id
+  instance_id = aws_instance.rancher_server.id
+
+  # Prevent accidental detachment
+  skip_destroy = true
+}
+
 resource "aws_instance" "rancher_server" {
   ami                    = data.aws_ami.amazon_linux_2.id
   instance_type          = "t4g.nano"
@@ -174,6 +199,33 @@ python3 -m venv /opt/certbot
 /opt/certbot/bin/pip install --upgrade pip
 /opt/certbot/bin/pip install certbot
 
+# Wait for EBS volume to be attached
+echo "Waiting for EBS volume to be attached..."
+for i in {1..30}; do
+  if [ -e /dev/nvme1n1 ]; then
+    echo "Volume found at /dev/nvme1n1"
+    break
+  fi
+  sleep 2
+done
+
+# Check if volume has a filesystem, if not create one
+if ! blkid /dev/nvme1n1; then
+  echo "Creating ext4 filesystem on /dev/nvme1n1..."
+  mkfs.ext4 /dev/nvme1n1
+fi
+
+# Create mount point and mount the volume
+mkdir -p /var/lib/rancher
+mount /dev/nvme1n1 /var/lib/rancher
+
+# Add to fstab for persistence across reboots
+VOLUME_UUID=$(blkid -s UUID -o value /dev/nvme1n1)
+echo "UUID=$VOLUME_UUID /var/lib/rancher ext4 defaults,nofail 0 2" >> /etc/fstab
+
+# Set correct permissions
+chown -R 1000:1000 /var/lib/rancher
+
 mkdir -p /opt/rancher/ssl
 
 sleep 30
@@ -191,6 +243,7 @@ cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
+  -v /var/lib/rancher:/var/lib/rancher \
   -v /opt/rancher/ssl:/etc/rancher/ssl:ro \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
   rancher/rancher:latest \

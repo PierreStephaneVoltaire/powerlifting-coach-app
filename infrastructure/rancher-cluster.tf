@@ -1,3 +1,68 @@
+resource "aws_s3_bucket" "etcd_backups" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  bucket = "${local.cluster_name}-etcd-backups"
+
+  tags = {
+    Name        = "${local.cluster_name}-etcd-backups"
+    Environment = var.environment
+    Project     = var.project_name
+    Purpose     = "etcd-snapshots"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "etcd_backups" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.etcd_backups[0].id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "etcd_backups" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.etcd_backups[0].id
+
+  rule {
+    id     = "delete-old-snapshots"
+    status = "Enabled"
+
+    expiration {
+      days = 7
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 3
+    }
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "etcd_backups" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.etcd_backups[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "etcd_backups" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.etcd_backups[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 provider "rancher2" {
   alias     = "bootstrap"
   api_url   = "https://rancher.${var.domain_name}"
@@ -166,6 +231,19 @@ resource "aws_iam_role_policy" "rancher_node_permissive" {
         Effect   = "Allow"
         Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*", "ebs:*","iam:*"]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:DeleteObject"
+        ]
+        Resource = [
+          "arn:aws:s3:::${local.cluster_name}-etcd-backups",
+          "arn:aws:s3:::${local.cluster_name}-etcd-backups/*"
+        ]
       }
     ]
   })
@@ -219,6 +297,18 @@ resource "rancher2_cluster_v2" "main" {
       tls-san:
         - "${local.cluster_name}.${var.domain_name}"
     EOF
+
+    # Enable etcd snapshots for disaster recovery
+    etcd {
+      snapshot_schedule_cron = "0 */6 * * *"  # Every 6 hours
+      snapshot_retention     = 10              # Keep 10 snapshots (2.5 days)
+      s3_config {
+        bucket    = aws_s3_bucket.etcd_backups[0].id
+        region    = var.aws_region
+        folder    = "etcd-snapshots"
+        endpoint  = "s3.${var.aws_region}.amazonaws.com"
+      }
+    }
   }
 
   depends_on = [
