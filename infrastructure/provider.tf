@@ -63,18 +63,27 @@ provider "aws" {
 data "aws_partition" "current" {}
 
 provider "kubernetes" {
-  config_path = var.kubernetes_resources_enabled ? "${path.module}/kubeconfig.yaml" : null
+  host                   = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
+  cluster_ca_certificate = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster["certificate-authority-data"]) : null
+  client_certificate     = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-certificate-data"]) : null
+  client_key             = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-key-data"]) : null
 }
 
 provider "helm" {
   kubernetes {
-    config_path = var.kubernetes_resources_enabled ? "${path.module}/kubeconfig.yaml" : null
+    host                   = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
+    cluster_ca_certificate = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster["certificate-authority-data"]) : null
+    client_certificate     = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-certificate-data"]) : null
+    client_key             = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-key-data"]) : null
   }
 }
 
 provider "kubectl" {
-  config_path    = var.kubernetes_resources_enabled ? "${path.module}/kubeconfig.yaml" : null
-  load_config_file = var.kubernetes_resources_enabled
+  host                   = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster.server : null
+  cluster_ca_certificate = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).clusters[0].cluster["certificate-authority-data"]) : null
+  client_certificate     = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-certificate-data"]) : null
+  client_key             = var.kubernetes_resources_enabled && var.rancher_cluster_enabled ? base64decode(yamldecode(rancher2_cluster_v2.main[0].kube_config).users[0].user["client-key-data"]) : null
+  load_config_file       = false
 }
 
 output "kubeconfig_path" {
