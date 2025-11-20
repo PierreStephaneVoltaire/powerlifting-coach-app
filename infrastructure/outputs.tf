@@ -138,3 +138,8 @@ output "ses_smtp_password" {
   value     = var.kubernetes_resources_enabled ? aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4 : null
   sensitive = true
 }
+
+output "rancher_admin" {
+  value = random_password.rancher_admin
+  sensitive = true
+}
