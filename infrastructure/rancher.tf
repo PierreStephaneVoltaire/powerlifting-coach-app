@@ -175,13 +175,11 @@ else
     --server zerossl
 fi
 
+# Install certificates for Rancher
+# cert.pem must contain server cert + intermediates (use fullchain)
 /root/.acme.sh/acme.sh --install-cert --domain rancher.${var.domain_name} \
-  --cert-file /opt/rancher/ssl/cert.pem \
   --key-file /opt/rancher/ssl/key.pem \
-  --fullchain-file /opt/rancher/ssl/fullchain.pem
-
-# Use fullchain as cert so Rancher sends complete chain to agents
-cp /opt/rancher/ssl/fullchain.pem /opt/rancher/ssl/cert.pem
+  --fullchain-file /opt/rancher/ssl/cert.pem
 
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
