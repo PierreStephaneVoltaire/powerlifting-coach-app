@@ -161,7 +161,7 @@ set -e
 exec > >(tee /var/log/user-data.log) 2>&1
 
 yum update -y
-yum install -y amazon-ssm-agent
+yum install -y amazon-ssm-agent socat
 systemctl enable amazon-ssm-agent
 systemctl start amazon-ssm-agent
 amazon-linux-extras install docker -y
