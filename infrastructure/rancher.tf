@@ -148,14 +148,14 @@ set -e
 exec > >(tee /var/log/user-data.log) 2>&1
 
 yum update -y
-yum install -y amazon-ssm-agent
+yum install -y amazon-ssm-agent socat
 systemctl enable amazon-ssm-agent
 systemctl start amazon-ssm-agent
 amazon-linux-extras install docker -y
 systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
-
+export HOME=/root
 curl https://get.acme.sh | sh -s email=admin@${var.domain_name}
 mkdir -p /opt/rancher/ssl
 sleep 30
@@ -174,9 +174,16 @@ else
     --httpport 80 \
     --server zerossl
 fi
+
+/root/.acme.sh/acme.sh --install-cert --domain rancher.${var.domain_name} \
+  --cert-file /opt/rancher/ssl/cert.pem \
+  --key-file /opt/rancher/ssl/key.pem \
+  --fullchain-file /opt/rancher/ssl/fullchain.pem
+
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
   --privileged \
+  -v /opt/rancher/ssl:/etc/rancher/ssl:ro \
   -e CATTLE_BOOTSTRAP_PASSWORD="${random_password.rancher_admin.result}" \
   rancher/rancher:latest \
   --no-cacerts
