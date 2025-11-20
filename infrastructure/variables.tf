@@ -111,7 +111,7 @@ variable "monthly_budget_limit" {
 variable "budget_notification_email" {
   description = "Email address to receive budget notifications when spend exceeds thresholds"
   type        = string
-  default = "psvoltaire96@gmail.com"
+  default     = "psvoltaire96@gmail.com"
 }
 
 variable "deploy_frontend" {
@@ -139,9 +139,9 @@ variable "rancher_cluster_enabled" {
 }
 
 variable "admin_ips" {
-  type = list(string)
-  default = [ "0.0.0.0/0" ]
-  
+  type    = list(string)
+  default = ["0.0.0.0/0"]
+
 }
 
 variable "zerossl_eab_kid" {
@@ -152,7 +152,7 @@ variable "zerossl_eab_kid" {
 
 }
 
- 
+
 
 variable "zerossl_eab_hmac_key" {
   description = "ZeroSSL EAB (External Account Binding) HMAC Key. Optional - if not provided, acme.sh will auto-register with ZeroSSL using email."

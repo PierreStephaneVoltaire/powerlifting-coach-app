@@ -28,12 +28,12 @@ output "s3_videos_endpoint" {
 }
 
 output "s3_videos_access_key" {
-  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.s3_videos[0].id : null
+  value     = try(aws_iam_access_key.s3_videos[0].id, null)
   sensitive = true
 }
 
 output "s3_videos_secret_key" {
-  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.s3_videos[0].secret : null
+  value     = try(aws_iam_access_key.s3_videos[0].secret, null)
   sensitive = true
 }
 
@@ -42,22 +42,22 @@ output "region" {
 }
 
 output "postgres_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.postgres_password[0].result : null
+  value     = try(module.kubernetes_base[0].postgres_password, null)
   sensitive = true
 }
 
 output "rabbitmq_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.rabbitmq_password[0].result : null
+  value     = try(module.kubernetes_base[0].rabbitmq_password, null)
   sensitive = true
 }
 
 output "keycloak_client_secret" {
-  value     = var.kubernetes_resources_enabled ? random_password.keycloak_client_secret[0].result : null
+  value     = try(module.kubernetes_base[0].keycloak_client_secret, null)
   sensitive = true
 }
 
 output "keycloak_admin_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.keycloak_admin_password[0].result : null
+  value     = try(module.kubernetes_base[0].keycloak_admin_password, null)
   sensitive = true
 }
 
@@ -82,7 +82,7 @@ output "grafana_url" {
 }
 
 output "grafana_admin_password" {
-  value     = var.kubernetes_resources_enabled ? random_password.grafana_admin_password[0].result : null
+  value     = try(module.kubernetes_base[0].grafana_admin_password, null)
   sensitive = true
 }
 
@@ -130,16 +130,16 @@ output "ses_smtp_endpoint" {
 }
 
 output "ses_smtp_username" {
-  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.ses_smtp[0].id : null
+  value     = try(aws_iam_access_key.ses_smtp[0].id, null)
   sensitive = true
 }
 
 output "ses_smtp_password" {
-  value     = var.kubernetes_resources_enabled ? aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4 : null
+  value     = try(aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4, null)
   sensitive = true
 }
 
 output "rancher_admin" {
-  value = random_password.rancher_admin
+  value     = random_password.rancher_admin
   sensitive = true
 }

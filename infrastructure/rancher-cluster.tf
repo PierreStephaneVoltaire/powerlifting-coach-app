@@ -25,10 +25,10 @@ provider "rancher2" {
   token_key = try(rancher2_bootstrap.admin[0].token, "")
 }
 resource "rancher2_setting" "agenttlsmode" {
-    count = var.rancher_cluster_enabled ? 1 : 0
+  count      = var.rancher_cluster_enabled ? 1 : 0
   depends_on = [rancher2_bootstrap.admin]
 
-  name = "agent-tls-mode"
+  name  = "agent-tls-mode"
   value = "system-store"
 }
 resource "rancher2_cloud_credential" "aws" {
@@ -45,9 +45,9 @@ resource "rancher2_cloud_credential" "aws" {
 }
 
 resource "aws_ssm_parameter" "password" {
-  name = "/rancher_admin"
-  type = "String"
-  value =   random_password.rancher_admin.result
+  name  = "/rancher_admin"
+  type  = "String"
+  value = random_password.rancher_admin.result
 
 }
 
@@ -176,7 +176,7 @@ resource "aws_iam_role_policy" "rancher_node_permissive" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*", "ebs:*","iam:*"]
+        Action   = ["ec2:*", "elasticloadbalancing:*", "ecr:*", "s3:*", "route53:*", "ebs:*", "iam:*"]
         Resource = "*"
       }
     ]
