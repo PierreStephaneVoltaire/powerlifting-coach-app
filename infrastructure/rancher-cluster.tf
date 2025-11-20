@@ -2,7 +2,7 @@ provider "rancher2" {
   alias     = "bootstrap"
   api_url   = "https://rancher.${var.domain_name}"
   bootstrap = true
-  insecure  = false
+  insecure  = true
 }
 
 resource "rancher2_bootstrap" "admin" {
@@ -21,10 +21,16 @@ resource "rancher2_bootstrap" "admin" {
 provider "rancher2" {
   api_url   = "https://rancher.${var.domain_name}"
   bootstrap = false
-  insecure  = false
+  insecure  = true
   token_key = try(rancher2_bootstrap.admin[0].token, "")
 }
+resource "rancher2_setting" "agenttlsmode" {
+    count = var.rancher_cluster_enabled ? 1 : 0
+  depends_on = [rancher2_bootstrap.admin]
 
+  name = "agent-tls-mode"
+  value = "system-store"
+}
 resource "rancher2_cloud_credential" "aws" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -38,6 +44,12 @@ resource "rancher2_cloud_credential" "aws" {
   depends_on = [rancher2_bootstrap.admin]
 }
 
+resource "aws_ssm_parameter" "password" {
+  name = "/rancher_admin"
+  type = "String"
+  value =   random_password.rancher_admin.result
+
+}
 resource "rancher2_machine_config_v2" "nodes" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
@@ -50,7 +62,7 @@ resource "rancher2_machine_config_v2" "nodes" {
     subnet_id             = aws_subnet.public[0].id
     vpc_id                = aws_vpc.main.id
     zone                  = "a"
-    instance_type         = "t3a.small"
+    instance_type         = "t4g.medium"
     root_size             = "30"
     iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
     ssh_user              = "ec2-user"
@@ -58,7 +70,7 @@ resource "rancher2_machine_config_v2" "nodes" {
     spot_price            = "0.05"
   }
 
-  depends_on = [rancher2_bootstrap.admin]
+  depends_on = [rancher2_bootstrap.admin,aws_ssm_parameter.password]
 }
 
 resource "aws_security_group" "rancher_node" {
