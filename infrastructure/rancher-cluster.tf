@@ -50,10 +50,34 @@ resource "aws_ssm_parameter" "password" {
   value =   random_password.rancher_admin.result
 
 }
-resource "rancher2_machine_config_v2" "nodes" {
+# On-demand instances for control plane - ensures at least 1 master always running
+resource "rancher2_machine_config_v2" "control_plane_nodes" {
   count = var.rancher_cluster_enabled ? 1 : 0
 
-  generate_name = "${local.cluster_name}-node"
+  generate_name = "${local.cluster_name}-control-plane"
+
+  amazonec2_config {
+    ami                   = data.aws_ami.amazon_linux_2.id
+    region                = var.aws_region
+    security_group        = [aws_security_group.rancher_node[0].name]
+    subnet_id             = aws_subnet.public[0].id
+    vpc_id                = aws_vpc.main.id
+    zone                  = "a"
+    instance_type         = "t4g.medium"
+    root_size             = "30"
+    iam_instance_profile  = aws_iam_instance_profile.rancher_node[0].name
+    ssh_user              = "ec2-user"
+    request_spot_instance = false  # On-demand for reliability
+  }
+
+  depends_on = [rancher2_bootstrap.admin, aws_ssm_parameter.password]
+}
+
+# Spot instances for worker nodes - cost-effective for workloads
+resource "rancher2_machine_config_v2" "worker_nodes" {
+  count = var.rancher_cluster_enabled ? 1 : 0
+
+  generate_name = "${local.cluster_name}-worker"
 
   amazonec2_config {
     ami                   = data.aws_ami.amazon_linux_2.id
@@ -70,7 +94,7 @@ resource "rancher2_machine_config_v2" "nodes" {
     spot_price            = "0.05"
   }
 
-  depends_on = [rancher2_bootstrap.admin,aws_ssm_parameter.password]
+  depends_on = [rancher2_bootstrap.admin, aws_ssm_parameter.password]
 }
 
 resource "aws_security_group" "rancher_node" {
@@ -204,18 +228,40 @@ resource "rancher2_cluster_v2" "main" {
   kubernetes_version = var.kubernetes_version
 
   rke_config {
+    # On-demand control plane pool - always running for cluster stability
     machine_pools {
-      name                         = "pool1"
+      name                         = "control-plane-pool"
       cloud_credential_secret_name = rancher2_cloud_credential.aws[0].id
       control_plane_role           = true
       etcd_role                    = true
+      worker_role                  = false
+      quantity                     = var.stopped ? 0 : max(1, var.worker_min_size)  # At least 1 control plane node
+      max_unhealthy                = "100%"
+
+      machine_config {
+        kind = rancher2_machine_config_v2.control_plane_nodes[0].kind
+        name = rancher2_machine_config_v2.control_plane_nodes[0].name
+      }
+
+      rolling_update {
+        max_unavailable = "1"
+        max_surge       = "1"
+      }
+    }
+
+    # Spot worker pool - cost-effective for application workloads
+    machine_pools {
+      name                         = "worker-spot-pool"
+      cloud_credential_secret_name = rancher2_cloud_credential.aws[0].id
+      control_plane_role           = false
+      etcd_role                    = false
       worker_role                  = true
       quantity                     = var.stopped ? 0 : var.worker_desired_capacity
       max_unhealthy                = "100%"
 
       machine_config {
-        kind = rancher2_machine_config_v2.nodes[0].kind
-        name = rancher2_machine_config_v2.nodes[0].name
+        kind = rancher2_machine_config_v2.worker_nodes[0].kind
+        name = rancher2_machine_config_v2.worker_nodes[0].name
       }
 
       rolling_update {
@@ -235,7 +281,8 @@ resource "rancher2_cluster_v2" "main" {
 
   depends_on = [
     rancher2_bootstrap.admin,
-    rancher2_machine_config_v2.nodes
+    rancher2_machine_config_v2.control_plane_nodes,
+    rancher2_machine_config_v2.worker_nodes
   ]
 }
 
