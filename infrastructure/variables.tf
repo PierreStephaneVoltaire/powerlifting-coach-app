@@ -19,7 +19,7 @@ variable "environment" {
 variable "kubernetes_version" {
   description = "Kubernetes version for the cluster (K3s format: v1.31.13-k3s1)"
   type        = string
-  default     = "v1.33.5-k3s1"
+  default     = "v1.31.13-k3s1"
 }
 
 variable "worker_desired_capacity" {
@@ -142,4 +142,22 @@ variable "admin_ips" {
   type = list(string)
   default = [ "0.0.0.0/0" ]
   
+}
+
+variable "zerossl_eab_kid" {
+  description = "ZeroSSL EAB (External Account Binding) Key ID. Optional - if not provided, acme.sh will auto-register with ZeroSSL using email."
+  type        = string
+  sensitive   = true
+  default     = ""
+
+}
+
+ 
+
+variable "zerossl_eab_hmac_key" {
+  description = "ZeroSSL EAB (External Account Binding) HMAC Key. Optional - if not provided, acme.sh will auto-register with ZeroSSL using email."
+  type        = string
+  sensitive   = true
+  default     = ""
+
 }
