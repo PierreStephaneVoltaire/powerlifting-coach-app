@@ -87,8 +87,8 @@ resource "kubernetes_manifest" "app_frontend" {
       "name"      = "${var.project_name}-frontend"
       "namespace" = var.argocd_namespace
       "annotations" = {
-        "argocd-image-updater.argoproj.io/image-list"               = "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend:latest"
-        "argocd-image-updater.argoproj.io/write-back-method"        = "argocd"
+        "argocd-image-updater.argoproj.io/image-list"              = "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend:latest"
+        "argocd-image-updater.argoproj.io/write-back-method"       = "argocd"
         "argocd-image-updater.argoproj.io/frontend.update-strategy" = "latest"
       }
     }
@@ -187,18 +187,18 @@ resource "kubernetes_manifest" "app_backend" {
           "machine-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/machine-service:latest",
           "reminder-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/reminder-service:latest"
         ])
-        "argocd-image-updater.argoproj.io/write-back-method"                       = "argocd"
-        "argocd-image-updater.argoproj.io/auth-service.update-strategy"            = "latest"
-        "argocd-image-updater.argoproj.io/user-service.update-strategy"            = "latest"
-        "argocd-image-updater.argoproj.io/video-service.update-strategy"           = "latest"
+        "argocd-image-updater.argoproj.io/write-back-method"                 = "argocd"
+        "argocd-image-updater.argoproj.io/auth-service.update-strategy"      = "latest"
+        "argocd-image-updater.argoproj.io/user-service.update-strategy"      = "latest"
+        "argocd-image-updater.argoproj.io/video-service.update-strategy"     = "latest"
         "argocd-image-updater.argoproj.io/media-processor-service.update-strategy" = "latest"
-        "argocd-image-updater.argoproj.io/settings-service.update-strategy"        = "latest"
-        "argocd-image-updater.argoproj.io/program-service.update-strategy"         = "latest"
-        "argocd-image-updater.argoproj.io/coach-service.update-strategy"           = "latest"
-        "argocd-image-updater.argoproj.io/notification-service.update-strategy"    = "latest"
-        "argocd-image-updater.argoproj.io/dm-service.update-strategy"              = "latest"
-        "argocd-image-updater.argoproj.io/machine-service.update-strategy"         = "latest"
-        "argocd-image-updater.argoproj.io/reminder-service.update-strategy"        = "latest"
+        "argocd-image-updater.argoproj.io/settings-service.update-strategy"  = "latest"
+        "argocd-image-updater.argoproj.io/program-service.update-strategy"   = "latest"
+        "argocd-image-updater.argoproj.io/coach-service.update-strategy"     = "latest"
+        "argocd-image-updater.argoproj.io/notification-service.update-strategy" = "latest"
+        "argocd-image-updater.argoproj.io/dm-service.update-strategy"        = "latest"
+        "argocd-image-updater.argoproj.io/machine-service.update-strategy"   = "latest"
+        "argocd-image-updater.argoproj.io/reminder-service.update-strategy"  = "latest"
       }
     }
     "spec" = {

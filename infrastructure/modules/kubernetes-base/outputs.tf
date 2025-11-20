@@ -3,8 +3,14 @@ output "app_namespace" {
   value       = kubernetes_namespace.app.metadata[0].name
 }
 
+output "grafana_admin_password" {
+  description = "Grafana admin password"
+  value       = random_password.grafana_admin_password.result
+  sensitive   = true
+}
+
 output "postgres_password" {
-  description = "Postgres password"
+  description = "PostgreSQL password"
   value       = random_password.postgres_password.result
   sensitive   = true
 }
@@ -24,11 +30,5 @@ output "keycloak_client_secret" {
 output "keycloak_admin_password" {
   description = "Keycloak admin password"
   value       = random_password.keycloak_admin_password.result
-  sensitive   = true
-}
-
-output "grafana_admin_password" {
-  description = "Grafana admin password"
-  value       = random_password.grafana_admin_password.result
   sensitive   = true
 }
