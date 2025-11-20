@@ -169,24 +169,26 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
-yum install -y python3 augeas-libs
-python3 -m venv /opt/certbot
-/opt/certbot/bin/pip install --upgrade pip
-/opt/certbot/bin/pip install certbot
+curl https://get.acme.sh | sh -s email=admin@${var.domain_name}
 
 mkdir -p /opt/rancher/ssl
 
 sleep 30
 
-/opt/certbot/bin/certbot certonly --standalone \
-  --non-interactive \
-  --agree-tos \
-  --email admin@${var.domain_name} \
-  --domains rancher.${var.domain_name} \
-  --http-01-port=80
+# Set ZeroSSL as the default CA
+/root/.acme.sh/acme.sh --set-default-ca --server zerossl
 
-cp /etc/letsencrypt/live/rancher.${var.domain_name}/fullchain.pem /opt/rancher/ssl/cert.pem
-cp /etc/letsencrypt/live/rancher.${var.domain_name}/privkey.pem /opt/rancher/ssl/key.pem
+# Issue certificate using ZeroSSL
+/root/.acme.sh/acme.sh --issue --standalone \
+  --domain rancher.${var.domain_name} \
+  --httpport 80 \
+  --email admin@${var.domain_name}
+
+# Install certificates to the Rancher SSL directory
+/root/.acme.sh/acme.sh --install-cert --domain rancher.${var.domain_name} \
+  --cert-file /opt/rancher/ssl/cert.pem \
+  --key-file /opt/rancher/ssl/key.pem \
+  --fullchain-file /opt/rancher/ssl/fullchain.pem
 
 docker run -d --restart=unless-stopped \
   -p 80:80 -p 443:443 \
