@@ -115,7 +115,8 @@ class ApiClient {
   }
 
   private async refreshToken(refreshToken: string): Promise<AuthTokens> {
-    const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
+    const config = getConfig();
+    const response = await axios.post(`${config.apiUrl}/api/v1/auth/refresh`, {
       refresh_token: refreshToken,
     });
     return response.data;
