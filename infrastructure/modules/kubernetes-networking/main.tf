@@ -209,9 +209,10 @@ resource "kubectl_manifest" "letsencrypt_prod" {
               gatewayHTTPRoute = {
                 parentRefs = [
                   {
-                    name      = "nginx-gateway"
-                    namespace = "nginx-gateway"
-                    kind      = "Gateway"
+                    name        = "nginx-gateway"
+                    namespace   = "nginx-gateway"
+                    kind        = "Gateway"
+                    sectionName = "http"
                   }
                 ]
               }
