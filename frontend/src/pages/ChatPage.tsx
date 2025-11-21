@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '@/utils/api';
+import { apiClient, API_BASE_URL } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8084';
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
