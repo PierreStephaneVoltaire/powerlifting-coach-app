@@ -26,7 +26,7 @@ spec:
         - name: REACT_APP_API_URL
           value: "http://api.DOMAIN_PLACEHOLDER"
         - name: REACT_APP_AUTH_URL
-          value: "http://api.DOMAIN_PLACEHOLDER/auth"
+          value: "http://auth.DOMAIN_PLACEHOLDER"
         resources:
           requests:
             memory: "32Mi"
