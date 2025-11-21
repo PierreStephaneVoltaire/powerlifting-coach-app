@@ -23,6 +23,8 @@ output "kubeconfig" {
 output "kube_host" {
   description = "Kubernetes API server host"
   value       = yamldecode(rancher2_cluster_v2.main.kube_config).clusters[0].cluster.server
+  sensitive   = true
+
 }
 
 output "kube_token" {
