@@ -116,6 +116,7 @@ func main() {
 				programs.GET("/:id", programHandlers.GetProgram)
 				programs.POST("/:id/approve", programHandlers.ApproveProgram)
 				programs.POST("/:id/reject", programHandlers.RejectProgram)
+				programs.GET("/:id/changes/pending", programHandlers.GetPendingChanges)
 				programs.POST("/export", programHandlers.ExportProgram)
 				programs.POST("/chat", programHandlers.ChatWithAI)
 				programs.GET("/chat/conversation", programHandlers.GetAIConversation)
@@ -123,7 +124,6 @@ func main() {
 
 				// Program change management (git-like)
 				programs.POST("/changes/propose", programHandlers.ProposeChange)
-				programs.GET("/:programId/changes/pending", programHandlers.GetPendingChanges)
 				programs.POST("/changes/:changeId/apply", programHandlers.ApplyChange)
 				programs.POST("/changes/:changeId/reject", programHandlers.RejectChange)
 			}

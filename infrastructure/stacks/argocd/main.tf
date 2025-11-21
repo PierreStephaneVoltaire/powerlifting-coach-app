@@ -4,6 +4,27 @@ resource "kubernetes_namespace" "argocd" {
   }
 }
 
+data "kubernetes_secret" "argocd_admin" {
+  count = var.stopped ? 0 : 1
+
+  metadata {
+    name      = "argocd-initial-admin-secret"
+    namespace = kubernetes_namespace.argocd.metadata[0].name
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
+resource "aws_ssm_parameter" "argocd_admin_password" {
+  count = var.stopped ? 0 : 1
+
+  name  = "/${var.project_name}/${var.environment}/argocd/admin-password"
+  type  = "SecureString"
+  value = data.kubernetes_secret.argocd_admin[0].data["password"]
+
+  depends_on = [data.kubernetes_secret.argocd_admin]
+}
+
 resource "helm_release" "argocd" {
   count = var.stopped ? 0 : 1
 

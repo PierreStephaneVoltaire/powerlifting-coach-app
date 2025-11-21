@@ -277,7 +277,7 @@ func (h *ProgramHandlers) ProposeChange(c *gin.Context) {
 }
 
 func (h *ProgramHandlers) GetPendingChanges(c *gin.Context) {
-	programID, err := uuid.Parse(c.Param("programId"))
+	programID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid program ID"})
 		return

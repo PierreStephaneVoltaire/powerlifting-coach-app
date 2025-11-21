@@ -78,6 +78,9 @@ resource "helm_release" "loki" {
     yamlencode({
       loki = {
         auth_enabled = false
+        commonConfig = {
+          replication_factor = 1
+        }
       }
       singleBinary = {
         replicas = 1

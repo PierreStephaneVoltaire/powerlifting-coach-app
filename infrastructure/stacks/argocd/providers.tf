@@ -12,7 +12,15 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = "~> 1.14"
     }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
   }
+}
+
+provider "aws" {
+  region = var.aws_region
 }
 
 provider "kubernetes" {
