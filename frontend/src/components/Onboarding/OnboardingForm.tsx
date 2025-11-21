@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, SubmitHandler, FieldPath } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/utils/api';
@@ -17,7 +17,7 @@ export const OnboardingForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, watch, trigger, formState: { errors }, getValues } = useForm<FormData>({
+  const { control, handleSubmit, watch, trigger, formState: { errors }, getValues, setValue, clearErrors } = useForm<FormData>({
     defaultValues: {
       weight: { value: 0, unit: 'kg' },
       age: 0,
@@ -69,6 +69,15 @@ export const OnboardingForm: React.FC = () => {
   const hasCompeted = watch('has_competed');
   const heightUnit = watch('height.unit');
   const feedVisibility = watch('feed_visibility');
+
+  useEffect(() => {
+    if (!hasCompeted) {
+      setValue('best_total_kg', 0);
+      setValue('comp_pr_date', '');
+      setValue('comp_federation', '');
+      clearErrors(['best_total_kg', 'comp_pr_date', 'comp_federation']);
+    }
+  }, [hasCompeted, setValue, clearErrors]);
 
   const nextStep = async () => {
     const currentStepFields = getStepFields(step, hasCompeted, heightUnit || 'cm', feedVisibility || 'public');
