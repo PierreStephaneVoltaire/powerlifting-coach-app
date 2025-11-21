@@ -64,7 +64,7 @@ export const getStepFields = (
     case 3:
       return ['training_days_per_week', 'session_length_minutes', 'volume_preference', 'recovery_rating_squat', 'recovery_rating_bench', 'recovery_rating_dead', 'squat_stance', 'deadlift_style', 'squat_bar_position'];
     case 4:
-      const step4Fields: FieldPath<FormData>[] = ['weight_plan', 'feed_visibility', 'injuries', 'knee_sleeve'];
+      const step4Fields: FieldPath<FormData>[] = ['weight_plan', 'feed_visibility', 'knee_sleeve'];
       if (feedVisibility === 'passcode') {
         step4Fields.push('passcode');
       }

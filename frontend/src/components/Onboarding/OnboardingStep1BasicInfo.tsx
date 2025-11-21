@@ -406,10 +406,11 @@ export const OnboardingStep1BasicInfo: React.FC<StepProps> = ({
               name="best_total_kg"
               control={control}
               rules={{
-                required: "Total is required",
-                min: { value: MIN_LIFT_KG * 3, message: `Total must be at least ${MIN_LIFT_KG * 3} kg` },
-                max: { value: MAX_TOTAL_KG, message: `Max total is ${MAX_TOTAL_KG} kg` },
+                required: hasCompeted ? "Total is required" : false,
+                min: hasCompeted ? { value: MIN_LIFT_KG * 3, message: `Total must be at least ${MIN_LIFT_KG * 3} kg` } : undefined,
+                max: hasCompeted ? { value: MAX_TOTAL_KG, message: `Max total is ${MAX_TOTAL_KG} kg` } : undefined,
                 validate: (value) => {
+                  if (!hasCompeted) return true;
                   const s = getValues('best_squat_kg') || 0;
                   const b = getValues('best_bench_kg') || 0;
                   const d = getValues('best_dead_kg') || 0;
@@ -447,7 +448,7 @@ export const OnboardingStep1BasicInfo: React.FC<StepProps> = ({
               <Controller
                 name="comp_federation"
                 control={control}
-                rules={{ required: "Federation is required" }}
+                rules={{ required: hasCompeted ? "Federation is required" : false }}
                 render={({ field }) => (
                   <select
                     {...field}
@@ -475,8 +476,11 @@ export const OnboardingStep1BasicInfo: React.FC<StepProps> = ({
                 name="comp_pr_date"
                 control={control}
                 rules={{
-                  required: "Date is required",
-                  validate: (value) => (value && value <= new Date().toISOString().split('T')[0]) || "Date cannot be in the future"
+                  required: hasCompeted ? "Date is required" : false,
+                  validate: (value) => {
+                    if (!hasCompeted) return true;
+                    return (value && value <= new Date().toISOString().split('T')[0]) || "Date cannot be in the future";
+                  }
                 }}
                 render={({ field }) => (
                   <input

@@ -53,12 +53,11 @@ export const OnboardingStep4Details: React.FC<StepProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Injuries or Limitations *
+          Injuries or Limitations
         </label>
         <Controller
           name="injuries"
           control={control}
-          rules={{ required: "This field is required" }}
           render={({ field }) => (
             <textarea
               {...field}

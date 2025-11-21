@@ -19,8 +19,8 @@ export async function loadConfig(): Promise<AppConfig> {
   }
 
   config = {
-    apiUrl: process.env.REACT_APP_API_URL || 'api.nolift.training',
-    authUrl: process.env.REACT_APP_AUTH_URL || 'auth.nolift.training',
+    apiUrl: process.env.REACT_APP_API_URL || 'https://api.nolift.training',
+    authUrl: process.env.REACT_APP_AUTH_URL || 'https://auth.nolift.training',
   };
   return config;
 }

@@ -5,19 +5,18 @@ import { offlineQueue } from './offlineQueue';
 import { toast } from '@/components/UI/Toast';
 
 import { generateUUID } from '@/utils/uuid';
-import { getConfig } from './config';
 
+const API_BASE_URL = 'https://api.nolift.training';
 const DEFAULT_TIMEOUT = 30000;
 const WRITE_TIMEOUT = 60000;
 
 class ApiClient {
   private client: AxiosInstance;
   private serviceErrorShown: Set<string> = new Set();
-  private initialized = false;
 
   constructor() {
     this.client = axios.create({
-      baseURL: '',
+      baseURL: API_BASE_URL,
       timeout: DEFAULT_TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
@@ -25,13 +24,6 @@ class ApiClient {
     });
 
     this.setupInterceptors();
-  }
-
-  async init() {
-    if (this.initialized) return;
-    const config = getConfig();
-    this.client.defaults.baseURL = config.apiUrl;
-    this.initialized = true;
   }
 
   private getServiceName(url: string): string {
@@ -115,8 +107,7 @@ class ApiClient {
   }
 
   private async refreshToken(refreshToken: string): Promise<AuthTokens> {
-    const config = getConfig();
-    const response = await axios.post(`${config.apiUrl}/api/v1/auth/refresh`, {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
       refresh_token: refreshToken,
     });
     return response.data;
