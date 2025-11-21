@@ -1,22 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, API_BASE_URL } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
+import axios from 'axios';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
-  const [initialMessages, setInitialMessages] = useState<any[]>([]);
-
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: `${API_BASE_URL}/v1/chat/completions`,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    initialMessages,
-  });
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -25,6 +26,14 @@ export const ChatPage: React.FC = () => {
     }
     loadInitialPrompt();
   }, [user, navigate]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const loadInitialPrompt = async () => {
     setIsLoadingSettings(true);
@@ -68,20 +77,71 @@ export const ChatPage: React.FC = () => {
       contextParts.push('');
       contextParts.push('How can I help you today?');
 
-      setInitialMessages([{
+      setMessages([{
         id: 'initial-system-message',
         role: 'system',
         content: contextParts.join('\n'),
       }]);
     } catch (err) {
       console.error('Failed to get user settings:', err);
-      setInitialMessages([{
+      setMessages([{
         id: 'initial-system-message',
         role: 'system',
         content: '👋 Welcome! How can I help you today?',
       }]);
     } finally {
       setIsLoadingSettings(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: input,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/v1/chat/completions`,
+        {
+          model: 'gpt-3.5-turbo',
+          messages: [...messages, userMessage].map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: response.data.choices[0].message.content,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -166,6 +226,8 @@ export const ChatPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -175,7 +237,7 @@ export const ChatPage: React.FC = () => {
             <input
               type="text"
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
               disabled={isLoading}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
