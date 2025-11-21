@@ -173,25 +173,6 @@ resource "kubectl_manifest" "grafana_httproute" {
   depends_on = [helm_release.kube_prometheus_stack]
 }
 
-resource "kubectl_manifest" "grafana_certificate" {
-  yaml_body = yamlencode({
-    apiVersion = "cert-manager.io/v1"
-    kind       = "Certificate"
-    metadata = {
-      name      = "grafana-tls"
-      namespace = "nginx-gateway"
-    }
-    spec = {
-      secretName = "grafana-tls"
-      issuerRef = {
-        name = "letsencrypt-prod"
-        kind = "ClusterIssuer"
-      }
-      dnsNames = ["grafana.${var.domain_name}"]
-    }
-  })
-}
-
 resource "kubectl_manifest" "prometheus_httproute" {
   yaml_body = yamlencode({
     apiVersion = "gateway.networking.k8s.io/v1"
@@ -231,25 +212,6 @@ resource "kubectl_manifest" "prometheus_httproute" {
   })
 
   depends_on = [helm_release.kube_prometheus_stack]
-}
-
-resource "kubectl_manifest" "prometheus_certificate" {
-  yaml_body = yamlencode({
-    apiVersion = "cert-manager.io/v1"
-    kind       = "Certificate"
-    metadata = {
-      name      = "prometheus-tls"
-      namespace = "nginx-gateway"
-    }
-    spec = {
-      secretName = "prometheus-tls"
-      issuerRef = {
-        name = "letsencrypt-prod"
-        kind = "ClusterIssuer"
-      }
-      dnsNames = ["prometheus.${var.domain_name}"]
-    }
-  })
 }
 
 resource "kubectl_manifest" "loki_httproute" {
@@ -293,25 +255,6 @@ resource "kubectl_manifest" "loki_httproute" {
   depends_on = [helm_release.loki]
 }
 
-resource "kubectl_manifest" "loki_certificate" {
-  yaml_body = yamlencode({
-    apiVersion = "cert-manager.io/v1"
-    kind       = "Certificate"
-    metadata = {
-      name      = "loki-tls"
-      namespace = "nginx-gateway"
-    }
-    spec = {
-      secretName = "loki-tls"
-      issuerRef = {
-        name = "letsencrypt-prod"
-        kind = "ClusterIssuer"
-      }
-      dnsNames = ["loki.${var.domain_name}"]
-    }
-  })
-}
-
 resource "kubectl_manifest" "rabbitmq_httproute" {
   yaml_body = yamlencode({
     apiVersion = "gateway.networking.k8s.io/v1"
@@ -351,21 +294,3 @@ resource "kubectl_manifest" "rabbitmq_httproute" {
   })
 }
 
-resource "kubectl_manifest" "rabbitmq_certificate" {
-  yaml_body = yamlencode({
-    apiVersion = "cert-manager.io/v1"
-    kind       = "Certificate"
-    metadata = {
-      name      = "rabbitmq-tls"
-      namespace = "nginx-gateway"
-    }
-    spec = {
-      secretName = "rabbitmq-tls"
-      issuerRef = {
-        name = "letsencrypt-prod"
-        kind = "ClusterIssuer"
-      }
-      dnsNames = ["rabbitmq.${var.domain_name}"]
-    }
-  })
-}

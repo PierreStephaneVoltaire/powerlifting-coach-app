@@ -79,21 +79,3 @@ resource "kubectl_manifest" "argocd_httproute" {
   ]
 }
 
-resource "kubectl_manifest" "argocd_certificate" {
-  yaml_body = yamlencode({
-    apiVersion = "cert-manager.io/v1"
-    kind       = "Certificate"
-    metadata = {
-      name      = "argocd-tls"
-      namespace = "nginx-gateway"
-    }
-    spec = {
-      secretName = "argocd-tls"
-      issuerRef = {
-        name = "letsencrypt-prod"
-        kind = "ClusterIssuer"
-      }
-      dnsNames = ["argocd.${var.domain_name}"]
-    }
-  })
-}
