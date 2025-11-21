@@ -41,11 +41,11 @@ resource "rancher2_machine_config_v2" "cluster_nodes" {
     subnet_id             = data.terraform_remote_state.base.outputs.public_subnet_ids[0]
     vpc_id                = data.terraform_remote_state.base.outputs.vpc_id
     zone                  = "a"
-    instance_type         = "t4g.large"
+    instance_type         = "m6g.xlarge"
     root_size             = "30"
     iam_instance_profile  = aws_iam_instance_profile.rancher_node.name
     ssh_user              = "ec2-user"
-    request_spot_instance = false
+    request_spot_instance = true
   }
 
   depends_on = [rancher2_bootstrap.admin, aws_ssm_parameter.password]
