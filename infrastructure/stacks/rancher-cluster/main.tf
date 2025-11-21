@@ -113,9 +113,9 @@ resource "aws_security_group" "rancher_node" {
   }
 
   tags = {
-    Name                                        = "${local.cluster_name}-rancher-node-sg"
-    Environment                                 = var.environment
-    Project                                     = var.project_name
+    Name                                          = "${local.cluster_name}-rancher-node-sg"
+    Environment                                   = var.environment
+    Project                                       = var.project_name
     "kubernetes.io/cluster/${local.cluster_name}" = "owned"
   }
 }
