@@ -250,7 +250,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/video-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -296,7 +296,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/media-processor-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -342,7 +342,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/settings-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -388,7 +388,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/program-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -434,7 +434,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/coach-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -480,7 +480,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/notification-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -526,7 +526,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/dm-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -572,7 +572,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/machine-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
@@ -618,7 +618,7 @@ jobs:
       - name: Build and push multi-arch image
         run: |
           IMAGE_PATH="${{ env.REGISTRY }}/pierrestephanevoltaire/${{ env.IMAGE_PREFIX }}/reminder-service"
-          SHA_TAG="${IMAGE_PATH}:${{GITHUB_SHA::8}}"
+          SHA_TAG="${IMAGE_PATH}:${GITHUB_SHA::8}"
           LATEST_TAG="${IMAGE_PATH}:latest"
 
           podman manifest create ${SHA_TAG}
