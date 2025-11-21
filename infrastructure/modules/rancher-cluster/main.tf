@@ -211,10 +211,3 @@ resource "local_file" "kubeconfig_rancher" {
   depends_on = [rancher2_cluster_v2.main]
 }
 
-resource "aws_route53_record" "cluster_wildcard" {
-  zone_id = var.route53_zone_id
-  name    = "*.${var.domain_name}"
-  type    = "CNAME"
-  ttl     = 300
-  records = [var.rancher_server_fqdn]
-}
