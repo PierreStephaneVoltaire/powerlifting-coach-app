@@ -6,7 +6,7 @@ import { toast } from '@/components/UI/Toast';
 
 import { generateUUID } from '@/utils/uuid';
 
-const API_BASE_URL = 'https://api.nolift.training';
+export const API_BASE_URL = 'https://api.nolift.training';
 const DEFAULT_TIMEOUT = 30000;
 const WRITE_TIMEOUT = 60000;
 
