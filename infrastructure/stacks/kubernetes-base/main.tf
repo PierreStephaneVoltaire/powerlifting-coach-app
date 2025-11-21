@@ -239,6 +239,11 @@ spec:
     spec:
       containers:
       - name: frontend
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://api.${var.domain_name}"
+        - name: REACT_APP_AUTH_URL
+          value: "https://auth.${var.domain_name}"
         resources:
           requests:
             memory: "32Mi"
