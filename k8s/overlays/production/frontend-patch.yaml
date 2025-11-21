@@ -8,6 +8,11 @@ spec:
     spec:
       containers:
       - name: frontend
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://api.nolift.training"
+        - name: REACT_APP_AUTH_URL
+          value: "https://auth.nolift.training"
         resources:
           requests:
             memory: "32Mi"
