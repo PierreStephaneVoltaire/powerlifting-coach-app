@@ -12,8 +12,6 @@ RUN npm install --legacy-peer-deps
 COPY . .
 ENV TSC_COMPILE_ON_ERROR=true
 ENV DISABLE_ESLINT_PLUGIN=true
-ARG REACT_APP_API_URL
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
 RUN npm run build
 
 FROM public.ecr.aws/docker/library/node:16-alpine
@@ -22,7 +20,10 @@ WORKDIR /app
 RUN npm install -g serve@14
 
 COPY --from=builder /app/build ./build
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 3000
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["serve", "-s", "build", "-l", "3000"]

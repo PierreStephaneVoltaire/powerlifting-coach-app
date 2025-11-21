@@ -670,11 +670,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
-          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./frontend
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./frontend
 
-          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
-          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./frontend
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./frontend
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}

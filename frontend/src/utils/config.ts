@@ -1,0 +1,33 @@
+interface AppConfig {
+  apiUrl: string;
+  authUrl: string;
+}
+
+let config: AppConfig | null = null;
+
+export async function loadConfig(): Promise<AppConfig> {
+  if (config) return config;
+
+  try {
+    const response = await fetch('/config.json');
+    if (response.ok) {
+      config = await response.json();
+      return config!;
+    }
+  } catch (e) {
+    console.warn('Failed to load config.json, using env vars');
+  }
+
+  config = {
+    apiUrl: process.env.REACT_APP_API_URL || '',
+    authUrl: process.env.REACT_APP_AUTH_URL || '',
+  };
+  return config;
+}
+
+export function getConfig(): AppConfig {
+  if (!config) {
+    throw new Error('Config not loaded. Call loadConfig() first.');
+  }
+  return config;
+}
