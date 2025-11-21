@@ -164,11 +164,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/auth-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/auth-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/auth-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/auth-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/auth-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/auth-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/auth-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/auth-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -210,11 +210,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/user-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/user-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/user-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/user-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/user-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/user-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/user-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/user-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -256,11 +256,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/video-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/video-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/video-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/video-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/video-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/video-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/video-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/video-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -302,11 +302,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/media-processor-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/media-processor-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/media-processor-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/media-processor-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/media-processor-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/media-processor-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/media-processor-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/media-processor-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -348,11 +348,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/settings-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/settings-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/settings-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/settings-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/settings-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/settings-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/settings-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/settings-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -394,11 +394,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/program-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/program-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/program-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/program-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/program-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/program-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/program-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/program-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -440,11 +440,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/coach-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/coach-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/coach-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/coach-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/coach-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/coach-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/coach-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/coach-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -486,11 +486,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/notification-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/notification-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/notification-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/notification-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/notification-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/notification-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/notification-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/notification-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -532,11 +532,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/dm-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/dm-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/dm-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/dm-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/dm-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/dm-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/dm-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/dm-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -578,11 +578,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/machine-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/machine-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/machine-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/machine-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/machine-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/machine-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/machine-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/machine-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -624,11 +624,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --manifest ${SHA_TAG} ./services/reminder-service
-          podman build --platform linux/arm64 --manifest ${SHA_TAG} ./services/reminder-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${SHA_TAG} ./services/reminder-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${SHA_TAG} ./services/reminder-service
 
-          podman build --platform linux/amd64 --manifest ${LATEST_TAG} ./services/reminder-service
-          podman build --platform linux/arm64 --manifest ${LATEST_TAG} ./services/reminder-service
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --manifest ${LATEST_TAG} ./services/reminder-service
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --manifest ${LATEST_TAG} ./services/reminder-service
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
@@ -670,11 +670,11 @@ jobs:
           podman manifest create ${SHA_TAG}
           podman manifest create ${LATEST_TAG}
 
-          podman build --platform linux/amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
-          podman build --platform linux/arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${SHA_TAG} ./frontend
 
-          podman build --platform linux/amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
-          podman build --platform linux/arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
+          podman build --platform linux/amd64 --build-arg TARGETARCH=amd64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
+          podman build --platform linux/arm64 --build-arg TARGETARCH=arm64 --build-arg REACT_APP_API_URL=https://api.${{ vars.DOMAIN_NAME }} --manifest ${LATEST_TAG} ./frontend
 
           podman manifest push --remove-signatures ${SHA_TAG}
           podman manifest push --remove-signatures ${LATEST_TAG}
