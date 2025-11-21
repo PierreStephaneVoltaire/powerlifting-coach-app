@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-ARG TARGETARCH
+ARG TARGETARCH=amd64
 ARG TARGETOS=linux
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o reminder-service ./cmd/main.go

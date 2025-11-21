@@ -1,6 +1,6 @@
 FROM public.ecr.aws/docker/library/node:16-alpine AS builder
 
-ARG TARGETARCH
+ARG TARGETARCH=amd64
 ARG TARGETOS=linux
 
 WORKDIR /app
