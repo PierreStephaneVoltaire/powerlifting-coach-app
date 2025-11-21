@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/powerlifting-coach-app/notification-service/internal/config"
 	"github.com/powerlifting-coach-app/notification-service/internal/handlers"
 	"github.com/powerlifting-coach-app/notification-service/internal/notification"
@@ -76,6 +77,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.Use(middleware.DefaultCORSMiddleware())
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {

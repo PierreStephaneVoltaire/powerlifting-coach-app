@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared/middleware"
 	"github.com/powerlifting-coach-app/auth-service/internal/auth"
 	"github.com/powerlifting-coach-app/auth-service/internal/config"
 	"github.com/powerlifting-coach-app/auth-service/internal/handlers"
@@ -33,18 +34,7 @@ func main() {
 
 	router := gin.Default()
 
-	router.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		
-		c.Next()
-	})
+	router.Use(middleware.DefaultCORSMiddleware())
 
 	v1 := router.Group("/api/v1")
 	{
