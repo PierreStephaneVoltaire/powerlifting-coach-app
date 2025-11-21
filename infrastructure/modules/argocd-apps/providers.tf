@@ -6,3 +6,8 @@ terraform {
     }
   }
 }
+
+provider "kubernetes" {
+  host  = var.kube_host
+  token = var.kube_token
+}

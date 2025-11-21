@@ -171,6 +171,8 @@ module "kubernetes_base" {
   google_oauth_client_secret = var.google_oauth_client_secret
   stopped                    = var.stopped
   project_root               = path.module
+  kube_host                  = module.rancher_cluster[0].kube_host
+  kube_token                 = module.rancher_cluster[0].kube_token
 }
 
 module "kubernetes_networking" {
@@ -180,6 +182,8 @@ module "kubernetes_networking" {
   domain_name  = var.domain_name
   cluster_name = local.cluster_name
   stopped      = var.stopped
+  kube_host    = module.rancher_cluster[0].kube_host
+  kube_token   = module.rancher_cluster[0].kube_token
 }
 
 module "kubernetes_monitoring" {
@@ -190,6 +194,8 @@ module "kubernetes_monitoring" {
   app_namespace          = module.kubernetes_base[0].app_namespace
   grafana_admin_password = module.kubernetes_base[0].grafana_admin_password
   stopped                = var.stopped
+  kube_host              = module.rancher_cluster[0].kube_host
+  kube_token             = module.rancher_cluster[0].kube_token
 
   depends_on = [module.kubernetes_networking]
 }
@@ -200,6 +206,8 @@ module "argocd" {
 
   domain_name = var.domain_name
   stopped     = var.stopped
+  kube_host   = module.rancher_cluster[0].kube_host
+  kube_token  = module.rancher_cluster[0].kube_token
 
   depends_on = [module.kubernetes_networking]
 }
@@ -214,6 +222,8 @@ module "argocd_apps" {
   deploy_frontend  = var.deploy_frontend
   deploy_datalayer = var.deploy_datalayer
   deploy_backend   = var.deploy_backend
+  kube_host        = module.rancher_cluster[0].kube_host
+  kube_token       = module.rancher_cluster[0].kube_token
 
   depends_on = [module.argocd]
 }

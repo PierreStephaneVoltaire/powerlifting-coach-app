@@ -14,10 +14,3 @@ terraform {
     }
   }
 }
-
-provider "rancher2" {
-  alias     = "bootstrap"
-  api_url   = "https://rancher.${var.domain_name}"
-  bootstrap = true
-  insecure  = true
-}

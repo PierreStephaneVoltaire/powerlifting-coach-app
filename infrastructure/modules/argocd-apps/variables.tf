@@ -30,3 +30,14 @@ variable "deploy_backend" {
   type        = bool
   default     = false
 }
+
+variable "kube_host" {
+  description = "Kubernetes API server host"
+  type        = string
+}
+
+variable "kube_token" {
+  description = "Kubernetes API server token"
+  type        = string
+  sensitive   = true
+}
