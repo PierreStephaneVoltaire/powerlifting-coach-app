@@ -2,11 +2,6 @@ output "cluster_name" {
   value = local.cluster_name
 }
 
-output "cluster_endpoint" {
-  description = "Kubernetes API endpoint (from Rancher kubeconfig)"
-  value       = var.rancher_cluster_enabled ? "See cluster_kubeconfig output" : "Rancher Server: https://${aws_eip.rancher.public_ip}"
-}
-
 output "vpc_id" {
   value = aws_vpc.main.id
 }
@@ -21,6 +16,10 @@ output "s3_videos_bucket" {
 
 output "s3_videos_bucket_arn" {
   value = aws_s3_bucket.videos.arn
+}
+
+output "s3_videos_bucket_domain" {
+  value = aws_s3_bucket.videos.bucket_regional_domain_name
 }
 
 output "s3_videos_endpoint" {
@@ -39,26 +38,6 @@ output "s3_videos_secret_key" {
 
 output "region" {
   value = var.aws_region
-}
-
-output "postgres_password" {
-  value     = module.kubernetes_base.postgres_password
-  sensitive = true
-}
-
-output "rabbitmq_password" {
-  value     = module.kubernetes_base.rabbitmq_password
-  sensitive = true
-}
-
-output "keycloak_client_secret" {
-  value     = module.kubernetes_base.keycloak_client_secret
-  sensitive = true
-}
-
-output "keycloak_admin_password" {
-  value     = module.kubernetes_base.keycloak_admin_password
-  sensitive = true
 }
 
 output "argocd_url" {
@@ -81,11 +60,6 @@ output "grafana_url" {
   value = "https://grafana.${var.domain_name}"
 }
 
-output "grafana_admin_password" {
-  value     = module.kubernetes_base.grafana_admin_password
-  sensitive = true
-}
-
 output "prometheus_url" {
   value = "https://prometheus.${var.domain_name}"
 }
@@ -101,7 +75,6 @@ output "rabbitmq_management_url" {
 output "rabbitmq_management_username" {
   value = "admin"
 }
-
 
 output "route53_zone_id" {
   value = aws_route53_zone.main.zone_id
@@ -139,29 +112,23 @@ output "ses_smtp_password" {
   sensitive = true
 }
 
-output "rancher_admin" {
-  value     = random_password.rancher_admin
-  sensitive = true
+output "ami_id" {
+  description = "AMI ID for cluster nodes"
+  value       = data.aws_ami.amazon_linux_2.id
 }
 
-output "rancher_cluster_id" {
-  description = "ID of the Rancher-managed cluster"
-  value       = module.rancher_cluster.cluster_id
+output "rancher_server_sg_id" {
+  description = "Rancher server security group ID"
+  value       = aws_security_group.rancher_server.id
 }
 
-output "rancher_cluster_name" {
-  description = "Name of the Rancher-managed cluster"
-  value       = module.rancher_cluster.cluster_name
+output "rancher_server_fqdn" {
+  description = "Rancher server FQDN"
+  value       = aws_route53_record.rancher_server.fqdn
 }
 
-output "rancher_admin_token" {
-  description = "Rancher admin API token"
-  value       = module.rancher_cluster.admin_token
-  sensitive   = true
-}
-
-output "cluster_kubeconfig" {
-  description = "Kubeconfig for the cluster (use terraform output -raw cluster_kubeconfig)"
-  value       = module.rancher_cluster.kubeconfig
+output "rancher_admin_password" {
+  description = "Rancher admin password"
+  value       = random_password.rancher_admin.result
   sensitive   = true
 }

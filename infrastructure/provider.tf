@@ -1,24 +1,8 @@
 terraform {
   required_providers {
-        rancher2 = {
-      source  = "rancher/rancher2"
-      version = "~> 8.3.1"
-    }
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.20"
-    }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.7"
-    }
-    kubectl = {
-      source  = "gavinbunney/kubectl"
-      version = "~> 1.14"
     }
     random = {
       source  = "hashicorp/random"
@@ -31,6 +15,10 @@ terraform {
     tls = {
       source  = "hashicorp/tls"
       version = "~> 4.0"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
   }
 }
@@ -61,10 +49,3 @@ provider "aws" {
 }
 
 data "aws_partition" "current" {}
-
-
-provider "rancher2" {
-  api_url   = "https://rancher.${var.domain_name}"
-  bootstrap = true
-  insecure  = true
-}
