@@ -1,10 +1,6 @@
 resource "rancher2_bootstrap" "admin" {
-  provider = rancher2.bootstrap
-
   initial_password = var.rancher_admin_password
   password         = var.rancher_admin_password
-
-  depends_on = [var.rancher_server_ready]
 }
 
 resource "rancher2_setting" "agenttlsmode" {
@@ -41,7 +37,7 @@ resource "rancher2_machine_config_v2" "cluster_nodes" {
     subnet_id             = var.subnet_id
     vpc_id                = var.vpc_id
     zone                  = "a"
-    instance_type         = "t4g.small"
+    instance_type         = "t4g.large"
     root_size             = "30"
     iam_instance_profile  = aws_iam_instance_profile.rancher_node.name
     ssh_user              = "ec2-user"
@@ -113,9 +109,9 @@ resource "aws_security_group" "rancher_node" {
   }
 
   tags = {
-    Name                                       = "${var.cluster_name}-rancher-node-sg"
-    Environment                                = var.environment
-    Project                                    = var.project_name
+    Name                                        = "${var.cluster_name}-rancher-node-sg"
+    Environment                                 = var.environment
+    Project                                     = var.project_name
     "kubernetes.io/cluster/${var.cluster_name}" = "owned"
   }
 }

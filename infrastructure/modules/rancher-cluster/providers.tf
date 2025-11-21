@@ -14,3 +14,9 @@ terraform {
     }
   }
 }
+
+provider "rancher2" {
+  api_url   = "https://${var.rancher_server_fqdn}"
+  bootstrap = true
+  insecure  = true
+}

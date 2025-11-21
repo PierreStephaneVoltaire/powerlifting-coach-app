@@ -85,12 +85,6 @@ variable "rancher_admin_password" {
   sensitive   = true
 }
 
-variable "rancher_server_ready" {
-  description = "Dependency marker for rancher server readiness"
-  type        = any
-  default     = null
-}
-
 variable "project_root" {
   description = "Project root path"
   type        = string

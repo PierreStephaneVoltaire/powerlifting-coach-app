@@ -45,7 +45,6 @@ resource "aws_route53_record" "ses_mail_from_txt" {
 }
 
 resource "aws_iam_user" "ses_smtp" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
   name  = "${local.cluster_name}-ses-smtp"
 
   tags = {
@@ -56,14 +55,12 @@ resource "aws_iam_user" "ses_smtp" {
 }
 
 resource "aws_iam_access_key" "ses_smtp" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-  user  = aws_iam_user.ses_smtp[0].name
+  user  = aws_iam_user.ses_smtp.name
 }
 
 resource "aws_iam_user_policy" "ses_smtp" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
   name  = "${local.cluster_name}-ses-smtp-policy"
-  user  = aws_iam_user.ses_smtp[0].name
+  user  = aws_iam_user.ses_smtp.name
 
   policy = jsonencode({
     Version = "2012-10-17"

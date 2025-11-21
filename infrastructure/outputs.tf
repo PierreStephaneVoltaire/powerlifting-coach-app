@@ -28,12 +28,12 @@ output "s3_videos_endpoint" {
 }
 
 output "s3_videos_access_key" {
-  value     = try(aws_iam_access_key.s3_videos[0].id, null)
+  value     = try(aws_iam_access_key.s3_videos.id, null)
   sensitive = true
 }
 
 output "s3_videos_secret_key" {
-  value     = try(aws_iam_access_key.s3_videos[0].secret, null)
+  value     = try(aws_iam_access_key.s3_videos.secret, null)
   sensitive = true
 }
 
@@ -42,60 +42,60 @@ output "region" {
 }
 
 output "postgres_password" {
-  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].postgres_password : null
+  value     = module.kubernetes_base.postgres_password
   sensitive = true
 }
 
 output "rabbitmq_password" {
-  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].rabbitmq_password : null
+  value     = module.kubernetes_base.rabbitmq_password
   sensitive = true
 }
 
 output "keycloak_client_secret" {
-  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].keycloak_client_secret : null
+  value     = module.kubernetes_base.keycloak_client_secret
   sensitive = true
 }
 
 output "keycloak_admin_password" {
-  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].keycloak_admin_password : null
+  value     = module.kubernetes_base.keycloak_admin_password
   sensitive = true
 }
 
 output "argocd_url" {
-  value = var.kubernetes_resources_enabled ? "https://argocd.${var.domain_name}" : null
+  value = "https://argocd.${var.domain_name}"
 }
 
 output "frontend_url" {
-  value = var.kubernetes_resources_enabled ? "https://app.${var.domain_name}" : null
+  value = "https://app.${var.domain_name}"
 }
 
 output "api_url" {
-  value = var.kubernetes_resources_enabled ? "https://api.${var.domain_name}" : null
+  value = "https://api.${var.domain_name}"
 }
 
 output "auth_url" {
-  value = var.kubernetes_resources_enabled ? "https://auth.${var.domain_name}" : null
+  value = "https://auth.${var.domain_name}"
 }
 
 output "grafana_url" {
-  value = var.kubernetes_resources_enabled ? "https://grafana.${var.domain_name}" : null
+  value = "https://grafana.${var.domain_name}"
 }
 
 output "grafana_admin_password" {
-  value     = var.kubernetes_resources_enabled ? module.kubernetes_base[0].grafana_admin_password : null
+  value     = module.kubernetes_base.grafana_admin_password
   sensitive = true
 }
 
 output "prometheus_url" {
-  value = var.kubernetes_resources_enabled ? "https://prometheus.${var.domain_name}" : null
+  value = "https://prometheus.${var.domain_name}"
 }
 
 output "loki_url" {
-  value = var.kubernetes_resources_enabled ? "https://loki.${var.domain_name}" : null
+  value = "https://loki.${var.domain_name}"
 }
 
 output "rabbitmq_management_url" {
-  value = var.kubernetes_resources_enabled ? "https://rabbitmq.${var.domain_name}" : null
+  value = "https://rabbitmq.${var.domain_name}"
 }
 
 output "rabbitmq_management_username" {
@@ -130,12 +130,12 @@ output "ses_smtp_endpoint" {
 }
 
 output "ses_smtp_username" {
-  value     = try(aws_iam_access_key.ses_smtp[0].id, null)
+  value     = try(aws_iam_access_key.ses_smtp.id, null)
   sensitive = true
 }
 
 output "ses_smtp_password" {
-  value     = try(aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4, null)
+  value     = try(aws_iam_access_key.ses_smtp.ses_smtp_password_v4, null)
   sensitive = true
 }
 
@@ -146,22 +146,22 @@ output "rancher_admin" {
 
 output "rancher_cluster_id" {
   description = "ID of the Rancher-managed cluster"
-  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].cluster_id : null
+  value       = module.rancher_cluster.cluster_id
 }
 
 output "rancher_cluster_name" {
   description = "Name of the Rancher-managed cluster"
-  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].cluster_name : null
+  value       = module.rancher_cluster.cluster_name
 }
 
 output "rancher_admin_token" {
   description = "Rancher admin API token"
-  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].admin_token : null
+  value       = module.rancher_cluster.admin_token
   sensitive   = true
 }
 
 output "cluster_kubeconfig" {
   description = "Kubeconfig for the cluster (use terraform output -raw cluster_kubeconfig)"
-  value       = var.rancher_cluster_enabled ? module.rancher_cluster[0].kubeconfig : null
+  value       = module.rancher_cluster.kubeconfig
   sensitive   = true
 }

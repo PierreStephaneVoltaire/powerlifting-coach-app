@@ -2,6 +2,7 @@ locals {
   cluster_name      = "${var.project_name}-${var.environment}"
   ses_smtp_endpoint = "email-smtp.${var.aws_region}.amazonaws.com"
 }
+data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "videos" {
   bucket_prefix = "${local.cluster_name}-videos-"
@@ -79,8 +80,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "videos" {
 }
 
 resource "aws_iam_user" "s3_videos" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-  name  = "${local.cluster_name}-s3-videos"
+  name = "${local.cluster_name}-s3-videos"
 
   tags = {
     Name        = "${local.cluster_name}-s3-videos"
@@ -90,14 +90,12 @@ resource "aws_iam_user" "s3_videos" {
 }
 
 resource "aws_iam_access_key" "s3_videos" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-  user  = aws_iam_user.s3_videos[0].name
+  user = aws_iam_user.s3_videos.name
 }
 
 resource "aws_iam_user_policy" "s3_videos" {
-  count = var.kubernetes_resources_enabled ? 1 : 0
-  name  = "${local.cluster_name}-s3-videos-policy"
-  user  = aws_iam_user.s3_videos[0].name
+  name = "${local.cluster_name}-s3-videos-policy"
+  user = aws_iam_user.s3_videos.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -120,110 +118,88 @@ resource "aws_iam_user_policy" "s3_videos" {
 }
 
 module "rancher_cluster" {
-  count  = var.rancher_cluster_enabled ? 1 : 0
   source = "./modules/rancher-cluster"
 
-  cluster_name             = local.cluster_name
-  environment              = var.environment
-  project_name             = var.project_name
-  domain_name              = var.domain_name
-  aws_region               = var.aws_region
-  aws_account_id           = data.aws_caller_identity.current.account_id
-  kubernetes_version       = var.kubernetes_version
-  worker_desired_capacity  = var.worker_desired_capacity
-  stopped                  = var.stopped
-  ami_id                   = data.aws_ami.amazon_linux_2.id
-  vpc_id                   = aws_vpc.main.id
-  subnet_id                = aws_subnet.public[0].id
-  rancher_server_sg_id     = aws_security_group.rancher_server.id
-  rancher_server_fqdn      = aws_route53_record.rancher_server.fqdn
-  route53_zone_id          = aws_route53_zone.main.zone_id
-  admin_ips                = var.admin_ips
-  rancher_admin_password   = random_password.rancher_admin.result
-  rancher_server_ready     = aws_eip_association.rancher_server
-  project_root             = path.module
-
-  providers = {
-    rancher2.bootstrap = rancher2.bootstrap
-  }
-
-  depends_on = [
-    aws_instance.rancher_server,
-    aws_eip_association.rancher_server
-  ]
+  cluster_name            = local.cluster_name
+  environment             = var.environment
+  project_name            = var.project_name
+  domain_name             = var.domain_name
+  aws_region              = var.aws_region
+  aws_account_id          = data.aws_caller_identity.current.account_id
+  kubernetes_version      = var.kubernetes_version
+  worker_desired_capacity = var.worker_desired_capacity
+  stopped                 = var.stopped
+  ami_id                  = data.aws_ami.amazon_linux_2.id
+  vpc_id                  = aws_vpc.main.id
+  subnet_id               = aws_subnet.public[0].id
+  rancher_server_sg_id    = aws_security_group.rancher_server.id
+  rancher_server_fqdn     = aws_route53_record.rancher_server.fqdn
+  route53_zone_id         = aws_route53_zone.main.zone_id
+  admin_ips               = var.admin_ips
+  rancher_admin_password  = random_password.rancher_admin.result
+  project_root            = path.module
 }
 
 module "kubernetes_base" {
-  count  = var.kubernetes_resources_enabled ? 1 : 0
   source = "./modules/kubernetes-base"
 
   environment                = var.environment
   domain_name                = var.domain_name
-  s3_access_key_id           = aws_iam_access_key.s3_videos[0].id
-  s3_secret_access_key       = aws_iam_access_key.s3_videos[0].secret
+  s3_access_key_id           = aws_iam_access_key.s3_videos.id
+  s3_secret_access_key       = aws_iam_access_key.s3_videos.secret
   s3_bucket_domain           = aws_s3_bucket.videos.bucket_regional_domain_name
   s3_bucket_id               = aws_s3_bucket.videos.id
   aws_region                 = var.aws_region
   ses_smtp_endpoint          = local.ses_smtp_endpoint
-  ses_smtp_username          = aws_iam_access_key.ses_smtp[0].id
-  ses_smtp_password          = aws_iam_access_key.ses_smtp[0].ses_smtp_password_v4
+  ses_smtp_username          = aws_iam_access_key.ses_smtp.id
+  ses_smtp_password          = aws_iam_access_key.ses_smtp.ses_smtp_password_v4
   google_oauth_client_id     = var.google_oauth_client_id
   google_oauth_client_secret = var.google_oauth_client_secret
   stopped                    = var.stopped
   project_root               = path.module
-  kube_host                  = module.rancher_cluster[0].kube_host
-  kube_token                 = module.rancher_cluster[0].kube_token
+  kube_host                  = module.rancher_cluster.kube_host
+  kube_token                 = module.rancher_cluster.kube_token
 }
 
 module "kubernetes_networking" {
-  count  = var.kubernetes_resources_enabled ? 1 : 0
   source = "./modules/kubernetes-networking"
 
   domain_name  = var.domain_name
   cluster_name = local.cluster_name
   stopped      = var.stopped
-  kube_host    = module.rancher_cluster[0].kube_host
-  kube_token   = module.rancher_cluster[0].kube_token
+  kube_host    = module.rancher_cluster.kube_host
+  kube_token   = module.rancher_cluster.kube_token
 }
 
 module "kubernetes_monitoring" {
-  count  = var.kubernetes_resources_enabled ? 1 : 0
   source = "./modules/kubernetes-monitoring"
 
   domain_name            = var.domain_name
-  app_namespace          = module.kubernetes_base[0].app_namespace
-  grafana_admin_password = module.kubernetes_base[0].grafana_admin_password
+  app_namespace          = module.kubernetes_base.app_namespace
+  grafana_admin_password = module.kubernetes_base.grafana_admin_password
   stopped                = var.stopped
-  kube_host              = module.rancher_cluster[0].kube_host
-  kube_token             = module.rancher_cluster[0].kube_token
-
-  depends_on = [module.kubernetes_networking]
+  kube_host              = module.rancher_cluster.kube_host
+  kube_token             = module.rancher_cluster.kube_token
 }
 
 module "argocd" {
-  count  = var.kubernetes_resources_enabled ? 1 : 0
   source = "./modules/argocd"
 
   domain_name = var.domain_name
   stopped     = var.stopped
-  kube_host   = module.rancher_cluster[0].kube_host
-  kube_token  = module.rancher_cluster[0].kube_token
-
-  depends_on = [module.kubernetes_networking]
+  kube_host   = module.rancher_cluster.kube_host
+  kube_token  = module.rancher_cluster.kube_token
 }
 
 module "argocd_apps" {
-  count  = var.kubernetes_resources_enabled && var.argocd_resources_enabled ? 1 : 0
   source = "./modules/argocd-apps"
 
   project_name     = var.project_name
-  argocd_namespace = module.argocd[0].argocd_namespace
-  app_namespace    = module.kubernetes_base[0].app_namespace
+  argocd_namespace = module.argocd.argocd_namespace
+  app_namespace    = module.kubernetes_base.app_namespace
   deploy_frontend  = var.deploy_frontend
   deploy_datalayer = var.deploy_datalayer
   deploy_backend   = var.deploy_backend
-  kube_host        = module.rancher_cluster[0].kube_host
-  kube_token       = module.rancher_cluster[0].kube_token
-
-  depends_on = [module.argocd]
+  kube_host        = module.rancher_cluster.kube_host
+  kube_token       = module.rancher_cluster.kube_token
 }
