@@ -248,11 +248,7 @@ output "rancher_server_ip" {
   value       = aws_eip.rancher.public_ip
 }
 
-output "rancher_admin_password" {
-  description = "Initial admin password for Rancher"
-  value       = random_password.rancher_admin.result
-  sensitive   = true
-}
+
 
 output "rancher_ssh_command" {
   description = "SSH command to connect to Rancher Server"
