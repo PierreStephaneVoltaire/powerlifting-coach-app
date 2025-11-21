@@ -1,21 +1,175 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
+import { useNavigate } from 'react-router-dom';
+import { apiClient } from '@/utils/api';
+import { useAuthStore } from '@/store/authStore';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8084';
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+}
+
 export const ChatPage: React.FC = () => {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [initialMessages, setInitialMessages] = useState<any[]>([]);
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
     api: `${API_BASE_URL}/v1/chat/completions`,
     headers: {
       'Content-Type': 'application/json',
     },
+    initialMessages,
   });
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    loadChatHistory();
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (messages.length > 0 && !isLoadingHistory) {
+      saveChatHistory();
+    }
+  }, [messages, isLoadingHistory]);
+
+  const loadChatHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const response = await apiClient.getChatHistory();
+
+      if (response.messages && response.messages.length > 0) {
+        const formattedMessages = response.messages.map((msg: ChatMessage) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+        }));
+        setInitialMessages(formattedMessages);
+        setMessages(formattedMessages);
+      } else {
+        const initialSystemMessage = await getInitialSystemMessage();
+        if (initialSystemMessage) {
+          setInitialMessages([initialSystemMessage]);
+          setMessages([initialSystemMessage]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+      const initialSystemMessage = await getInitialSystemMessage();
+      if (initialSystemMessage) {
+        setInitialMessages([initialSystemMessage]);
+        setMessages([initialSystemMessage]);
+      }
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const getInitialSystemMessage = async () => {
+    try {
+      const settings = await apiClient.getUserSettings();
+
+      const weeksUntilComp = settings.competition_date
+        ? Math.ceil((new Date(settings.competition_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 7))
+        : null;
+
+      let contextParts = [
+        '👋 Welcome! I\'m your AI assistant.',
+        '',
+        'Here\'s what I know about you:',
+      ];
+
+      if (settings.competition_date) {
+        contextParts.push(`📅 Competition in ${weeksUntilComp} weeks`);
+      }
+
+      if (settings.training_days_per_week) {
+        contextParts.push(`🏋️ Training ${settings.training_days_per_week} days per week`);
+      }
+
+      if (settings.best_squat_kg || settings.best_bench_kg || settings.best_dead_kg) {
+        contextParts.push('');
+        contextParts.push('💪 Current maxes:');
+        if (settings.best_squat_kg) contextParts.push(`  - Squat: ${settings.best_squat_kg}kg`);
+        if (settings.best_bench_kg) contextParts.push(`  - Bench: ${settings.best_bench_kg}kg`);
+        if (settings.best_dead_kg) contextParts.push(`  - Deadlift: ${settings.best_dead_kg}kg`);
+      }
+
+      if (settings.squat_goal_value || settings.bench_goal_value || settings.dead_goal_value) {
+        contextParts.push('');
+        contextParts.push('🎯 Goals:');
+        if (settings.squat_goal_value) contextParts.push(`  - Squat: ${settings.squat_goal_value}kg`);
+        if (settings.bench_goal_value) contextParts.push(`  - Bench: ${settings.bench_goal_value}kg`);
+        if (settings.dead_goal_value) contextParts.push(`  - Deadlift: ${settings.dead_goal_value}kg`);
+      }
+
+      contextParts.push('');
+      contextParts.push('How can I help you today?');
+
+      return {
+        id: 'initial-system-message',
+        role: 'system' as const,
+        content: contextParts.join('\n'),
+      };
+    } catch (err) {
+      console.error('Failed to get user settings:', err);
+      return {
+        id: 'initial-system-message',
+        role: 'system' as const,
+        content: '👋 Welcome! How can I help you today?',
+      };
+    }
+  };
+
+  const saveChatHistory = async () => {
+    try {
+      const messagesToSave = messages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        created_at: new Date().toISOString(),
+      }));
+
+      await apiClient.saveChatMessages(messagesToSave);
+    } catch (err) {
+      console.error('Failed to save chat history:', err);
+    }
+  };
+
+  if (isLoadingHistory) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading chat...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900">AI Chat</h1>
-        <p className="text-sm text-gray-600">Chat with AI powered by LiteLLM</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">AI Chat</h1>
+            <p className="text-sm text-gray-600">Chat with AI powered by LiteLLM</p>
+          </div>
+          <button
+            onClick={() => navigate('/feed')}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            Back
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -30,12 +184,16 @@ export const ChatPage: React.FC = () => {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
             >
               <div
                 className={`max-w-[80%] rounded-lg px-4 py-3 ${
                   message.role === 'user'
                     ? 'bg-blue-600 text-white'
+                    : message.role === 'system'
+                    ? 'bg-gray-100 text-gray-800 border border-gray-300'
                     : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                 }`}
               >

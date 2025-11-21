@@ -78,6 +78,7 @@ func main() {
 
 	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator, settingsClient, coachClient)
 	openaiHandlers := handlers.NewOpenAICompatHandlers(cfg)
+	chatHistoryHandlers := handlers.NewChatHistoryHandlers(db.DB)
 
 	router := gin.Default()
 
@@ -170,6 +171,15 @@ func main() {
 	{
 		openai.POST("/chat/completions", openaiHandlers.ChatCompletions)
 		openai.GET("/models", openaiHandlers.ListModels)
+	}
+
+	// Chat history endpoints
+	chat := v1.Group("/chat")
+	chat.Use(middleware.AuthMiddleware(authConfig))
+	{
+		chat.GET("/history", chatHistoryHandlers.GetChatHistory)
+		chat.POST("/messages", chatHistoryHandlers.SaveMessages)
+		chat.DELETE("/history", chatHistoryHandlers.ClearHistory)
 	}
 
 	router.GET("/health", programHandlers.HealthCheck)
