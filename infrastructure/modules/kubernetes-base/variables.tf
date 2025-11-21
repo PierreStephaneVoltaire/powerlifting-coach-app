@@ -74,3 +74,14 @@ variable "project_root" {
   description = "Project root path for local file resources"
   type        = string
 }
+
+variable "kube_host" {
+  description = "Kubernetes API server host"
+  type        = string
+}
+
+variable "kube_token" {
+  description = "Kubernetes API server token"
+  type        = string
+  sensitive   = true
+}
