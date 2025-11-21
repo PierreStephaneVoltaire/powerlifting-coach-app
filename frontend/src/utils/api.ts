@@ -519,21 +519,6 @@ class ApiClient {
     return response.data;
   }
 
-  async getChatHistory() {
-    const response = await this.client.get('/api/v1/chat/history');
-    return response.data;
-  }
-
-  async saveChatMessages(messages: any[]) {
-    const response = await this.client.post('/api/v1/chat/messages', { messages });
-    return response.data;
-  }
-
-  async clearChatHistory() {
-    const response = await this.client.delete('/api/v1/chat/history');
-    return response.data;
-  }
-
   async get(url: string, config?: any) {
     return this.client.get(`/api/v1${url}`, config);
   }

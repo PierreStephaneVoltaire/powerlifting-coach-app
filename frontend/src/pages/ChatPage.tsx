@@ -6,20 +6,13 @@ import { useAuthStore } from '@/store/authStore';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8084';
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  created_at: string;
-}
-
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [initialMessages, setInitialMessages] = useState<any[]>([]);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: `${API_BASE_URL}/v1/chat/completions`,
     headers: {
       'Content-Type': 'application/json',
@@ -32,48 +25,11 @@ export const ChatPage: React.FC = () => {
       navigate('/login');
       return;
     }
-    loadChatHistory();
+    loadInitialPrompt();
   }, [user, navigate]);
 
-  useEffect(() => {
-    if (messages.length > 0 && !isLoadingHistory) {
-      saveChatHistory();
-    }
-  }, [messages, isLoadingHistory]);
-
-  const loadChatHistory = async () => {
-    setIsLoadingHistory(true);
-    try {
-      const response = await apiClient.getChatHistory();
-
-      if (response.messages && response.messages.length > 0) {
-        const formattedMessages = response.messages.map((msg: ChatMessage) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-        }));
-        setInitialMessages(formattedMessages);
-        setMessages(formattedMessages);
-      } else {
-        const initialSystemMessage = await getInitialSystemMessage();
-        if (initialSystemMessage) {
-          setInitialMessages([initialSystemMessage]);
-          setMessages([initialSystemMessage]);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load chat history:', err);
-      const initialSystemMessage = await getInitialSystemMessage();
-      if (initialSystemMessage) {
-        setInitialMessages([initialSystemMessage]);
-        setMessages([initialSystemMessage]);
-      }
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
-
-  const getInitialSystemMessage = async () => {
+  const loadInitialPrompt = async () => {
+    setIsLoadingSettings(true);
     try {
       const settings = await apiClient.getUserSettings();
 
@@ -114,37 +70,24 @@ export const ChatPage: React.FC = () => {
       contextParts.push('');
       contextParts.push('How can I help you today?');
 
-      return {
+      setInitialMessages([{
         id: 'initial-system-message',
-        role: 'system' as const,
+        role: 'system',
         content: contextParts.join('\n'),
-      };
+      }]);
     } catch (err) {
       console.error('Failed to get user settings:', err);
-      return {
+      setInitialMessages([{
         id: 'initial-system-message',
-        role: 'system' as const,
+        role: 'system',
         content: '👋 Welcome! How can I help you today?',
-      };
+      }]);
+    } finally {
+      setIsLoadingSettings(false);
     }
   };
 
-  const saveChatHistory = async () => {
-    try {
-      const messagesToSave = messages.map((msg) => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        created_at: new Date().toISOString(),
-      }));
-
-      await apiClient.saveChatMessages(messagesToSave);
-    } catch (err) {
-      console.error('Failed to save chat history:', err);
-    }
-  };
-
-  if (isLoadingHistory) {
+  if (isLoadingSettings) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="text-center">
