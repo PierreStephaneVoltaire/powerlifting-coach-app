@@ -77,6 +77,7 @@ func main() {
 	coachClient := clients.NewCoachClient(cfg.CoachService)
 
 	programHandlers := handlers.NewProgramHandlers(programRepo, aiClient, excelExporter, workoutGenerator, settingsClient, coachClient)
+	openaiHandlers := handlers.NewOpenAICompatHandlers(cfg)
 
 	router := gin.Default()
 
@@ -162,6 +163,13 @@ func main() {
 			sessions.GET("/history", programHandlers.GetSessionHistory)
 			sessions.DELETE("/:sessionId", programHandlers.DeleteSession)
 		}
+	}
+
+	// OpenAI-compatible endpoints for chat UI libraries
+	openai := router.Group("/v1")
+	{
+		openai.POST("/chat/completions", openaiHandlers.ChatCompletions)
+		openai.GET("/models", openaiHandlers.ListModels)
 	}
 
 	router.GET("/health", programHandlers.HealthCheck)

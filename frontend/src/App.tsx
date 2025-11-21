@@ -15,6 +15,7 @@ import { ProgramPage } from '@/pages/ProgramPage';
 import { DMPage } from '@/pages/DMPage';
 import { ToolsPage } from '@/pages/ToolsPage';
 import { ChatPage } from '@/pages/ChatPage';
+import { AIChatPage } from '@/pages/AIChatPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { ExerciseLibraryPage } from '@/pages/ExerciseLibraryPage';
 import { WorkoutHistoryPage } from '@/pages/WorkoutHistoryPage';
@@ -50,6 +51,11 @@ function App() {
               <Route path="/chat" element={
                 <ProtectedRoute>
                   <ChatPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/ai-chat" element={
+                <ProtectedRoute>
+                  <AIChatPage />
                 </ProtectedRoute>
               } />
               <Route element={
