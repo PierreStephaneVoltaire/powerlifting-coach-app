@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
+import React from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, API_BASE_URL } from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
