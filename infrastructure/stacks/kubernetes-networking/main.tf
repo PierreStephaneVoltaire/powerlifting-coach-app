@@ -171,8 +171,9 @@ resource "kubectl_manifest" "nginx_gateway" {
             mode = "Terminate"
             certificateRefs = [
               {
-                kind = "Secret"
-                name = "wildcard-tls"
+                kind      = "Secret"
+                name      = "wildcard-tls"
+                namespace = "app"
               }
             ]
           }
@@ -224,6 +225,36 @@ resource "kubectl_manifest" "letsencrypt_prod" {
   })
 
   depends_on = [helm_release.cert_manager, helm_release.nginx_gateway_fabric]
+}
+
+resource "kubectl_manifest" "cert_reference_grant" {
+  count = var.stopped ? 0 : 1
+
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1beta1"
+    kind       = "ReferenceGrant"
+    metadata = {
+      name      = "allow-nginx-gateway-cert"
+      namespace = "app"
+    }
+    spec = {
+      from = [
+        {
+          group     = "gateway.networking.k8s.io"
+          kind      = "Gateway"
+          namespace = "nginx-gateway"
+        }
+      ]
+      to = [
+        {
+          group = ""
+          kind  = "Secret"
+        }
+      ]
+    }
+  })
+
+  depends_on = [helm_release.nginx_gateway_fabric]
 }
 
 data "kubernetes_service" "nginx_gateway" {

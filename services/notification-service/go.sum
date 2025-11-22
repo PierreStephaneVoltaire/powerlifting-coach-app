@@ -1,5 +1,5 @@
-github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.4 h1:UR3k6jrlsPbmPsY3wzaya8yLWk3wPVafXJrEn1tH4Mc=
-github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.4/go.mod h1:i82mRs0R/ThZpDqm1eRIkwl3vLGRzilyUd3O2ia9W1w=
+github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.5 h1:p8O/J7T9qP0hensz1tHLFSwZnl4C2kDb/W8n/WM0gA0=
+github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.5/go.mod h1:i82mRs0R/ThZpDqm1eRIkwl3vLGRzilyUd3O2ia9W1w=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bytedance/sonic v1.14.0 h1:/OfKt8HFw0kh2rj8N0F6C/qPGRESq0BbaNZgcNXXzQQ=
