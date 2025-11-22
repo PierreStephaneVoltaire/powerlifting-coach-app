@@ -57,6 +57,33 @@ resource "helm_release" "argocd" {
   ]
 }
 
+resource "helm_release" "argocd_image_updater" {
+  count = var.stopped ? 0 : 1
+
+  name          = "argocd-image-updater"
+  repository    = "https://argoproj.github.io/argo-helm"
+  chart         = "argocd-image-updater"
+  version       = "0.11.0"
+  namespace     = kubernetes_namespace.argocd.metadata[0].name
+  wait          = true
+  wait_for_jobs = true
+  timeout       = 600
+
+  set {
+    name  = "config.argocd.insecure"
+    value = "true"
+  }
+
+  set {
+    name  = "config.argocd.plaintext"
+    value = "true"
+  }
+
+  depends_on = [
+    helm_release.argocd
+  ]
+}
+
 resource "kubectl_manifest" "argocd_httproute" {
   yaml_body = yamlencode({
     apiVersion = "gateway.networking.k8s.io/v1"
