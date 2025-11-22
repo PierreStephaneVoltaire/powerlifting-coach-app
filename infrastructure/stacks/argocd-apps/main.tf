@@ -87,11 +87,10 @@ resource "kubernetes_manifest" "app_frontend" {
       "name"      = "${var.project_name}-frontend"
       "namespace" = data.terraform_remote_state.argocd.outputs.argocd_namespace
       "annotations" = {
-        "argocd-image-updater.argoproj.io/image-list"               = "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend"
+        "argocd-image-updater.argoproj.io/image-list"               = "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend:latest"
         "argocd-image-updater.argoproj.io/write-back-method"        = "argocd"
         "argocd-image-updater.argoproj.io/write-back-target"        = "kustomization"
         "argocd-image-updater.argoproj.io/frontend.update-strategy" = "digest"
-        "argocd-image-updater.argoproj.io/frontend.allow-tags"      = "regexp:^.*$"
         "argocd-image-updater.argoproj.io/frontend.force-update"    = "true"
       }
     }
@@ -178,17 +177,17 @@ resource "kubernetes_manifest" "app_backend" {
       "namespace" = data.terraform_remote_state.argocd.outputs.argocd_namespace
       "annotations" = {
         "argocd-image-updater.argoproj.io/image-list" = join(",", [
-          "auth-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/auth-service",
-          "user-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/user-service",
-          "video-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/video-service",
-          "media-processor-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/media-processor-service",
-          "settings-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/settings-service",
-          "program-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/program-service",
-          "coach-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/coach-service",
-          "notification-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/notification-service",
-          "dm-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/dm-service",
-          "machine-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/machine-service",
-          "reminder-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/reminder-service"
+          "auth-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/auth-service:latest",
+          "user-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/user-service:latest",
+          "video-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/video-service:latest",
+          "media-processor-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/media-processor-service:latest",
+          "settings-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/settings-service:latest",
+          "program-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/program-service:latest",
+          "coach-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/coach-service:latest",
+          "notification-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/notification-service:latest",
+          "dm-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/dm-service:latest",
+          "machine-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/machine-service:latest",
+          "reminder-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/reminder-service:latest"
         ])
         "argocd-image-updater.argoproj.io/write-back-method"                       = "argocd"
         "argocd-image-updater.argoproj.io/write-back-target"                      = "kustomization"
@@ -203,17 +202,6 @@ resource "kubernetes_manifest" "app_backend" {
         "argocd-image-updater.argoproj.io/dm-service.update-strategy"              = "digest"
         "argocd-image-updater.argoproj.io/machine-service.update-strategy"         = "digest"
         "argocd-image-updater.argoproj.io/reminder-service.update-strategy"        = "digest"
-        "argocd-image-updater.argoproj.io/auth-service.allow-tags"                 = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/user-service.allow-tags"                 = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/video-service.allow-tags"                = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/media-processor-service.allow-tags"      = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/settings-service.allow-tags"             = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/program-service.allow-tags"              = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/coach-service.allow-tags"                = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/notification-service.allow-tags"         = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/dm-service.allow-tags"                   = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/machine-service.allow-tags"              = "regexp:^.*$"
-        "argocd-image-updater.argoproj.io/reminder-service.allow-tags"             = "regexp:^.*$"
       }
     }
     "spec" = {
