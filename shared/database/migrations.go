@@ -50,7 +50,6 @@ func RunMigrations(config MigrationConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to create migration instance: %w", err)
 	}
-	defer m.Close()
 
 	// Get current version and check for mismatches
 	currentVersion, dirty, err := m.Version()

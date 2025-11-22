@@ -134,6 +134,13 @@ spec:
       backendRefs:
         - name: dm-service
           port: 8084
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /v1/
+      backendRefs:
+        - name: program-service
+          port: 8084
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
