@@ -89,8 +89,10 @@ resource "kubernetes_manifest" "app_frontend" {
       "annotations" = {
         "argocd-image-updater.argoproj.io/image-list"               = "frontend=ghcr.io/pierrestephanevoltaire/powerlifting-coach/frontend"
         "argocd-image-updater.argoproj.io/write-back-method"        = "argocd"
+        "argocd-image-updater.argoproj.io/write-back-target"        = "kustomization"
         "argocd-image-updater.argoproj.io/frontend.update-strategy" = "digest"
         "argocd-image-updater.argoproj.io/frontend.allow-tags"      = "regexp:^.*$"
+        "argocd-image-updater.argoproj.io/frontend.force-update"    = "true"
       }
     }
     "spec" = {
@@ -189,6 +191,7 @@ resource "kubernetes_manifest" "app_backend" {
           "reminder-service=ghcr.io/pierrestephanevoltaire/powerlifting-coach/reminder-service"
         ])
         "argocd-image-updater.argoproj.io/write-back-method"                       = "argocd"
+        "argocd-image-updater.argoproj.io/write-back-target"                      = "kustomization"
         "argocd-image-updater.argoproj.io/auth-service.update-strategy"            = "digest"
         "argocd-image-updater.argoproj.io/user-service.update-strategy"            = "digest"
         "argocd-image-updater.argoproj.io/video-service.update-strategy"           = "digest"
