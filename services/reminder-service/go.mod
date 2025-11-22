@@ -3,7 +3,7 @@ module github.com/powerlifting-coach-app/reminder-service
 go 1.23.0
 
 require (
-	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.4
+	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.5
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1

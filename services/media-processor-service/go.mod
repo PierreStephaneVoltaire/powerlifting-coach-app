@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.7
 
 require (
-	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.4
+	github.com/PierreStephaneVoltaire/powerlifting-coach-app/shared v0.1.5
 	github.com/aws/aws-sdk-go-v2 v1.32.2
 	github.com/aws/aws-sdk-go-v2/config v1.28.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.41
