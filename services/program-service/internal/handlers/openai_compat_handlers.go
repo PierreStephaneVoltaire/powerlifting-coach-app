@@ -44,8 +44,12 @@ func (h *OpenAICompatHandlers) ChatCompletions(c *gin.Context) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to forward to LiteLLM")
-		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to forward request to LiteLLM"})
+		log.Error().Err(err).Str("litellm_url", litellmURL).Msg("Failed to forward to LiteLLM")
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error":        "Failed to forward request to LiteLLM",
+			"error_detail": err.Error(),
+			"litellm_url":  litellmURL,
+		})
 		return
 	}
 	defer resp.Body.Close()
@@ -78,8 +82,12 @@ func (h *OpenAICompatHandlers) ListModels(c *gin.Context) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to forward to LiteLLM")
-		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to forward request to LiteLLM"})
+		log.Error().Err(err).Str("litellm_url", litellmURL).Msg("Failed to forward to LiteLLM")
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error":        "Failed to forward request to LiteLLM",
+			"error_detail": err.Error(),
+			"litellm_url":  litellmURL,
+		})
 		return
 	}
 	defer resp.Body.Close()
