@@ -33,6 +33,19 @@ resource "random_password" "grafana_admin_password" {
   special = true
 }
 
+resource "aws_ssm_parameter" "grafana_admin_password" {
+  name        = "/nolift/${var.environment}/grafana/admin-password"
+  description = "Grafana admin password for ${var.domain_name}"
+  type        = "SecureString"
+  value       = random_password.grafana_admin_password.result
+
+  tags = {
+    Environment = var.environment
+    Domain      = var.domain_name
+    ManagedBy   = "Terraform"
+  }
+}
+
 resource "kubernetes_secret" "postgres_secret" {
   metadata {
     name      = "postgres-secret"
