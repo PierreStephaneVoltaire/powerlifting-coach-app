@@ -7,20 +7,21 @@ resource "helm_release" "kube_prometheus_stack" {
   namespace        = "monitoring"
   create_namespace = true
   version          = "55.5.0"
+  timeout          = 900
 
   values = [
     yamlencode({
       prometheus = {
         prometheusSpec = {
-          retention = "15d"
+          retention = "7d"
           resources = {
             requests = {
-              cpu    = "200m"
-              memory = "512Mi"
+              cpu    = "100m"
+              memory = "256Mi"
             }
             limits = {
-              cpu    = "500m"
-              memory = "2Gi"
+              cpu    = "300m"
+              memory = "1Gi"
             }
           }
           storageSpec = {
@@ -48,12 +49,56 @@ resource "helm_release" "kube_prometheus_stack" {
         }
         resources = {
           requests = {
-            cpu    = "100m"
-            memory = "256Mi"
+            cpu    = "50m"
+            memory = "128Mi"
           }
           limits = {
-            cpu    = "200m"
-            memory = "512Mi"
+            cpu    = "150m"
+            memory = "256Mi"
+          }
+        }
+        datasources = {
+          "datasources.yaml" = {
+            apiVersion = 1
+            datasources = [
+              {
+                name      = "Loki"
+                type      = "loki"
+                access    = "proxy"
+                url       = "http://loki:3100"
+                isDefault = true
+                jsonData = {
+                  maxLines = 1000
+                }
+              }
+            ]
+          }
+        }
+        dashboardProviders = {
+          "dashboardproviders.yaml" = {
+            apiVersion = 1
+            providers = [
+              {
+                name            = "default"
+                orgId           = 1
+                folder          = ""
+                type            = "file"
+                disableDeletion = false
+                editable        = true
+                options = {
+                  path = "/var/lib/grafana/dashboards/default"
+                }
+              }
+            ]
+          }
+        }
+        dashboards = {
+          default = {
+            pod-errors = {
+              gnetId     = 15141
+              revision   = 1
+              datasource = "Loki"
+            }
           }
         }
       }
@@ -86,12 +131,12 @@ resource "helm_release" "loki" {
         replicas = 1
         resources = {
           requests = {
-            cpu    = "100m"
-            memory = "256Mi"
+            cpu    = "50m"
+            memory = "128Mi"
           }
           limits = {
-            cpu    = "200m"
-            memory = "512Mi"
+            cpu    = "150m"
+            memory = "256Mi"
           }
         }
         persistence = {
@@ -121,12 +166,12 @@ resource "helm_release" "promtail" {
       }
       resources = {
         requests = {
-          cpu    = "50m"
-          memory = "64Mi"
+          cpu    = "25m"
+          memory = "32Mi"
         }
         limits = {
-          cpu    = "100m"
-          memory = "128Mi"
+          cpu    = "75m"
+          memory = "64Mi"
         }
       }
     })
